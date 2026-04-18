@@ -3,7 +3,7 @@
 ## Error Summary
 
 ```
-POST https://rnstore.runasp.net/api/Authorize/GenerateRefreshToken - Error: undefined
+POST http://sanjulogin.runasp.net/api/Authorize/GenerateRefreshToken - Error: undefined
 {message: 'Bad request. Please check your input.', status: undefined}
 AUTH_SERVICE: Token refresh failed, logging out
 ```
@@ -67,7 +67,7 @@ services.AddCors(options => {
 ### 3. **API Endpoint Mismatch**
 
 **Symptoms:**
-- Request URL: `https://rnstore.runasp.net/api/Authorize/GenerateRefreshToken`
+- Request URL: `http://sanjulogin.runasp.net/api/Authorize/GenerateRefreshToken`
 - But endpoint might be different on backend
 
 **Causes:**
@@ -80,11 +80,11 @@ Verify in `environment.ts` or `environment.prod.ts`:
 ```typescript
 export const environment = {
   production: true,
-  apiUrl: 'https://rnstore.runasp.net/api/'  // Must end with /
+  apiUrl: 'http://sanjulogin.runasp.net/api/'  // Must end with /
 };
 ```
 
-Should result in URL: `https://rnstore.runasp.net/api/Authorize/GenerateRefreshToken`
+Should result in URL: `http://sanjulogin.runasp.net/api/Authorize/GenerateRefreshToken`
 
 ---
 
