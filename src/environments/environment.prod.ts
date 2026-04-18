@@ -1,4 +1,4 @@
 export const environment = {
   production: true,
-  apiUrl: 'http://sanjulogin.runasp.net/api/'  // Production API URL
+  apiUrl: 'https://sanjulogin.runasp.net/api/'  // Production API URL
 };
