@@ -1,0 +1,81 @@
+<h2 mat-dialog-title>Record Payment</h2>
+<mat-dialog-content [formGroup]="form">
+    <!-- Invoice selection removed; not required for payment -->
+
+  <mat-form-field appearance="outline" style="width:100%">
+    <mat-label>Amount</mat-label>
+    <input matInput formControlName="amountPaid" type="number" min="0.01" step="0.01">
+    <mat-error *ngIf="form.get('amountPaid')?.hasError('required')">Amount is required</mat-error>
+    <mat-error *ngIf="form.get('amountPaid')?.hasError('min')">Amount must be greater than 0</mat-error>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" style="width:100%">
+    <mat-label>Payment Method</mat-label>
+    <mat-select formControlName="paymentMethod">
+      <mat-option value="Cash">Cash</mat-option>
+      <mat-option value="Bank Transfer">Bank Transfer</mat-option>
+      <mat-option value="Cheque">Cheque</mat-option>
+      <mat-option value="Other">Other</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" style="width:100%">
+    <mat-label>Remark / Payment note</mat-label>
+    <input matInput formControlName="reference" placeholder="Remark / Payment note">
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" style="width:100%">
+    <mat-label>Receipt Date</mat-label>
+    <input matInput [matDatepicker]="receiptPicker" formControlName="paymentDate" placeholder="dd/MM/yyyy">
+    <mat-datepicker-toggle matSuffix [for]="receiptPicker"></mat-datepicker-toggle>
+    <mat-datepicker #receiptPicker></mat-datepicker>
+    <mat-error *ngIf="form.get('paymentDate')?.hasError('invalidDate')">Invalid receipt date</mat-error>
+  </mat-form-field>
+
+  <!-- Cheque details shown only for Cheque payments -->
+  <ng-container *ngIf="form.get('paymentMethod')?.value === 'Cheque'">
+    <mat-form-field appearance="outline" style="width:100%">
+      <mat-label>Cheque Number</mat-label>
+      <input matInput formControlName="chequeNumber">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" style="width:100%">
+      <mat-label>Cheque Bank</mat-label>
+      <input matInput formControlName="chequeBank">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" style="width:100%">
+      <mat-label>Cheque Branch</mat-label>
+      <input matInput formControlName="chequeBranch">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" style="width:100%">
+      <mat-label>Cheque Date</mat-label>
+      <input matInput [matDatepicker]="chequePicker" formControlName="chequeDate" placeholder="dd/MM/yyyy">
+      <mat-datepicker-toggle matSuffix [for]="chequePicker"></mat-datepicker-toggle>
+      <mat-datepicker #chequePicker></mat-datepicker>
+      <mat-error *ngIf="form.get('chequeDate')?.hasError('invalidDate')">Invalid cheque date</mat-error>
+    </mat-form-field>
+  </ng-container>
+
+  <!-- Transaction fields shown for non-Cash methods (e.g., Bank Transfer) -->
+  <ng-container *ngIf="form.get('paymentMethod')?.value !== 'Cash' && form.get('paymentMethod')?.value !== 'Cheque'">
+    <mat-form-field appearance="outline" style="width:100%">
+      <mat-label>Transaction ID</mat-label>
+      <input matInput formControlName="transactionId">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" style="width:100%">
+      <mat-label>Transaction Date</mat-label>
+      <input matInput [matDatepicker]="transPicker" formControlName="transactionDate" placeholder="dd/MM/yyyy">
+      <mat-datepicker-toggle matSuffix [for]="transPicker"></mat-datepicker-toggle>
+      <mat-datepicker #transPicker></mat-datepicker>
+      <mat-error *ngIf="form.get('transactionDate')?.hasError('invalidDate')">Invalid transaction date</mat-error>
+    </mat-form-field>
+  </ng-container>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-flat-button color="primary" (click)="submit()" [disabled]="form.invalid">Record</button>
+</mat-dialog-actions>

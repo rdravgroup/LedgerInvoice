@@ -1,0 +1,151 @@
+<div class="product-container">
+  <div class="hero-section">
+    <h1>Product Master</h1>
+    <p>Manage your product inventory</p>
+  </div>
+
+  <div class="stats-container">
+    <div class="stat-card">
+      <mat-icon>inventory_2</mat-icon>
+      <div class="stat-content">
+        <h3>{{ totalProducts }}</h3>
+        <p>Total Products</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <mat-icon>check_circle</mat-icon>
+      <div class="stat-content">
+        <h3>{{ activeProducts }}</h3>
+        <p>Active Products</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <mat-icon>cancel</mat-icon>
+      <div class="stat-content">
+        <h3>{{ totalProducts - activeProducts }}</h3>
+        <p>Inactive Products</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="card-header">
+      <h2>{{ isEditMode ? 'Edit Product' : 'Add New Product' }}</h2>
+      <button mat-raised-button color="accent" (click)="openProductList()">
+        <mat-icon>list</mat-icon>
+        View All Products
+      </button>
+    </div>
+
+    <form [formGroup]="productForm" (ngSubmit)="onSubmit()">
+      <div class="form-grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Product Name</mat-label>
+          <input matInput formControlName="productName" placeholder="Enter product name">
+          <mat-icon matPrefix>shopping_bag</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Category</mat-label>
+          <mat-select formControlName="categoryCode">
+            <mat-option *ngFor="let cat of categoryList" [value]="cat.name">
+              {{ cat.name }}
+            </mat-option>
+          </mat-select>
+          <mat-icon matPrefix>category</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Measurement</mat-label>
+          <mat-select formControlName="measurement">
+            <mat-option *ngFor="let measure of measurementList" [value]="measure.name">
+              {{ measure.name }}
+            </mat-option>
+          </mat-select>
+          <mat-icon matPrefix>straighten</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>HSN/SAC Number</mat-label>
+          <input matInput formControlName="hsnSacNumber" placeholder="Enter HSN/SAC">
+          <mat-icon matPrefix>tag</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Rate With Tax</mat-label>
+          <input matInput type="number" formControlName="rateWithTax" placeholder="0.00">
+          <mat-icon matPrefix>currency_rupee</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Purchase Rate</mat-label>
+          <input matInput type="number" formControlName="purchaseRate" placeholder="0.00">
+          <mat-icon matPrefix>price_check</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Purchase Rate Date</mat-label>
+          <input matInput [matDatepicker]="purchaseRatePicker" formControlName="purchaseRateDate" placeholder="Choose a date">
+          <mat-datepicker-toggle matSuffix [for]="purchaseRatePicker"></mat-datepicker-toggle>
+          <mat-datepicker #purchaseRatePicker></mat-datepicker>
+        </mat-form-field>
+
+        <div class="checkbox-field">
+          <mat-checkbox [(ngModel)]="showExtraFields" [ngModelOptions]="{standalone: true}">
+            Show Extra Fields
+          </mat-checkbox>
+        </div>
+
+        <div *ngIf="showExtraFields" class="extra-fields">
+          <mat-form-field appearance="outline">
+            <mat-label>Rate Without Tax</mat-label>
+            <input matInput type="number" formControlName="rateWithoutTax" placeholder="0.00">
+            <mat-icon matPrefix>currency_rupee</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>CGST Rate (%)</mat-label>
+            <input matInput type="number" formControlName="cgstRate" placeholder="0">
+            <mat-icon matPrefix>percent</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>SGST Rate (%)</mat-label>
+            <input matInput type="number" formControlName="scgstRate" placeholder="0">
+            <mat-icon matPrefix>percent</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Total GST Rate (%)</mat-label>
+            <input matInput type="number" formControlName="totalGstRate" placeholder="0">
+            <mat-icon matPrefix>percent</mat-icon>
+          </mat-form-field>
+
+          
+        </div>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Remark</mat-label>
+          <input matInput formControlName="remark" placeholder="Enter remark">
+          <mat-icon matPrefix>note</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <div class="status-toggle">
+        <mat-slide-toggle formControlName="isActive" color="primary">
+          Active Status
+        </mat-slide-toggle>
+      </div>
+
+      <div class="form-actions">
+        <button mat-raised-button type="button" (click)="resetForm()" *ngIf="isEditMode">
+          Cancel
+        </button>
+        <button mat-raised-button color="primary" type="submit">
+          <mat-icon>{{ isEditMode ? 'update' : 'add' }}</mat-icon>
+          {{ isEditMode ? 'Update Product' : 'Add Product' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

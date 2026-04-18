@@ -1,0 +1,15 @@
+{
+  "/api": {
+    "target": "http://localhost:7238",
+    "secure": false,
+    "pathRewrite": { "^/api": "/api" },
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/api/ip": {
+    "target": "https://api64.ipify.org",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}

@@ -1,0 +1,243 @@
+<div class="outstanding-ar-container">
+  <div class="header">
+    <h1>Outstanding A/R</h1>
+    <div class="header-actions">
+      <button mat-stroked-button (click)="toggleFilters()" class="filter-toggle">
+        <mat-icon>{{ showFilters ? 'expand_less' : 'expand_more' }}</mat-icon>
+        {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
+      </button>
+      <button mat-raised-button color="primary" (click)="refreshData()">
+        <mat-icon>refresh</mat-icon>Refresh
+      </button>
+    </div>
+  </div>
+
+  <!-- Advanced Filters Panel -->
+  <mat-card *ngIf="showFilters" class="filters-panel">
+    <mat-card-header>
+      <mat-card-title>Advanced Filters</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="filters-grid">
+        
+        <!-- Search Filter -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Customer Name</mat-label>
+          <input matInput [(ngModel)]="filterSearchName" placeholder="Search by customer name">
+          <mat-icon matPrefix>search</mat-icon>
+        </mat-form-field>
+
+        <!-- Sorting -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Sort By</mat-label>
+          <mat-select [(ngModel)]="filterSortBy">
+            <mat-option *ngFor="let opt of sortOptions" [value]="opt.value">
+              {{ opt.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Ageing Bucket -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Ageing Bucket</mat-label>
+          <mat-select [(ngModel)]="filterAgeingBucket">
+            <mat-option *ngFor="let opt of ageingBucketOptions" [value]="opt.value">
+              {{ opt.label }}
+            </mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <!-- Min Outstanding Amount -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Min Outstanding Amount</mat-label>
+          <input matInput type="number" [(ngModel)]="filterMinOutstanding" placeholder="0">
+          <mat-icon matPrefix>currency_rupee</mat-icon>
+        </mat-form-field>
+
+        <!-- Max Outstanding Amount -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Max Outstanding Amount</mat-label>
+          <input matInput type="number" [(ngModel)]="filterMaxOutstanding" placeholder="999999">
+          <mat-icon matPrefix>currency_rupee</mat-icon>
+        </mat-form-field>
+
+        <!-- Min Days Overdue -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Min Days Overdue</mat-label>
+          <input matInput type="number" [(ngModel)]="filterMinDaysOverdue" min="0" placeholder="0">
+          <mat-icon matPrefix>schedule</mat-icon>
+        </mat-form-field>
+
+        <!-- Min Last Payment Days -->
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>No Payment For (Days)</mat-label>
+          <input matInput type="number" [(ngModel)]="filterMinLastPaymentDays" placeholder="30">
+          <mat-icon matPrefix>calendar_today</mat-icon>
+        </mat-form-field>
+
+        <!-- Toggles -->
+        <div class="filter-toggles">
+          <mat-checkbox [(ngModel)]="filterShowOnlyOverdue" color="primary">
+            <span>Show Only Overdue</span>
+          </mat-checkbox>
+          <mat-checkbox [(ngModel)]="filterNeverPaid" color="primary">
+            <span>Never Paid</span>
+          </mat-checkbox>
+          <mat-checkbox [(ngModel)]="filterIncludeFullyPaid" color="primary">
+            <span>Include Fully Paid</span>
+          </mat-checkbox>
+        </div>
+      </div>
+
+      <!-- Filter Actions -->
+      <div class="filter-actions">
+        <button mat-raised-button color="primary" (click)="applyFilters()">
+          <mat-icon>filter_list</mat-icon>Apply Filters
+        </button>
+        <button mat-stroked-button (click)="resetFilters()">
+          <mat-icon>clear_all</mat-icon>Reset Filters
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Error Alert -->
+  <mat-card *ngIf="error" class="error-card">
+    <mat-card-content>
+      <div class="alert-error">
+        <mat-icon>error</mat-icon>
+        <span>{{ error }}</span>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading outstanding customers...</p>
+  </div>
+
+  <!-- Main Content -->
+  <div *ngIf="!loading" class="content">
+    <!-- Search Filter -->
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search</mat-label>
+      <input matInput (keyup)="applyFilter($event)" placeholder="Search by customer name or ID">
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+
+    <!-- Table -->
+    <mat-card class="table-card">
+      <table mat-table [dataSource]="dataSource" matSort class="outstanding-table">
+        
+        <!-- Customer Name -->
+        <ng-container matColumnDef="customerName">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Customer Name</th>
+          <td mat-cell *matCellDef="let element">{{ element.customerName }}</td>
+        </ng-container>
+
+        <!-- Total Invoiced -->
+        <ng-container matColumnDef="totalInvoiced">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Total Invoiced</th>
+          <td mat-cell *matCellDef="let element">
+            <span class="invoiced-value">{{ formatCurrency(element.totalInvoiced) }}</span>
+          </td>
+        </ng-container>
+
+        <!-- Total Paid -->
+        <ng-container matColumnDef="totalPaid">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Total Paid</th>
+          <td mat-cell *matCellDef="let element">
+            <span class="paid-value">{{ formatCurrency(element.totalPaid) }}</span>
+          </td>
+        </ng-container>
+
+        <!-- Outstanding Balance -->
+        <ng-container matColumnDef="balance">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Outstanding Balance</th>
+          <td mat-cell *matCellDef="let element">
+            <div class="balance-cell" [class]="getBalanceStatusCss(element.totalInvoiced, element.totalPaid)">
+              <span class="balance-value">{{ formatCurrency(getCalculatedBalance(element.totalInvoiced, element.totalPaid)) }}</span>
+              <span class="balance-label">{{ getBalanceStatusLabel(element.totalInvoiced, element.totalPaid) }}</span>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Days Outstanding -->
+        <ng-container matColumnDef="daysOutstanding">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Days</th>
+          <td mat-cell *matCellDef="let element">
+            <span [class]="'days-badge ' + getStatusCss(element.daysOutstanding)">
+              {{ element.daysOutstanding }} days
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Last Payment Date -->
+        <ng-container matColumnDef="lastPaymentDate">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Last Payment</th>
+          <td mat-cell *matCellDef="let element">
+            {{ formatDate(element.lastPaymentDate) }}
+          </td>
+        </ng-container>
+
+        <!-- Status -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let element">
+            <span [class]="'status-badge ' + getStatusCss(element.daysOutstanding)">
+              {{ getStatusLabel(element.daysOutstanding) }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Actions -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let element">
+            <button mat-icon-button color="primary" 
+              (click)="viewCustomer(element.customerId)" 
+              matTooltip="View Details">
+              <mat-icon>visibility</mat-icon>
+            </button>
+            <button mat-icon-button color="info" 
+              (click)="viewPayments(element.customerId, element.customerName)" 
+              matTooltip="View Payments">
+              <mat-icon>receipt_long</mat-icon>
+            </button>
+            <button mat-icon-button color="warn"
+              (click)="openPaymentPrompt(element)"
+              matTooltip="Record Payment">
+              <mat-icon>attach_money</mat-icon>
+            </button>
+            <button mat-icon-button color="accent" 
+              (click)="sendReminder(element.customerId, element.customerName)" 
+              matTooltip="Send Reminder">
+              <mat-icon>mail</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <!-- Header Row -->
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        
+        <!-- Data Rows -->
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+      </table>
+
+      <!-- Paginator (server-side) -->
+      <mat-paginator [pageSizeOptions]="[5, 10, 20, 50]" [pageSize]="pageSize" [pageIndex]="currentPage - 1" [length]="totalRecords" showFirstLastButtons></mat-paginator>
+    </mat-card>
+
+    <!-- No Data Message -->
+    <mat-card *ngIf="dataSource.data.length === 0" class="no-data-card">
+      <mat-card-content>
+        <div class="no-data">
+          <mat-icon>check_circle</mat-icon>
+          <p>No outstanding invoices found</p>
+          <small>Great! All customers are up to date.</small>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

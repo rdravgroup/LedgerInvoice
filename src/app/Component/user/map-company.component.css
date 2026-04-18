@@ -1,0 +1,3 @@
+/* Minimal spacing for dialog */
+:host { display: block; }
+mat-form-field { margin-top: 6px; }

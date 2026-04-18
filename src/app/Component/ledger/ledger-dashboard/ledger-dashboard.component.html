@@ -1,0 +1,145 @@
+<div class="ledger-dashboard">
+  <div class="dashboard-header">
+    <h1>Customer Ledger Dashboard</h1>
+    <button mat-raised-button color="primary" (click)="refreshDashboard()">
+      <mat-icon>refresh</mat-icon> Refresh
+    </button>
+  </div>
+
+  <!-- Error Alert -->
+  <mat-card *ngIf="error" class="error-card">
+    <mat-card-content>
+      <div class="alert-error">
+        <mat-icon>error</mat-icon>
+        <span>{{ error }}</span>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Loading Spinner -->
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner diameter="50"></mat-spinner>
+    <p>Loading ledger data...</p>
+  </div>
+
+  <!-- Summary Cards -->
+  <div *ngIf="!loading && companySummary" class="summary-section">
+    <h2>A/R Summary</h2>
+    <div class="cards-grid">
+      <mat-card class="summary-card">
+        <mat-card-header>
+          <mat-card-title>Total A/R</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="card-value primary">{{ formatCurrency(companySummary.totalAR) }}</div>
+          <div class="card-label">Outstanding Amount</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <mat-card-header>
+          <mat-card-title>Due Amount</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="card-value danger">{{ formatCurrency(companySummary.totalDue) }}</div>
+          <div class="card-label">Overdue Invoices</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <mat-card-header>
+          <mat-card-title>Days Outstanding</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="card-value info">{{ companySummary.daysOutstanding }} days</div>
+          <div class="card-label">Average DSO</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <mat-card-header>
+          <mat-card-title>Collection Rate</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="card-value success">{{ getPercentage(companySummary.collectionRate * 100) }}</div>
+          <div class="card-label">Collections</div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="summary-card">
+        <mat-card-header>
+          <mat-card-title>Largest Customer</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="card-value dark">{{ companySummary.largestCustomer }}</div>
+          <div class="card-label">Top Debtor</div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <!-- Ageing Distribution Chart -->
+  <div *ngIf="!loading && ageDistribution" class="ageing-section">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Ageing Distribution</mat-card-title>
+        <mat-card-subtitle>Invoice age breakdown</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="ageing-grid">
+          <!-- 0-30 Days -->
+          <div class="ageing-bucket bucket-0-30">
+            <div class="bucket-header">
+              <span class="bucket-label">0 - 30 Days</span>
+              <span class="bucket-status">Normal</span>
+            </div>
+            <div class="bucket-amount">{{ formatCurrency(ageDistribution.bucket_0_30.amount) }}</div>
+            <div class="progress-container">
+              <div class="progress-bar" [style.width.%]="ageDistribution.bucket_0_30.percentage"></div>
+            </div>
+            <div class="bucket-percentage">{{ getPercentage(ageDistribution.bucket_0_30.percentage) }}</div>
+          </div>
+
+          <!-- 30-60 Days -->
+          <div class="ageing-bucket bucket-30-60">
+            <div class="bucket-header">
+              <span class="bucket-label">30 - 60 Days</span>
+              <span class="bucket-status">Warning</span>
+            </div>
+            <div class="bucket-amount">{{ formatCurrency(ageDistribution.bucket_30_60.amount) }}</div>
+            <div class="progress-container">
+              <div class="progress-bar" [style.width.%]="ageDistribution.bucket_30_60.percentage"></div>
+            </div>
+            <div class="bucket-percentage">{{ getPercentage(ageDistribution.bucket_30_60.percentage) }}</div>
+          </div>
+
+          <!-- 60-90 Days -->
+          <div class="ageing-bucket bucket-60-90">
+            <div class="bucket-header">
+              <span class="bucket-label">60 - 90 Days</span>
+              <span class="bucket-status">Alert</span>
+            </div>
+            <div class="bucket-amount">{{ formatCurrency(ageDistribution.bucket_60_90.amount) }}</div>
+            <div class="progress-container">
+              <div class="progress-bar" [style.width.%]="ageDistribution.bucket_60_90.percentage"></div>
+            </div>
+            <div class="bucket-percentage">{{ getPercentage(ageDistribution.bucket_60_90.percentage) }}</div>
+          </div>
+
+          <!-- 90+ Days -->
+          <div class="ageing-bucket bucket-90-plus">
+            <div class="bucket-header">
+              <span class="bucket-label">90+ Days</span>
+              <span class="bucket-status">Overdue</span>
+            </div>
+            <div class="bucket-amount">{{ formatCurrency(ageDistribution.bucket_90_plus.amount) }}</div>
+            <div class="progress-container">
+              <div class="progress-bar" [style.width.%]="ageDistribution.bucket_90_plus.percentage"></div>
+            </div>
+            <div class="bucket-percentage">{{ getPercentage(ageDistribution.bucket_90_plus.percentage) }}</div>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

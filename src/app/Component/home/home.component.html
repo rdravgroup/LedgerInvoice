@@ -1,0 +1,197 @@
+<div class="page-content">
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <!-- <h1 class="page-title">Dashboard</h1> -->
+      <h1 class="page-title">Welcome back, {{ company?.name || 'Store' }}</h1>
+    </div>
+
+    <!-- Button to open company details popup -->
+    <button mat-stroked-button color="accent" (click)="openCompanyDetails()" *ngIf="company">
+      View Company Details
+    </button>
+
+    <button mat-flat-button color="primary" routerLink="/createinvoice">
+      <mat-icon aria-hidden="true">add</mat-icon>
+      New Invoice
+    </button>
+  </div>
+
+  <!-- Loading skeleton -->
+  @if (loading) {
+    <div class="kpi-grid">
+      @for (i of [1,2,3,4,5]; track i) {
+        <div class="kpi-card skeleton" style="height:100px"></div>
+      }
+    </div>
+    <div class="skeleton" style="height:320px;border-radius:14px;margin-top:20px"></div>
+  }
+
+  <!-- KPI Cards -->
+  @if (!loading) {
+    <div class="kpi-grid">
+      <mat-card class="kpi-card kpi-primary" routerLink="/ledger-dashboard">
+        <mat-card-content>
+          <div class="kpi-icon-wrap">
+            <mat-icon aria-hidden="true">account_balance_wallet</mat-icon>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-value">₹{{ totalAR | number:'1.0-0' }}</div>
+            <div class="kpi-label">Total A/R</div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card kpi-success" routerLink="/ledger-dashboard">
+        <mat-card-content>
+          <div class="kpi-icon-wrap">
+            <mat-icon aria-hidden="true">check_circle</mat-icon>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-value">₹{{ totalPaid | number:'1.0-0' }}</div>
+            <div class="kpi-label">Total Paid</div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card kpi-danger" routerLink="/ledger-outstanding-ar">
+        <mat-card-content>
+          <div class="kpi-icon-wrap">
+            <mat-icon aria-hidden="true">trending_up</mat-icon>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-value">₹{{ overdueAmount | number:'1.0-0' }}</div>
+            <div class="kpi-label">Overdue Amount</div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card kpi-success" routerLink="/customer">
+        <mat-card-content>
+          <div class="kpi-icon-wrap">
+            <mat-icon aria-hidden="true">people</mat-icon>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-value">{{ customerCount }}</div>
+            <div class="kpi-label">Active Customers</div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="kpi-card kpi-info" routerLink="/listinvoice">
+        <mat-card-content>
+          <div class="kpi-icon-wrap">
+            <mat-icon aria-hidden="true">receipt_long</mat-icon>
+          </div>
+          <div class="kpi-body">
+            <div class="kpi-value">{{ invoiceCount }}</div>
+            <div class="kpi-label">Invoices This Month</div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Quick Action Row -->
+    <div class="quick-actions">
+      <button mat-stroked-button routerLink="/quick-invoice">
+        <mat-icon aria-hidden="true">calculate</mat-icon>
+        Quick Invoice
+      </button>
+      <button mat-stroked-button routerLink="/customer/add">
+        <mat-icon aria-hidden="true">person_add</mat-icon>
+        Add Customer
+      </button>
+      <button mat-stroked-button routerLink="/product">
+        <mat-icon aria-hidden="true">inventory_2</mat-icon>
+        Products
+      </button>
+      <button mat-stroked-button routerLink="/ledger-dashboard">
+        <mat-icon aria-hidden="true">bar_chart</mat-icon>
+        Ledger Report
+      </button>
+    </div>
+
+    <!-- Recent Invoices Table -->
+    <mat-card class="table-card">
+      <mat-card-header>
+        <mat-card-title>Recent Invoices</mat-card-title>
+        <div class="card-header-actions">
+          <button mat-button routerLink="/listinvoice" color="primary">
+            View all <mat-icon aria-hidden="true" style="font-size:16px;vertical-align:middle">arrow_forward</mat-icon>
+          </button>
+        </div>
+      </mat-card-header>
+
+      <mat-card-content style="padding:0">
+        <!-- Desktop table -->
+        <div class="desktop-only">
+          <table mat-table [dataSource]="recentInvoices" class="full-table">
+            <ng-container matColumnDef="customer">
+              <th mat-header-cell *matHeaderCellDef>Customer</th>
+              <td mat-cell *matCellDef="let row">
+                <div class="cell-with-avatar">
+                  <div class="cell-avatar">{{ (row.cuName || 'C').charAt(0) }}</div>
+                  <span class="cell-primary">{{ row.cuName }}</span>
+                </div>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="invoice">
+              <th mat-header-cell *matHeaderCellDef>Invoice #</th>
+              <td mat-cell *matCellDef="let row">
+                <span class="mono-text">{{ row.invNum || row.invoiceNumber }}</span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="date">
+              <th mat-header-cell *matHeaderCellDef>Date</th>
+              <td mat-cell *matCellDef="let row">{{ row.invDate | date:'dd MMM yyyy' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="amount">
+              <th mat-header-cell *matHeaderCellDef>Amount</th>
+              <td mat-cell *matCellDef="let row">
+                <span class="amount-text">₹{{ row.totalAmt | number:'1.2-2' }}</span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let row">
+                <button mat-icon-button [routerLink]="'/editinvoice/' + row.invoiceNumber" matTooltip="Edit">
+                  <mat-icon aria-hidden="true">edit</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="['customer','invoice','date','amount','actions']"></tr>
+            <tr mat-row *matRowDef="let row; columns: ['customer','invoice','date','amount','actions'];" class="table-row"></tr>
+          </table>
+        </div>
+
+        <!-- Mobile card list -->
+        <div class="mobile-only">
+          @for (row of recentInvoices; track row.invoiceNumber) {
+            <div class="mobile-invoice-row">
+              <div class="mobile-invoice-left">
+                <div class="mobile-invoice-customer">{{ row.cuName }}</div>
+                <div class="mobile-invoice-num">{{ row.invNum || row.invoiceNumber }} · {{ row.invDate | date:'dd MMM' }}</div>
+              </div>
+              <div class="mobile-invoice-right">
+                <div class="mobile-invoice-amount">₹{{ row.totalAmt | number:'1.0-0' }}</div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Empty state -->
+        @if (recentInvoices.length === 0) {
+          <div class="empty-state">
+            <mat-icon aria-hidden="true">receipt_long</mat-icon>
+            <h3>No invoices yet</h3>
+            <p>Create your first invoice to get started</p>
+            <button mat-flat-button color="primary" routerLink="/createinvoice">
+              <mat-icon aria-hidden="true">add</mat-icon>
+              Create Invoice
+            </button>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+</div>

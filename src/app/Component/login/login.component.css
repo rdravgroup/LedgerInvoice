@@ -1,0 +1,395 @@
+/* ================================================
+   LOGIN COMPONENT — REDESIGNED
+   ================================================ */
+
+/* Split layout */
+.auth-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+/* Left brand panel */
+.auth-brand {
+  background: linear-gradient(160deg, #312e81 0%, #4f46e5 60%, #6366f1 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-brand::before {
+  content: '';
+  position: absolute;
+  top: -100px; right: -100px;
+  width: 400px; height: 400px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.05);
+}
+
+.brand-content {
+  text-align: center;
+  color: white;
+  position: relative;
+  z-index: 1;
+}
+
+.brand-logo {
+  height: 80px;
+  width: auto;
+  object-fit: contain;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,.2));
+}
+
+.brand-title {
+  font-size: 36px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin: 0 0 8px;
+}
+
+.brand-sub {
+  font-size: 14px;
+  opacity: 0.7;
+  margin: 0 0 32px;
+}
+
+.brand-tagline {
+  font-size: 16px;
+  opacity: 0.85;
+  line-height: 1.6;
+  max-width: 280px;
+  margin: 0 auto 24px;
+}
+
+.brand-pills {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.pill {
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.2);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Right form panel */
+.auth-form-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 32px;
+  background: white;
+  overflow-y: auto;
+}
+
+.auth-form-inner {
+  width: 100%;
+  max-width: 400px;
+  position: relative;
+}
+/* Header right-side home link (login) */
+.header-home-link {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  color: #64748b;
+  text-decoration: none;
+  border: 1px solid #e2e8f0;
+  transition: all .15s;
+}
+.header-home-link:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Mobile logo (shown only on mobile) */
+.mobile-logo {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.mobile-logo-img {
+  height: 55px;
+  width: auto;
+}
+
+.mobile-brand-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: #4f46e5;
+  letter-spacing: -0.3px;
+}
+
+/* Form headings */
+.form-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 4px;
+  letter-spacing: -0.3px;
+}
+
+.form-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0 0 24px;
+}
+/* External link shown before subtitle */
+.form-subtitle .external-link {
+  color: #4f46e5;
+  font-weight: 600;
+  text-decoration: none;
+  margin-right: 8px;
+}
+
+/* Info / success banner */
+.info-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #1e40af;
+}
+
+.info-banner mat-icon {
+  flex-shrink: 0;
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+/* Mode toggle */
+.mode-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 4px;
+  margin-bottom: 20px;
+  gap: 4px;
+}
+
+.mode-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s;
+  min-height: 44px;
+  font-family: inherit;
+}
+
+.mode-btn mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.mode-btn.active {
+  background: white;
+  color: #4f46e5;
+  box-shadow: 0 1px 4px rgba(0,0,0,.1);
+}
+
+/* Form fields */
+.field-full { width: 100%; margin-bottom: 4px; }
+
+/* Remember me / forgot row */
+.form-row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 8px 0 20px;
+}
+
+/* Centered Home link between checkbox and forgot-password */
+.home-link {
+  font-size: 13px;
+  color: #4f46e5;
+  font-weight: 600;
+  text-decoration: none;
+  margin-left: auto;
+  margin-right: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+}
+.home-link:hover { text-decoration: underline; }
+
+/* Submit button */
+.submit-btn {
+  width: 100%;
+  height: 48px !important;
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  border-radius: 10px !important;
+  letter-spacing: 0.2px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  margin-bottom: 16px;
+}
+
+.submit-btn mat-icon {
+  font-size: 20px !important;
+  height: 20px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Link text */
+.link-text {
+  font-size: 13px;
+  color: #4f46e5;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.link-text:hover { text-decoration: underline; }
+
+/* Divider */
+.divider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 4px 0 16px;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: #e2e8f0;
+}
+
+.divider-text {
+  font-size: 12px;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+/* Google button */
+.google-btn {
+  width: 100%;
+  height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  border-radius: 10px !important;
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+  margin-bottom: 20px;
+  text-decoration: none;
+}
+
+/* OTP sent banner */
+.otp-sent-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  color: #065f46;
+}
+
+.otp-sent-banner mat-icon {
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.otp-sent-title { font-size: 13px; font-weight: 700; }
+.otp-sent-sub   { font-size: 12px; opacity: 0.8; }
+
+/* OTP input (large monospace digits) */
+.otp-input {
+  text-align: center;
+  font-size: 24px !important;
+  letter-spacing: 8px;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+}
+
+.otp-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Auth footer */
+.auth-footer {
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* ================================================
+   RESPONSIVE
+   ================================================ */
+@media (max-width: 768px) {
+  .auth-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-brand {
+    display: none;
+  }
+
+  .auth-form-panel {
+    align-items: flex-start;
+    padding: 24px 20px 40px;
+  }
+
+  .mobile-logo {
+    display: flex;
+  }
+
+  .form-title { font-size: 22px; }
+}
+
+@media (max-width: 400px) {
+  .auth-form-panel { padding: 20px 16px 40px; }
+  .form-row-between { flex-direction: column; align-items: flex-start; gap: 8px; }
+}

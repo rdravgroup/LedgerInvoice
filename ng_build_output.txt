@@ -1,0 +1,592 @@
+[33mΓ¥»[39m Building...
+[32mΓ£ö[39m Building...
+Application bundle generation failed. [6.782 seconds]
+
+Γû▓ [WARNING] NG8011: Node matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" slot of the "MatButton" component, but will not be projected into the specific slot because the surrounding @else has more than one node at its root. To project the node in the right slot, you can:
+
+1. Wrap the content of the @else block in an <ng-container/> that matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" selector.
+2. Split the content of the @else block across multiple @else blocks such that each one only has a single projectable node at its root.
+3. Remove all content from the @else block, except for the node being projected.
+
+This check can be disabled using the `extendedDiagnostics.checks.controlFlowPreventingContentProjection = "suppress" compiler option.` [plugin angular-compiler]
+
+    src/app/Component/confirmotp/confirmotp.component.html:75:10:
+      75 Γöé           <mat-icon aria-hidden="true">check_circle</mat-icon>Crea...
+         Γò╡           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ConfirmotpComponent.
+
+    src/app/Component/confirmotp/confirmotp.component.ts:17:15:
+      17 Γöé   templateUrl: './confirmotp.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Γû▓ [WARNING] NG8011: Node matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" slot of the "MatButton" component, but will not be projected into the specific slot because the surrounding @else has more than one node at its root. To project the node in the right slot, you can:
+
+1. Wrap the content of the @else block in an <ng-container/> that matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" selector.
+2. Split the content of the @else block across multiple @else blocks such that each one only has a single projectable node at its root.
+3. Remove all content from the @else block, except for the node being projected.
+
+This check can be disabled using the `extendedDiagnostics.checks.controlFlowPreventingContentProjection = "suppress" compiler option.` [plugin angular-compiler]
+
+    src/app/Component/forgetpassword/forgetpassword.component.html:58:12:
+      58 Γöé             <mat-icon aria-hidden="true">send</mat-icon>Send Reset...
+         Γò╡             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ForgetpasswordComponent.
+
+    src/app/Component/forgetpassword/forgetpassword.component.ts:17:15:
+      17 Γöé   templateUrl: './forgetpassword.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Γû▓ [WARNING] NG8011: Node matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" slot of the "MatButton" component, but will not be projected into the specific slot because the surrounding @else has more than one node at its root. To project the node in the right slot, you can:
+
+1. Wrap the content of the @else block in an <ng-container/> that matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" selector.
+2. Split the content of the @else block across multiple @else blocks such that each one only has a single projectable node at its root.
+3. Remove all content from the @else block, except for the node being projected.
+
+This check can be disabled using the `extendedDiagnostics.checks.controlFlowPreventingContentProjection = "suppress" compiler option.` [plugin angular-compiler]
+
+    src/app/Component/forgetpassword/forgetpassword.component.html:165:12:
+      165 Γöé             <mat-icon aria-hidden="true">check_circle</mat-icon>R...
+          Γò╡             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component ForgetpasswordComponent.
+
+    src/app/Component/forgetpassword/forgetpassword.component.ts:17:15:
+      17 Γöé   templateUrl: './forgetpassword.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Γû▓ [WARNING] NG8011: Node matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" slot of the "MatButton" component, but will not be projected into the specific slot because the surrounding @else has more than one node at its root. To project the node in the right slot, you can:
+
+1. Wrap the content of the @else block in an <ng-container/> that matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" selector.
+2. Split the content of the @else block across multiple @else blocks such that each one only has a single projectable node at its root.
+3. Remove all content from the @else block, except for the node being projected.
+
+This check can be disabled using the `extendedDiagnostics.checks.controlFlowPreventingContentProjection = "suppress" compiler option.` [plugin angular-compiler]
+
+    src/app/Component/login/login.component.html:109:14:
+      109 Γöé               <mat-icon aria-hidden="true">login</mat-icon>
+          Γò╡               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component LoginComponent.
+
+    src/app/Component/login/login.component.ts:18:15:
+      18 Γöé   templateUrl: './login.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Γû▓ [WARNING] NG8011: Node matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" slot of the "MatButton" component, but will not be projected into the specific slot because the surrounding @else has more than one node at its root. To project the node in the right slot, you can:
+
+1. Wrap the content of the @else block in an <ng-container/> that matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" selector.
+2. Split the content of the @else block across multiple @else blocks such that each one only has a single projectable node at its root.
+3. Remove all content from the @else block, except for the node being projected.
+
+This check can be disabled using the `extendedDiagnostics.checks.controlFlowPreventingContentProjection = "suppress" compiler option.` [plugin angular-compiler]
+
+    src/app/Component/login/login.component.html:165:16:
+      165 Γöé                 <mat-icon aria-hidden="true">send</mat-icon>
+          Γò╡                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component LoginComponent.
+
+    src/app/Component/login/login.component.ts:18:15:
+      18 Γöé   templateUrl: './login.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Γû▓ [WARNING] NG8011: Node matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" slot of the "MatButton" component, but will not be projected into the specific slot because the surrounding @else has more than one node at its root. To project the node in the right slot, you can:
+
+1. Wrap the content of the @else block in an <ng-container/> that matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" selector.
+2. Split the content of the @else block across multiple @else blocks such that each one only has a single projectable node at its root.
+3. Remove all content from the @else block, except for the node being projected.
+
+This check can be disabled using the `extendedDiagnostics.checks.controlFlowPreventingContentProjection = "suppress" compiler option.` [plugin angular-compiler]
+
+    src/app/Component/login/login.component.html:208:18:
+      208 Γöé                   <mat-icon aria-hidden="true">verified</mat-icon>
+          Γò╡                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component LoginComponent.
+
+    src/app/Component/login/login.component.ts:18:15:
+      18 Γöé   templateUrl: './login.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Γû▓ [WARNING] NG8011: Node matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" slot of the "MatButton" component, but will not be projected into the specific slot because the surrounding @else has more than one node at its root. To project the node in the right slot, you can:
+
+1. Wrap the content of the @else block in an <ng-container/> that matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" selector.
+2. Split the content of the @else block across multiple @else blocks such that each one only has a single projectable node at its root.
+3. Remove all content from the @else block, except for the node being projected.
+
+This check can be disabled using the `extendedDiagnostics.checks.controlFlowPreventingContentProjection = "suppress" compiler option.` [plugin angular-compiler]
+
+    src/app/Component/register/register.component.html:65:12:
+      65 Γöé             <mat-icon aria-hidden="true">send</mat-icon>
+         Γò╡             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component RegisterComponent.
+
+    src/app/Component/register/register.component.ts:17:15:
+      17 Γöé   templateUrl: './register.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Γû▓ [WARNING] NG8011: Node matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" slot of the "MatButton" component, but will not be projected into the specific slot because the surrounding @else has more than one node at its root. To project the node in the right slot, you can:
+
+1. Wrap the content of the @else block in an <ng-container/> that matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" selector.
+2. Split the content of the @else block across multiple @else blocks such that each one only has a single projectable node at its root.
+3. Remove all content from the @else block, except for the node being projected.
+
+This check can be disabled using the `extendedDiagnostics.checks.controlFlowPreventingContentProjection = "suppress" compiler option.` [plugin angular-compiler]
+
+    src/app/Component/register/register.component.html:109:12:
+      109 Γöé             <mat-icon aria-hidden="true">verified</mat-icon>
+          Γò╡             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component RegisterComponent.
+
+    src/app/Component/register/register.component.ts:17:15:
+      17 Γöé   templateUrl: './register.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Γû▓ [WARNING] NG8011: Node matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" slot of the "MatButton" component, but will not be projected into the specific slot because the surrounding @else has more than one node at its root. To project the node in the right slot, you can:
+
+1. Wrap the content of the @else block in an <ng-container/> that matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" selector.
+2. Split the content of the @else block across multiple @else blocks such that each one only has a single projectable node at its root.
+3. Remove all content from the @else block, except for the node being projected.
+
+This check can be disabled using the `extendedDiagnostics.checks.controlFlowPreventingContentProjection = "suppress" compiler option.` [plugin angular-compiler]
+
+    src/app/Component/updatepassword/updatepassword.component.html:93:12:
+      93 Γöé             <mat-icon aria-hidden="true">check_circle</mat-icon>Up...
+         Γò╡             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component UpdatepasswordComponent.
+
+    src/app/Component/updatepassword/updatepassword.component.ts:23:15:
+      23 Γöé   templateUrl: './updatepassword.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Γû▓ [WARNING] NG8011: Node matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" slot of the "MatButton" component, but will not be projected into the specific slot because the surrounding @else has more than one node at its root. To project the node in the right slot, you can:
+
+1. Wrap the content of the @else block in an <ng-container/> that matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" selector.
+2. Split the content of the @else block across multiple @else blocks such that each one only has a single projectable node at its root.
+3. Remove all content from the @else block, except for the node being projected.
+
+This check can be disabled using the `extendedDiagnostics.checks.controlFlowPreventingContentProjection = "suppress" compiler option.` [plugin angular-compiler]
+
+    src/app/Component/updatepassword/updatepassword.component.html:128:12:
+      128 Γöé             <mat-icon aria-hidden="true">check_circle</mat-icon>R...
+          Γò╡             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component UpdatepasswordComponent.
+
+    src/app/Component/updatepassword/updatepassword.component.ts:23:15:
+      23 Γöé   templateUrl: './updatepassword.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Γû▓ [WARNING] NG8011: Node matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" slot of the "MatButton" component, but will not be projected into the specific slot because the surrounding @else has more than one node at its root. To project the node in the right slot, you can:
+
+1. Wrap the content of the @else block in an <ng-container/> that matches the ".material-icons:not([iconPositionEnd]), mat-icon:not([iconPositionEnd]), [matButtonIcon]:not([iconPositionEnd])" selector.
+2. Split the content of the @else block across multiple @else blocks such that each one only has a single projectable node at its root.
+3. Remove all content from the @else block, except for the node being projected.
+
+This check can be disabled using the `extendedDiagnostics.checks.controlFlowPreventingContentProjection = "suppress" compiler option.` [plugin angular-compiler]
+
+    src/app/Component/userrole/userrole.component.html:96:16:
+      96 Γöé                 <mat-icon aria-hidden="true">save</mat-icon>
+         Γò╡                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+  Error occurs in the template of component UserroleComponent.
+
+    src/app/Component/userrole/userrole.component.ts:33:15:
+      33 Γöé   templateUrl: './userrole.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2729: Property 'breakpoint' is used before its initialization. [plugin angular-compiler]
+
+    src/app/Component/appmenu/appmenu.component.ts:68:9:
+      68 Γöé     this.breakpoint.observe([Breakpoints.Handset, '(max-width: 768...
+         Γò╡          ~~~~~~~~~~
+
+  'breakpoint' is declared here.
+
+    src/app/Component/appmenu/appmenu.component.ts:83:4:
+      83 Γöé     private breakpoint: BreakpointObserver,
+         Γò╡     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'loading' does not exist on type 'CustomerComponent'. [plugin angular-compiler]
+
+    src/app/Component/customer/customer.component.html:31:7:
+      31 Γöé   @if (loading) {
+         Γò╡        ~~~~~~~
+
+  Error occurs in the template of component CustomerComponent.
+
+    src/app/Component/customer/customer.component.ts:20:15:
+      20 Γöé   templateUrl: './customer.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'loading' does not exist on type 'CustomerComponent'. [plugin angular-compiler]
+
+    src/app/Component/customer/customer.component.html:40:8:
+      40 Γöé   @if (!loading && datasource.data.length === 0) {
+         Γò╡         ~~~~~~~
+
+  Error occurs in the template of component CustomerComponent.
+
+    src/app/Component/customer/customer.component.ts:20:15:
+      20 Γöé   templateUrl: './customer.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'loading' does not exist on type 'CustomerComponent'. [plugin angular-compiler]
+
+    src/app/Component/customer/customer.component.html:55:8:
+      55 Γöé   @if (!loading && datasource.data.length > 0) {
+         Γò╡         ~~~~~~~
+
+  Error occurs in the template of component CustomerComponent.
+
+    src/app/Component/customer/customer.component.ts:20:15:
+      20 Γöé   templateUrl: './customer.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'isMobile' does not exist on type 'CustomerComponent'. [plugin angular-compiler]
+
+    src/app/Component/customer/customer.component.html:56:51:
+      56 Γöé     <div class="mobile-card-list" [class.hidden]="!isMobile">
+         Γò╡                                                    ~~~~~~~~
+
+  Error occurs in the template of component CustomerComponent.
+
+    src/app/Component/customer/customer.component.ts:20:15:
+      20 Γöé   templateUrl: './customer.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'customerremove' does not exist on type 'CustomerComponent'. [plugin angular-compiler]
+
+    src/app/Component/customer/customer.component.html:84:65:
+      84 Γöé ...ked-button color="warn" (click)="customerremove(row.uniqueKeyID)">
+         Γò╡                                     ~~~~~~~~~~~~~~
+
+  Error occurs in the template of component CustomerComponent.
+
+    src/app/Component/customer/customer.component.ts:20:15:
+      20 Γöé   templateUrl: './customer.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'loading' does not exist on type 'CustomerComponent'. [plugin angular-compiler]
+
+    src/app/Component/customer/customer.component.html:96:8:
+      96 Γöé   @if (!loading && datasource.data.length > 0) {
+         Γò╡         ~~~~~~~
+
+  Error occurs in the template of component CustomerComponent.
+
+    src/app/Component/customer/customer.component.ts:20:15:
+      20 Γöé   templateUrl: './customer.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'isMobile' does not exist on type 'CustomerComponent'. [plugin angular-compiler]
+
+    src/app/Component/customer/customer.component.html:97:49:
+      97 Γöé     <mat-card class="table-card" [class.hidden]="isMobile">
+         Γò╡                                                  ~~~~~~~~
+
+  Error occurs in the template of component CustomerComponent.
+
+    src/app/Component/customer/customer.component.ts:20:15:
+      20 Γöé   templateUrl: './customer.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'customerremove' does not exist on type 'CustomerComponent'. [plugin angular-compiler]
+
+    src/app/Component/customer/customer.component.html:150:31:
+      150 Γöé                       (click)="customerremove(row.uniqueKeyID)"
+          Γò╡                                ~~~~~~~~~~~~~~
+
+  Error occurs in the template of component CustomerComponent.
+
+    src/app/Component/customer/customer.component.ts:20:15:
+      20 Γöé   templateUrl: './customer.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'getAllCustomers' does not exist on type 'CustomerService'. [plugin angular-compiler]
+
+    src/app/Component/home/home.component.ts:58:21:
+      58 Γöé     this.customerSvc.getAllCustomers().pipe(takeUntil(this.destroy...
+         Γò╡                      ~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'getInvoiceList' does not exist on type 'UserService'. [plugin angular-compiler]
+
+    src/app/Component/home/home.component.ts:66:17:
+      66 Γöé     this.userSvc.getInvoiceList?.()?.pipe(takeUntil(this.destroy$)...
+         Γò╡                  ~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'getInvoiceList' does not exist on type 'UserService'. [plugin angular-compiler]
+
+    src/app/Component/home/home.component.ts:80:22:
+      80 Γöé     if (!this.userSvc.getInvoiceList) {
+         Γò╡                       ~~~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'loading' does not exist on type 'ListinvoiceComponent'. [plugin angular-compiler]
+
+    src/app/Component/listinvoice/listinvoice.component.html:25:7:
+      25 Γöé   @if (loading) {
+         Γò╡        ~~~~~~~
+
+  Error occurs in the template of component ListinvoiceComponent.
+
+    src/app/Component/listinvoice/listinvoice.component.ts:28:15:
+      28 Γöé   templateUrl: './listinvoice.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'loading' does not exist on type 'ListinvoiceComponent'. [plugin angular-compiler]
+
+    src/app/Component/listinvoice/listinvoice.component.html:34:8:
+      34 Γöé   @if (!loading && dataSource.data.length === 0) {
+         Γò╡         ~~~~~~~
+
+  Error occurs in the template of component ListinvoiceComponent.
+
+    src/app/Component/listinvoice/listinvoice.component.ts:28:15:
+      28 Γöé   templateUrl: './listinvoice.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'loading' does not exist on type 'ListinvoiceComponent'. [plugin angular-compiler]
+
+    src/app/Component/listinvoice/listinvoice.component.html:47:8:
+      47 Γöé   @if (!loading && dataSource.data.length > 0) {
+         Γò╡         ~~~~~~~
+
+  Error occurs in the template of component ListinvoiceComponent.
+
+    src/app/Component/listinvoice/listinvoice.component.ts:28:15:
+      28 Γöé   templateUrl: './listinvoice.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'isMobile' does not exist on type 'ListinvoiceComponent'. [plugin angular-compiler]
+
+    src/app/Component/listinvoice/listinvoice.component.html:48:51:
+      48 Γöé     <div class="mobile-card-list" [class.hidden]="!isMobile">
+         Γò╡                                                    ~~~~~~~~
+
+  Error occurs in the template of component ListinvoiceComponent.
+
+    src/app/Component/listinvoice/listinvoice.component.ts:28:15:
+      28 Γöé   templateUrl: './listinvoice.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8004: No pipe found with name 'date'. [plugin angular-compiler]
+
+    src/app/Component/listinvoice/listinvoice.component.html:55:60:
+      55 Γöé ...class="inv-card-date">{{ row.invDate | date:'dd MMM yyyy' }}</div>
+         Γò╡                                           ~~~~
+
+  Error occurs in the template of component ListinvoiceComponent.
+
+    src/app/Component/listinvoice/listinvoice.component.ts:28:15:
+      28 Γöé   templateUrl: './listinvoice.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8004: No pipe found with name 'number'. [plugin angular-compiler]
+
+    src/app/Component/listinvoice/listinvoice.component.html:57:62:
+      57 Γöé ...ass="inv-card-amount">Γé╣{{ row.totalAmt | number:'1.2-2' }}</div>
+         Γò╡                                           ~~~~~~
+
+  Error occurs in the template of component ListinvoiceComponent.
+
+    src/app/Component/listinvoice/listinvoice.component.ts:28:15:
+      28 Γöé   templateUrl: './listinvoice.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'loading' does not exist on type 'ListinvoiceComponent'. [plugin angular-compiler]
+
+    src/app/Component/listinvoice/listinvoice.component.html:81:8:
+      81 Γöé   @if (!loading && dataSource.data.length > 0) {
+         Γò╡         ~~~~~~~
+
+  Error occurs in the template of component ListinvoiceComponent.
+
+    src/app/Component/listinvoice/listinvoice.component.ts:28:15:
+      28 Γöé   templateUrl: './listinvoice.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG9: Property 'isMobile' does not exist on type 'ListinvoiceComponent'. [plugin angular-compiler]
+
+    src/app/Component/listinvoice/listinvoice.component.html:82:49:
+      82 Γöé     <mat-card class="table-card" [class.hidden]="isMobile">
+         Γò╡                                                  ~~~~~~~~
+
+  Error occurs in the template of component ListinvoiceComponent.
+
+    src/app/Component/listinvoice/listinvoice.component.ts:28:15:
+      28 Γöé   templateUrl: './listinvoice.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8004: No pipe found with name 'date'. [plugin angular-compiler]
+
+    src/app/Component/listinvoice/listinvoice.component.html:96:62:
+      96 Γöé ... *matCellDef="let row">{{ row.invDate | date:'dd MMM yyyy' }}</td>
+         Γò╡                                            ~~~~
+
+  Error occurs in the template of component ListinvoiceComponent.
+
+    src/app/Component/listinvoice/listinvoice.component.ts:28:15:
+      28 Γöé   templateUrl: './listinvoice.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] NG8004: No pipe found with name 'number'. [plugin angular-compiler]
+
+    src/app/Component/listinvoice/listinvoice.component.html:114:57:
+      114 Γöé ...class="amount-text">Γé╣{{ row.totalAmt | number:'1.2-2' }}</span>
+          Γò╡                                         ~~~~~~
+
+  Error occurs in the template of component ListinvoiceComponent.
+
+    src/app/Component/listinvoice/listinvoice.component.ts:28:15:
+      28 Γöé   templateUrl: './listinvoice.component.html',
+         Γò╡                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2305: Module '"../../_model/user.model"' has no exported member 'UserDetailed'. [plugin angular-compiler]
+
+    src/app/Component/user/user-details-dialog.component.ts:5:9:
+      5 Γöé import { UserDetailed } from '../../_model/user.model';
+        Γò╡          ~~~~~~~~~~~~
+
+
+X [ERROR] TS2305: Module '"../../_model/user.model"' has no exported member 'UserDetailed'. [plugin angular-compiler]
+
+    src/app/Component/user/user.component.ts:4:9:
+      4 Γöé import { UserDetailed } from '../../_model/user.model';
+        Γò╡          ~~~~~~~~~~~~
+
+
+X [ERROR] TS2339: Property 'getRoles' does not exist on type 'UserService'. [plugin angular-compiler]
+
+    src/app/Component/userrole/userrole.component.ts:90:17:
+      90 Γöé     this.service.getRoles().subscribe({
+         Γò╡                  ~~~~~~~~
+
+
+X [ERROR] TS7006: Parameter 'items' implicitly has an 'any' type. [plugin angular-compiler]
+
+    src/app/Component/userrole/userrole.component.ts:91:13:
+      91 Γöé       next: (items) => { this.rolelist = items; },
+         Γò╡              ~~~~~
+
+
+X [ERROR] TS2339: Property 'getMenus' does not exist on type 'UserService'. [plugin angular-compiler]
+
+    src/app/Component/userrole/userrole.component.ts:97:17:
+      97 Γöé     this.service.getMenus().subscribe({
+         Γò╡                  ~~~~~~~~
+
+
+X [ERROR] TS7006: Parameter 'items' implicitly has an 'any' type. [plugin angular-compiler]
+
+    src/app/Component/userrole/userrole.component.ts:98:13:
+      98 Γöé       next: (items) => {
+         Γò╡              ~~~~~
+
+
+X [ERROR] TS2551: Property 'getMenuPermissionsByRole' does not exist on type 'UserService'. Did you mean 'getMenuPermission'? [plugin angular-compiler]
+
+    src/app/Component/userrole/userrole.component.ts:111:17:
+      111 Γöé     this.service.getMenuPermissionsByRole(role).subscribe({
+          Γò╡                  ~~~~~~~~~~~~~~~~~~~~~~~~
+
+  'getMenuPermission' is declared here.
+
+    src/app/_service/user.service.ts:192:2:
+      192 Γöé   getMenuPermission(role: string, menuname: string): Observable<M...
+          Γò╡   ~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2305: Module '"../../_model/user.model"' has no exported member 'UpdateUser'. [plugin angular-compiler]
+
+    src/app/Component/userupdate/userupdate.component.ts:7:16:
+      7 Γöé import { Roles, UpdateUser, Users } from '../../_model/user.model';
+        Γò╡                 ~~~~~~~~~~
+
+
+X [ERROR] TS2305: Module '"../../_model/user.model"' has no exported member 'Users'. [plugin angular-compiler]
+
+    src/app/Component/userupdate/userupdate.component.ts:7:28:
+      7 Γöé import { Roles, UpdateUser, Users } from '../../_model/user.model';
+        Γò╡                             ~~~~~
+
+
+X [ERROR] TS2724: '"../_model/user.model"' has no exported member named 'UpdateStatus'. Did you mean 'Updatestatus'? [plugin angular-compiler]
+
+    src/app/_service/user.service.ts:12:2:
+      12 Γöé   UpdateStatus,
+         Γò╡   ~~~~~~~~~~~~
+
+
+X [ERROR] TS2305: Module '"../_model/user.model"' has no exported member 'Users'. [plugin angular-compiler]
+
+    src/app/_service/user.service.ts:14:2:
+      14 Γöé   Users,
+         Γò╡   ~~~~~
+
+
+X [ERROR] TS2305: Module '"../_model/user.model"' has no exported member 'UserDetailed'. [plugin angular-compiler]
+
+    src/app/_service/user.service.ts:15:2:
+      15 Γöé   UserDetailed,
+         Γò╡   ~~~~~~~~~~~~
+
+
+X [ERROR] TS2305: Module '"../_model/user.model"' has no exported member 'RequestForgotPasswordOtp'. [plugin angular-compiler]
+
+    src/app/_service/user.service.ts:22:2:
+      22 Γöé   RequestForgotPasswordOtp,
+         Γò╡   ~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2305: Module '"../_model/user.model"' has no exported member 'ResetPasswordWithOtp'. [plugin angular-compiler]
+
+    src/app/_service/user.service.ts:23:2:
+      23 Γöé   ResetPasswordWithOtp,
+         Γò╡   ~~~~~~~~~~~~~~~~~~~~
+
+
+X [ERROR] TS2305: Module '"../_model/user.model"' has no exported member 'ApiResponse'. [plugin angular-compiler]
+
+    src/app/_service/user.service.ts:25:2:
+      25 Γöé   ApiResponse,
+         Γò╡   ~~~~~~~~~~~
+
+

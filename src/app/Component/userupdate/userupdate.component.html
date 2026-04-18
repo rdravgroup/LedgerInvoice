@@ -1,0 +1,38 @@
+
+<form [formGroup]="userform" (ngSubmit)="proceedchange()">
+
+    <mat-card>
+        <mat-card-header>
+            <h2 *ngIf="type === 'role'">Change Role</h2>
+            <h2 *ngIf="type !== 'role'">Change Status</h2>
+        </mat-card-header>
+
+        <mat-card-content>
+            <mat-form-field appearance="fill" style="width:100%">
+                <mat-label>Username</mat-label>
+                <input formControlName="username" matInput [disabled]="true" />
+            </mat-form-field>
+
+            <div *ngIf="type === 'role'">
+                <mat-form-field appearance="fill" style="width:100%">
+                    <mat-label>User Role</mat-label>
+                    <mat-select formControlName="role">
+                        <mat-option *ngFor="let item of rolelist" [value]="item.code">{{ item.name }}</mat-option>
+                    </mat-select>
+                </mat-form-field>
+            </div>
+
+            <div *ngIf="type !== 'role'">
+                <mat-checkbox formControlName="status">Is Active</mat-checkbox>
+            </div>
+        </mat-card-content>
+
+        <mat-card-actions>
+            <div style="display:flex;gap:8px;">
+                <button type="submit" mat-raised-button color="primary">Update</button>
+                <button type="button" mat-stroked-button color="accent" (click)="closepopup()">Cancel</button>
+            </div>
+        </mat-card-actions>
+    </mat-card>
+
+</form>

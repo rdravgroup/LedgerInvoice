@@ -1,0 +1,72 @@
+@if(showmenu) {
+  <mat-toolbar color="primary" class="mat-elevation-z8">
+    <button mat-icon-button (click)="toggleDrawer()">
+      <mat-icon>menu</mat-icon>
+    </button>
+
+    <!-- Brand container -->
+    <div class="brand-container">
+      <img src="assets/logo/logo.png" alt="CodeXClear Logo" class="brand-logo" />
+    </div>
+
+    <!-- Company name -->
+    <!-- <span class="company-display" *ngIf="companyName">{{ companyName }}</span> -->
+
+    <span class="example-spacer"></span>
+    <span>{{Loginuser}}</span>
+    <button mat-button [matMenuTriggerFor]="profile"><mat-icon>arrow_drop_down</mat-icon></button>
+    <mat-menu #profile>
+      <button mat-menu-item routerLink="/profile">
+        <mat-icon>account_circle</mat-icon>
+        <span>Profile</span>
+      </button>
+      <button mat-menu-item *ngIf="headerHasPassword" routerLink="/updatepassword">
+        <mat-icon>lock</mat-icon>
+        <span>Update Password</span>
+      </button>
+      <button mat-menu-item *ngIf="!headerHasPassword" (click)="router.navigate(['/confirmotp'], { queryParams: { email: headerUserEmail } })">
+        <mat-icon>lock_open</mat-icon>
+        <span>Create Password</span>
+      </button>
+      <mat-divider></mat-divider>
+      <button mat-menu-item routerLink="/login">
+        <mat-icon>logout</mat-icon>
+        <span>Logout</span>
+      </button>
+    </mat-menu>
+  </mat-toolbar>
+
+  <mat-drawer-container class="drawer-container">
+    <mat-drawer #drawer class="drawer" [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
+      [mode]="(isHandset$ | async) ? 'over' : 'side'" [opened]="true">
+      <mat-nav-list (click)="closeDrawerOnItemClick()">
+        <mat-list-item>
+          <button mat-button routerLink=""><mat-icon>home</mat-icon>Home</button>
+        </mat-list-item>
+        <!-- <mat-list-item>
+          <button mat-button routerLink="/quick-invoice"><mat-icon>calculate</mat-icon>Quick Invoice</button>
+        </mat-list-item> -->
+        @for(item of menulist(); track item.menucode){
+          <mat-list-item>
+            <button mat-button [routerLink]="getMenuRoute(item.menucode)">
+              <mat-icon>
+                @switch(item.menucode) {
+                  @case ('ledger-dashboard') { account_balance_wallet }
+                  @case ('ledger-outstanding-ar') { trending_up }
+                  @case ('ledger-maintenance') { settings }
+                  @default { folder }
+                }
+              </mat-icon>
+              {{item.menuname}}
+            </button>
+          </mat-list-item>
+        }
+      </mat-nav-list>
+    </mat-drawer>
+    <mat-drawer-content class="drawer-content">
+      <router-outlet></router-outlet>
+    </mat-drawer-content>
+  </mat-drawer-container>
+} @else {
+  <router-outlet></router-outlet>
+}

@@ -1,0 +1,41 @@
+<h2 mat-dialog-title>Saved Quick Invoices</h2>
+<mat-dialog-content>
+  <table class="invoice-list-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Number</th>
+        <th>Date</th>
+        <th>Customer</th>
+        <th>Total</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let inv of data.invoices; let i = index">
+        <td>{{ i + 1 }}</td>
+        <td>{{ inv.quickInvoiceNumber }}</td>
+        <td>{{ inv.invoiceDate | date:'short' }}</td>
+        <td>{{ inv.customerName }}</td>
+        <td>₹{{ inv.grandTotal | number:'1.2-2' }}</td>
+        <td>
+          <button mat-icon-button color="primary" (click)="performAction(inv.quickInvoiceId, 'edit')" matTooltip="Edit">
+            <mat-icon>edit</mat-icon>
+          </button>
+          <button mat-icon-button color="primary" (click)="performAction(inv.quickInvoiceId, 'print')" matTooltip="Print">
+            <mat-icon>print</mat-icon>
+          </button>
+          <button mat-icon-button color="accent" (click)="performAction(inv.quickInvoiceId, 'share')" matTooltip="Share">
+            <mat-icon>share</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" (click)="performAction(inv.quickInvoiceId, 'delete')" matTooltip="Delete">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button mat-dialog-close>Close</button>
+</mat-dialog-actions>

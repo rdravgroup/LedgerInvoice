@@ -1,0 +1,171 @@
+<div class="customer-details-dialog">
+  <div class="dialog-header">
+    <h2>Customer Details</h2>
+    <button mat-icon-button (click)="closeDialog()" class="close-button">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    <div class="content-container">
+      <!-- Customer Header -->
+      <mat-card class="customer-header">
+        <mat-card-content>
+          <div class="header-row">
+            <div class="header-item">
+              <span class="label">Customer ID</span>
+              <span class="value">{{ customer.customerId }}</span>
+            </div>
+            <div class="header-item">
+              <span class="label">Customer Name</span>
+              <span class="value">{{ customer.customerName }}</span>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Financial Summary -->
+      <mat-card class="section-card">
+        <mat-card-header>
+          <mat-card-title>Financial Summary</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="summary-grid">
+            <div class="summary-item">
+              <span class="label">Total Invoiced</span>
+              <span class="amount">{{ formatCurrency(customer.totalInvoiced) }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="label">Total Paid</span>
+              <span class="amount paid">{{ formatCurrency(customer.totalPaid) }}</span>
+            </div>
+            <div class="summary-item" [class]="getBalanceStatusCss(customer.totalInvoiced, customer.totalPaid)">
+              <span class="label">Outstanding Balance</span>
+              <span class="amount outstanding">{{ formatCurrency(getCalculatedBalance(customer.totalInvoiced, customer.totalPaid)) }}</span>
+              <span class="balance-status-label">{{ getBalanceStatusLabel(customer.totalInvoiced, customer.totalPaid) }}</span>
+            </div>
+          </div>
+          <!-- Grand Total / Net Amount -->
+          <div class="grand-total-row" [class]="getBalanceStatusCss(customer.totalInvoiced, customer.totalPaid)">
+            <span class="label">Net Amount</span>
+            <span class="amount-value">{{ formatCurrency(getCalculatedBalance(customer.totalInvoiced, customer.totalPaid)) }}</span>
+            <span class="net-label">{{ getCalculatedBalance(customer.totalInvoiced, customer.totalPaid) < 0 ? '(OverPaid)' : '(Outstanding)' }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Health & Risk -->
+      <div class="two-column">
+        <!-- Health Score -->
+        <mat-card class="section-card">
+          <mat-card-header>
+            <mat-card-title>Customer Health</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="health-section">
+              <div class="health-score" [class]="getHealthScoreClass(customer.ageing?.healthScore?.score)">
+                <span class="score">{{ customer.ageing?.healthScore?.score || 'N/A' }}</span>
+                <span class="label">/100</span>
+              </div>
+              <div class="health-info">
+                <p><strong>Rating:</strong> {{ customer.ageing?.healthScore?.rating || 'N/A' }}</p>
+                <p><strong>Recommendation:</strong> {{ customer.ageing?.healthScore?.recommendation || 'N/A' }}</p>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Risk Assessment -->
+        <mat-card class="section-card">
+          <mat-card-header>
+            <mat-card-title>Collection Risk</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="risk-section">
+              <div [class]="'risk-badge ' + getRiskLevelClass(customer.outstandingBalance?.riskLevel)">
+                {{ customer.outstandingBalance?.riskLevel || 'Unknown' }}
+              </div>
+              <p><strong>Risk Score:</strong> {{ customer.outstandingBalance?.collectionRisk || 'N/A' }}/10</p>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Ageing Analysis -->
+      <mat-card class="section-card">
+        <mat-card-header>
+          <mat-card-title>Ageing Analysis</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="ageing-grid">
+            <div class="ageing-item bucket-0-30">
+              <span class="bucket-label">0-30 Days</span>
+              <span class="bucket-amount">{{ formatCurrency(customer.ageing?.current_0_30) }}</span>
+            </div>
+            <div class="ageing-item bucket-31-60">
+              <span class="bucket-label">31-60 Days</span>
+              <span class="bucket-amount">{{ formatCurrency(customer.ageing?.overdue_31_60) }}</span>
+            </div>
+            <div class="ageing-item bucket-61-90">
+              <span class="bucket-label">61-90 Days</span>
+              <span class="bucket-amount">{{ formatCurrency(customer.ageing?.overdue_61_90) }}</span>
+            </div>
+            <div class="ageing-item bucket-90plus">
+              <span class="bucket-label">90+ Days</span>
+              <span class="bucket-amount">{{ formatCurrency(customer.ageing?.overdue_90Plus) }}</span>
+            </div>
+          </div>
+          <div class="total-row">
+            <span class="label">Grand Total</span>
+            <span class="amount">{{ formatCurrency(customer.ageing?.grandTotal) }}</span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Outstanding Invoices -->
+      <mat-card class="section-card" *ngIf="customer.outstandingBalance?.outstandingInvoices?.length > 0">
+        <mat-card-header>
+          <mat-card-title>Outstanding Invoices</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="invoices-container">
+            <div class="invoice-item" *ngFor="let invoice of customer.outstandingBalance?.outstandingInvoices">
+              <div class="invoice-header">
+                <span class="invoice-number"><strong>{{ invoice.invoiceNumber }}</strong></span>
+                <span class="invoice-status" [class]="'status-' + (invoice.ageingBucket || 'current').toLowerCase().replace('-', '_')">
+                  {{ invoice.ageingBucket }}
+                </span>
+              </div>
+              <div class="invoice-details">
+                <div class="detail-row">
+                  <span class="label">Invoice Date:</span>
+                  <span class="value">{{ invoice.invoiceDate | date: 'yyyy-MM-dd' }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Due Date:</span>
+                  <span class="value">{{ invoice.dueDate | date: 'yyyy-MM-dd' }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Original Amount:</span>
+                  <span class="value">{{ formatCurrency(invoice.originalAmount) }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Paid:</span>
+                  <span class="value">{{ formatCurrency(invoice.amountPaid) }}</span>
+                </div>
+                <div class="detail-row outstanding">
+                  <span class="label">Outstanding:</span>
+                  <span class="value">{{ formatCurrency(invoice.outstanding) }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="closeDialog()">Close</button>
+  </mat-dialog-actions>
+</div>

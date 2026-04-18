@@ -1,0 +1,69 @@
+/* PROFILE PAGE */
+.profile-page { padding: 24px; max-width: 720px; margin: 0 auto; }
+
+/* Page header with avatar */
+.profile-page-header { margin-bottom: 24px; }
+.profile-avatar-block { display: flex; align-items: center; gap: 20px; padding: 24px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius: 16px; color: white; }
+.profile-avatar { width: 72px; height: 72px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 3px solid rgba(255,255,255,0.4); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+.profile-avatar mat-icon { font-size: 44px; width: 44px; height: 44px; color: white; }
+.profile-name { font-size: 20px; font-weight: 800; margin: 0 0 4px; letter-spacing: -0.3px; }
+.profile-email { font-size: 13px; opacity: 0.85; margin: 0 0 8px; }
+.profile-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
+.profile-badge mat-icon { font-size: 13px; width: 13px; height: 13px; }
+
+/* Form card */
+.profile-card { border-radius: 16px !important; box-shadow: 0 4px 20px rgba(0,0,0,0.08) !important; }
+.profile-card-header { padding: 20px 24px 12px !important; border-bottom: 1px solid #f1f5f9; }
+.profile-card-header mat-card-title { font-size: 17px !important; font-weight: 700 !important; color: #0f172a !important; }
+.profile-card-header mat-card-subtitle { color: #64748b !important; margin-top: 4px !important; }
+
+/* Form content */
+.profile-form-content { padding: 20px 24px !important; }
+.mobile-info-btn { display: none; margin-bottom: 16px; border-radius: 10px !important; font-size: 13px !important; }
+.form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.field-full { width: 100%; display: block; }
+.opt-label { font-size: 11px; font-weight: 400; color: #94a3b8; }
+.req-star { color: #dc2626; }
+
+/* Form validation enhancement */
+mat-form-field.ng-invalid.ng-touched .mat-mdc-text-field-wrapper { border-color: #dc2626 !important; }
+
+/* Actions */
+.profile-actions { padding: 16px 24px !important; border-top: 1px solid #f1f5f9; display: flex; gap: 10px; }
+.save-btn {
+  border-radius: 10px !important; height: 44px !important; font-weight: 700 !important;
+  font-size: 14px !important; display: flex !important; align-items: center !important; gap: 6px !important;
+  min-width: 140px;
+}
+.cancel-btn { border-radius: 10px !important; height: 44px !important; font-weight: 600 !important; display: flex !important; align-items: center !important; gap: 6px !important; }
+.btn-spinner { display: inline-block; margin-right: 4px; }
+
+/* Info dialog */
+.info-dialog-inner { padding: 24px; text-align: center; min-width: 280px; }
+.info-avatar { width: 64px; height: 64px; border-radius: 50%; background: #eef2ff; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+.info-avatar mat-icon { font-size: 40px; width: 40px; height: 40px; color: #4f46e5; }
+.info-dialog-inner h3 { margin: 0 0 6px; font-size: 18px; font-weight: 700; color: #0f172a; }
+.info-email { font-size: 13px; color: #64748b; margin: 0 0 10px; }
+.info-hint  { font-size: 12px; color: #94a3b8; margin: 0; }
+
+/* Logout dialog */
+.logout-dialog { padding: 28px 24px; text-align: center; max-width: 360px; }
+.logout-icon { width: 56px; height: 56px; border-radius: 50%; background: #eff6ff; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+.logout-icon mat-icon { font-size: 32px; width: 32px; height: 32px; color: #4f46e5; }
+.logout-dialog h3 { font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 8px; }
+.logout-dialog p  { font-size: 14px; color: #64748b; margin: 0 0 20px; }
+.logout-dialog button { border-radius: 10px !important; height: 44px !important; font-weight: 700 !important; min-width: 180px; }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .profile-page { padding: 16px 12px; }
+  .profile-avatar-block { flex-direction: column; align-items: flex-start; gap: 14px; padding: 18px; }
+  .profile-avatar { width: 56px; height: 56px; }
+  .profile-avatar mat-icon { font-size: 34px; width: 34px; height: 34px; }
+  .form-row-2 { grid-template-columns: 1fr; }
+  .mobile-info-btn { display: flex; width: 100%; }
+  .profile-form-content { padding: 16px !important; }
+  .profile-actions { padding: 12px 16px !important; flex-direction: column; }
+  .save-btn, .cancel-btn { width: 100% !important; justify-content: center !important; }
+  .profile-card-header { padding: 16px !important; }
+}

@@ -1,0 +1,131 @@
+<h1 mat-dialog-title>User Details</h1>
+
+<mat-dialog-content class="user-details-content">
+  <!-- Loading State -->
+  <div *ngIf="isLoading" class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading user details...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="errorMessage && !isLoading" class="error-container">
+    <mat-icon color="warn">error</mat-icon>
+    <p>{{ errorMessage }}</p>
+  </div>
+
+  <!-- Content State -->
+  <div *ngIf="userDetails && !isLoading && !errorMessage" class="details-grid">
+    <!-- Basic Information Section -->
+    <div class="details-section">
+      <h3>Basic Information</h3>
+      <div class="detail-row">
+        <span class="label">Username:</span>
+        <span class="value">{{ userDetails.username }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Full Name:</span>
+        <span class="value">{{ userDetails.name }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Email:</span>
+        <span class="value">{{ userDetails.email }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Phone:</span>
+        <span class="value">{{ userDetails.phone || 'N/A' }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Address:</span>
+        <span class="value">{{ userDetails.address || 'N/A' }}</span>
+      </div>
+    </div>
+
+    <!-- Role & Access Section -->
+    <div class="details-section">
+      <h3>Role & Access</h3>
+      <div class="detail-row">
+        <span class="label">Role:</span>
+        <span class="value badge" [ngClass]="'role-' + userDetails.role">{{ userDetails.role }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Status:</span>
+        <span class="value badge" [ngClass]="userDetails.isactive ? 'status-active' : 'status-inactive'">
+          {{ getStatusLabel() }}
+        </span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Account Locked:</span>
+        <span class="value badge" [ngClass]="userDetails.islocked ? 'status-locked' : 'status-active'">
+          {{ getLockedLabel() }}
+        </span>
+      </div>
+      <div class="detail-row" *ngIf="userDetails.failattempt">
+        <span class="label">Failed Login Attempts:</span>
+        <span class="value">{{ userDetails.failattempt }}</span>
+      </div>
+    </div>
+
+    <!-- Company Information Section -->
+    <div class="details-section" *ngIf="userDetails.company">
+      <h3>Company Information</h3>
+      <div class="detail-row">
+        <span class="label">Company ID:</span>
+        <span class="value">{{ userDetails.company.companyId }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Company Name:</span>
+        <span class="value">{{ userDetails.company.companyName }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Address:</span>
+        <span class="value">{{ userDetails.company.address || 'N/A' }}</span>
+      </div>
+    </div>
+
+    <!-- Authentication Section -->
+    <div class="details-section">
+      <h3>Authentication</h3>
+      <div class="detail-row">
+        <span class="label">Auth Provider:</span>
+        <span class="value">{{ getAuthProvider() }}</span>
+      </div>
+      <div class="detail-row" *ngIf="userDetails.googleId">
+        <span class="label">Google ID:</span>
+        <span class="value">{{ userDetails.googleId }}</span>
+      </div>
+    </div>
+
+    <!-- Audit Information Section -->
+    <div class="details-section">
+      <h3>Audit Information</h3>
+      <div class="detail-row">
+        <span class="label">Created Date:</span>
+        <span class="value">{{ getCreatedDate() }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Updated Date:</span>
+        <span class="value">{{ getUpdatedDate() }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="label">Last Login:</span>
+        <span class="value">{{ getLastLoginDate() }}</span>
+      </div>
+      <div class="detail-row" *ngIf="userDetails.createIp">
+        <span class="label">Created IP:</span>
+        <span class="value">{{ userDetails.createIp }}</span>
+      </div>
+      <div class="detail-row" *ngIf="userDetails.updateIp">
+        <span class="label">Updated IP:</span>
+        <span class="value">{{ userDetails.updateIp }}</span>
+      </div>
+      <div class="detail-row" *ngIf="userDetails.lastIpAddress">
+        <span class="label">Last IP Address:</span>
+        <span class="value">{{ userDetails.lastIpAddress }}</span>
+      </div>
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="closeDialog()">Close</button>
+</mat-dialog-actions>

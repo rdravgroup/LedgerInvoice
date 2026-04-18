@@ -1,0 +1,9 @@
+.page-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom: 12px;
+}
+.actions { display:flex; gap:8px; }
+.table-container { width:100%; overflow:auto; }
+table { width:100%; }

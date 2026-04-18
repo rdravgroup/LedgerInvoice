@@ -1,0 +1,172 @@
+<div class="page-content">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Customers</h1>
+      <p class="page-subtitle">
+        {{ datasource.data.length || 0 }} total ·
+        {{ getActiveCount() }} active ·
+        {{ getInactiveCount() }} inactive
+      </p>
+    </div>
+    @if (_permission.haveadd) {
+      <button mat-flat-button color="primary" routerLink="/customer/add">
+        <mat-icon aria-hidden="true">person_add</mat-icon>
+        Add Customer
+      </button>
+    }
+  </div>
+
+  <!-- Search Bar -->
+  <div class="toolbar-row">
+    <mat-form-field appearance="outline" class="search-field">
+      <mat-label>Search customers</mat-label>
+      <input matInput (input)="applyFilter($event)" placeholder="Name, email, phone…" />
+      <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+    </mat-form-field>
+  </div>
+
+  <!-- Loading skeletons -->
+  @if (loading) {
+    <div class="skeleton-list">
+      @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  }
+
+  <!-- Empty state -->
+  @if (!loading && datasource.data.length === 0) {
+    <div class="empty-state">
+      <mat-icon aria-hidden="true">people_outline</mat-icon>
+      <h3>No customers yet</h3>
+      <p>Add your first customer to get started</p>
+      @if (_permission.haveadd) {
+        <button mat-flat-button color="primary" routerLink="/customer/add">
+          <mat-icon aria-hidden="true">person_add</mat-icon>
+          Add Customer
+        </button>
+      }
+    </div>
+  }
+
+  <!-- Mobile: Card List -->
+  @if (!loading && datasource.data.length > 0) {
+    <div class="mobile-card-list" [class.hidden]="!isMobile">
+      @for (row of datasource.filteredData; track row.uniqueKeyID) {
+        <mat-card class="list-card">
+          <mat-card-content>
+            <div class="list-card-header">
+              <div class="list-card-avatar">{{ (row.name || 'C').charAt(0).toUpperCase() }}</div>
+              <div class="list-card-info">
+                <div class="list-card-name">{{ row.name }}</div>
+                <div class="list-card-sub">{{ row.mobileNo || row.phone }}</div>
+                <div class="list-card-sub">{{ row.email }}</div>
+              </div>
+              <span class="status-badge" [class.active]="row.isActive" [class.inactive]="!row.isActive">
+                {{ row.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+            @if (row.customer_company) {
+              <div class="list-card-company">
+                <mat-icon aria-hidden="true">business</mat-icon>
+                {{ row.customer_company }}
+              </div>
+            }
+            <div class="list-card-actions">
+              @if (_permission.haveedit) {
+                <button mat-stroked-button [routerLink]="'/customer/edit/' + row.uniqueKeyID">
+                  <mat-icon aria-hidden="true">edit</mat-icon> Edit
+                </button>
+              }
+              @if (_permission.havedelete) {
+                <button mat-stroked-button color="warn" (click)="customerremove(row.uniqueKeyID)">
+                  <mat-icon aria-hidden="true">delete</mat-icon> Delete
+                </button>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
+
+  <!-- Desktop: Mat Table -->
+  @if (!loading && datasource.data.length > 0) {
+    <mat-card class="table-card" [class.hidden]="isMobile">
+      <table mat-table [dataSource]="datasource" matSort class="full-table" role="grid">
+
+        <!-- Name Column -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Customer</th>
+          <td mat-cell *matCellDef="let row">
+            <div class="cell-with-avatar">
+              <div class="cell-avatar">{{ (row.name || 'C').charAt(0).toUpperCase() }}</div>
+              <div>
+                <div class="cell-primary">{{ row.name }}</div>
+                <div class="cell-secondary">{{ row.email }}</div>
+              </div>
+            </div>
+          </td>
+        </ng-container>
+
+        <!-- Phone Column -->
+        <ng-container matColumnDef="phone">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header scope="col">Phone</th>
+          <td mat-cell *matCellDef="let row">{{ row.mobileNo || row.phone || '—' }}</td>
+        </ng-container>
+
+        <!-- Company Column -->
+        <ng-container matColumnDef="company">
+          <th mat-header-cell *matHeaderCellDef scope="col">Company</th>
+          <td mat-cell *matCellDef="let row">{{ row.customer_company || '—' }}</td>
+        </ng-container>
+
+        <!-- Status Column -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef scope="col">Status</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="status-badge" [class.active]="row.isActive" [class.inactive]="!row.isActive">
+              {{ row.isActive ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="action">
+          <th mat-header-cell *matHeaderCellDef scope="col"></th>
+          <td mat-cell *matCellDef="let row" class="actions-cell">
+            @if (_permission.haveedit) {
+              <button mat-icon-button
+                      [routerLink]="'/customer/edit/' + row.uniqueKeyID"
+                      matTooltip="Edit customer"
+                      aria-label="Edit customer">
+                <mat-icon aria-hidden="true">edit</mat-icon>
+              </button>
+            }
+            @if (_permission.havedelete) {
+              <button mat-icon-button color="warn"
+                      (click)="customerremove(row.uniqueKeyID)"
+                      matTooltip="Delete customer"
+                      aria-label="Delete customer">
+                <mat-icon aria-hidden="true">delete</mat-icon>
+              </button>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+      </table>
+
+      <mat-paginator
+        [pageSizeOptions]="[10, 20, 50]"
+        [pageSize]="20"
+        showFirstLastButtons
+        aria-label="Select page">
+      </mat-paginator>
+    </mat-card>
+  }
+
+</div>

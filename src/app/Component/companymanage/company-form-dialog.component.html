@@ -1,0 +1,50 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Edit Company' : 'Create Company' }}</h2>
+<mat-dialog-content>
+  <form [formGroup]="form" class="company-form">
+    <div class="row">
+      <mat-form-field appearance="outline" class="full">
+        <mat-label>Name</mat-label>
+        <input matInput formControlName="name" />
+        <mat-error *ngIf="form.get('name')?.hasError('required')">Name is required</mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="row two">
+      <mat-form-field appearance="outline">
+        <mat-label>Email</mat-label>
+        <input matInput formControlName="emailId" />
+        <mat-error *ngIf="form.get('emailId')?.hasError('required')">Email is required</mat-error>
+        <mat-error *ngIf="form.get('emailId')?.hasError('email')">Enter a valid email</mat-error>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Mobile</mat-label>
+        <input matInput formControlName="mobileNo" />
+        <mat-error *ngIf="form.get('mobileNo')?.hasError('required')">Mobile is required</mat-error>
+      </mat-form-field>
+    </div>
+
+    <div class="row two">
+      <mat-form-field appearance="outline">
+        <mat-label>GST Number</mat-label>
+        <input matInput formControlName="gstNumber" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Bank Name</mat-label>
+        <input matInput formControlName="bankName" />
+      </mat-form-field>
+    </div>
+
+    <mat-form-field appearance="outline" class="full">
+      <mat-label>Address</mat-label>
+      <textarea matInput rows="3" formControlName="addressDetails"></textarea>
+      <mat-error *ngIf="form.get('addressDetails')?.hasError('required')">Address is required</mat-error>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-flat-button color="primary" (click)="save()" [disabled]="form.invalid || submitting">
+    <mat-progress-spinner *ngIf="submitting" diameter="18" mode="indeterminate"></mat-progress-spinner>
+    <span *ngIf="!submitting">Save</span>
+  </button>
+</mat-dialog-actions>

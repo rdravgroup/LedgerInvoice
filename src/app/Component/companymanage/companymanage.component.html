@@ -1,0 +1,63 @@
+<div class="page-header">
+  <h2>Companies</h2>
+  <div class="actions">
+    <button mat-flat-button color="primary" (click)="openCreate()" *ngIf="isAdmin || isSuperAdmin">Create Company</button>
+  </div>
+</div>
+
+<div class="table-container">
+  <table mat-table [dataSource]="datasource" class="mat-elevation-z8">
+
+    <ng-container matColumnDef="companyId">
+      <th mat-header-cell *matHeaderCellDef>Code</th>
+      <td mat-cell *matCellDef="let e">{{ e.companyId }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef>Name</th>
+      <td mat-cell *matCellDef="let e">{{ e.name }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let e">{{ e.status }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="emailId">
+      <th mat-header-cell *matHeaderCellDef>Email</th>
+      <td mat-cell *matCellDef="let e">{{ e.emailId }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="mobileNo">
+      <th mat-header-cell *matHeaderCellDef>Mobile</th>
+      <td mat-cell *matCellDef="let e">{{ e.mobileNo }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="gstNumber">
+      <th mat-header-cell *matHeaderCellDef>GST</th>
+      <td mat-cell *matCellDef="let e">{{ e.gstNumber }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="createdDate">
+      <th mat-header-cell *matHeaderCellDef>Created</th>
+      <td mat-cell *matCellDef="let e">{{ e.createdDate | date:'short' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="action">
+      <th mat-header-cell *matHeaderCellDef>Action</th>
+      <td mat-cell *matCellDef="let e">
+        <button mat-icon-button color="primary" (click)="openEdit(e)" *ngIf="isAdmin || isSuperAdmin" matTooltip="Edit">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button color="warn" (click)="changeStatus(e)" *ngIf="isAdmin || isSuperAdmin" matTooltip="Toggle Status">
+          <mat-icon>toggle_on</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+  </table>
+
+  <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons></mat-paginator>
+</div>

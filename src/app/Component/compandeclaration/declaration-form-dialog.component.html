@@ -1,0 +1,25 @@
+<h2 mat-dialog-title>{{ isEdit ? 'Edit Declaration' : 'Create Declaration' }}</h2>
+<mat-dialog-content>
+  <form [formGroup]="form">
+    <mat-form-field appearance="outline" class="full">
+      <mat-label>Declaration</mat-label>
+      <textarea matInput formControlName="declaration" rows="4"></textarea>
+      <mat-error *ngIf="form.get('declaration')?.hasError('required')">Declaration is required</mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Active</mat-label>
+      <mat-select formControlName="active">
+        <mat-option value="Y">Y</mat-option>
+        <mat-option value="N">N</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </form>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-flat-button color="primary" (click)="save()" [disabled]="form.invalid || submitting">
+    <mat-progress-spinner *ngIf="submitting" diameter="18" mode="indeterminate"></mat-progress-spinner>
+    <span *ngIf="!submitting">Save</span>
+  </button>
+</mat-dialog-actions>

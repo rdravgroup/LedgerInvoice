@@ -1,0 +1,116 @@
+<div class="payment-details-dialog">
+  <div class="dialog-header">
+    <h2>Payment Details for {{ data.customerName }}</h2>
+    <button mat-icon-button (click)="closeDialog()" class="close-button">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    <!-- Loading Spinner -->
+    <div *ngIf="loading" class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Loading payments...</p>
+    </div>
+
+    <!-- Error Alert -->
+    <mat-card *ngIf="error && !loading" class="error-card">
+      <mat-card-content>
+        <div class="alert-error">
+          <mat-icon>error</mat-icon>
+          <span>{{ error }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Payments Table -->
+    <div *ngIf="!loading && !error && dataSource.data.length > 0" class="table-container">
+      <table mat-table [dataSource]="dataSource" matSort class="payments-table">
+
+        <!-- Payment Number Column -->
+        <ng-container matColumnDef="paymentNumber">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Payment Number</th>
+          <td mat-cell *matCellDef="let element">
+            <strong>{{ element.paymentNumber }}</strong>
+          </td>
+        </ng-container>
+
+        <!-- Payment Date Column -->
+        <ng-container matColumnDef="paymentDate">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Payment Date</th>
+          <td mat-cell *matCellDef="let element">
+            {{ formatDate(element.paymentDate) }}
+          </td>
+        </ng-container>
+
+        <!-- Payment Amount Column -->
+        <ng-container matColumnDef="paymentAmount">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Amount</th>
+          <td mat-cell *matCellDef="let element">
+            <span class="amount-value">{{ formatCurrency(element.paymentAmount) }}</span>
+          </td>
+        </ng-container>
+
+        <!-- Payment Method Column -->
+        <ng-container matColumnDef="paymentMethod">
+          <th mat-header-cell *matHeaderCellDef>Payment Method</th>
+          <td mat-cell *matCellDef="let element">
+            {{ element.paymentMethod }}
+            <span *ngIf="element.chequeNumber" class="cheque-info">
+              (Cheque: {{ element.chequeNumber }})
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Status Column -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let element">
+            <span [class]="'status-badge ' + getStatusCss(element.status)">
+              {{ element.status }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Actions Column -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let element">
+            <button mat-icon-button color="primary" 
+              (click)="viewAllocations(element)"
+              matTooltip="View Allocations">
+              <mat-icon>description</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" 
+              (click)="deletePayment(element)"
+              matTooltip="Delete Payment">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <!-- Header Row -->
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+
+        <!-- Data Rows -->
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+      </table>
+    </div>
+
+    <!-- No Data Message -->
+    <mat-card *ngIf="!loading && !error && dataSource.data.length === 0" class="no-data-card">
+      <mat-card-content>
+        <div class="no-data">
+          <mat-icon>payment</mat-icon>
+          <p>No payments found</p>
+          <small>This customer has no recorded payments yet.</small>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="closeDialog()">Close</button>
+  </mat-dialog-actions>
+</div>

@@ -1,0 +1,139 @@
+/* QUICK INVOICE — mobile-native redesign */
+.quick-invoice-container {
+  display: block; width: 100%; max-width: 100%;
+  min-height: 100vh; background: #f8fafc; padding: 0; box-sizing: border-box;
+}
+
+/* Main card */
+.invoice-card {
+  width: 100%; box-shadow: none !important; border-radius: 0 !important;
+  min-height: 100vh; margin: 0; border: none !important;
+}
+
+/* Sticky header */
+mat-card-header {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+  color: white; padding: 16px 16px !important;
+  margin: 0; position: sticky; top: 0; z-index: 102;
+  box-shadow: 0 3px 12px rgba(79,70,229,0.35);
+}
+mat-card-title {
+  color: white !important; font-size: 18px; margin: 0; font-weight: 700 !important; letter-spacing: -0.2px;
+}
+
+/* Card content */
+mat-card-content { padding: 12px !important; display: block; box-sizing: border-box; }
+
+/* Saved invoices */
+.saved-invoices-section { margin-bottom: 10px; padding: 0; }
+
+/* Customer section */
+.customer-section {
+  margin-bottom: 10px;
+  position: sticky; top: 56px; background: #f8fafc; z-index: 101; padding: 8px 0; box-sizing: border-box;
+}
+
+/* ── Action buttons — pill-style row ─────────────────────── */
+.action-buttons {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 0 12px;
+  position: sticky; top: 116px; background: #f8fafc; z-index: 100;
+  overflow-x: auto; scroll-behavior: smooth;
+  -ms-overflow-style: none; scrollbar-width: none;
+  box-sizing: border-box;
+}
+.action-buttons::-webkit-scrollbar { display: none; }
+
+.action-buttons button {
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  width: 44px !important; height: 44px !important; min-width: 44px !important;
+  border-radius: 12px !important; flex-shrink: 0 !important;
+  transition: transform 0.15s, box-shadow 0.15s !important;
+}
+.action-buttons button:hover { transform: translateY(-2px) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important; }
+
+.action-buttons button mat-icon { font-size: 22px; }
+
+/* Button spinner */
+.button-spinner { display: flex; align-items: center; justify-content: center; }
+
+/* ── Invoice table ───────────────────────────────────────── */
+.table-container { overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; margin-top: 4px; }
+
+.invoice-table {
+  width: 100%; min-width: 380px; border-collapse: collapse;
+  background: white; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+}
+
+.invoice-table th {
+  background: #1e1b4b;
+  color: white; padding: 11px 8px; text-align: left;
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  white-space: nowrap; position: sticky; top: 166px; z-index: 99;
+}
+.invoice-table td {
+  padding: 4px 6px; border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle; height: 50px;
+}
+.invoice-table tbody tr:hover { background: #f8fafc; }
+.invoice-table tbody tr:last-child td { border-bottom: none; }
+
+/* Cell classes */
+.sl-no-cell   { width: 28px; text-align: center; font-weight: 700; color: #4f46e5; font-size: 12px; }
+.product-cell { min-width: 130px; }
+.quantity-cell{ width: 68px; }
+.rate-cell    { width: 76px; }
+.total-cell   { width: 80px; font-weight: 700; color: #4f46e5; text-align: right; white-space: nowrap; }
+.action-cell  { width: 36px; text-align: center; }
+
+/* Table form fields */
+.table-form-field { width: 100%; margin: 0; display: block; }
+::ng-deep .table-form-field .mat-mdc-form-field-subscript-wrapper { display: none; }
+::ng-deep .table-form-field .mdc-text-field { height: 42px !important; }
+::ng-deep .table-form-field .mdc-text-field__input { padding: 0 8px !important; font-size: 13px; height: 42px !important; }
+
+/* Grand total sticky footer */
+.grand-total {
+  position: sticky; bottom: 0;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white; text-align: right;
+  padding: 14px 16px; font-size: 16px; font-weight: 800;
+  letter-spacing: -0.2px;
+  box-shadow: 0 -4px 16px rgba(79,70,229,0.25);
+  border-radius: 0;
+  z-index: 100;
+}
+
+/* Empty state */
+.empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; background: white; border-radius: 12px; margin: 12px 0; }
+.empty-state mat-icon { font-size: 64px; width: 64px; height: 64px; color: #cbd5e1; }
+.empty-state p { font-size: 15px; margin-top: 12px; color: #64748b; }
+
+/* Invoice list card */
+.invoice-list-card { margin-top: 14px; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); border: 1px solid #e2e8f0; overflow: hidden; }
+.invoice-list-table { width: 100%; border-collapse: collapse; }
+.invoice-list-table th, .invoice-list-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+.invoice-list-table th { background: #f8fafc; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; color: #64748b; }
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 600px) {
+  .quick-invoice-container { background: white; }
+  mat-card-header { position: relative !important; top: 0 !important; }
+  .customer-section { position: relative !important; top: 0 !important; background: white; }
+  .action-buttons { position: relative !important; top: 0 !important; background: white; padding: 8px 4px 12px; }
+  .action-buttons button { width: 42px !important; height: 42px !important; min-width: 42px !important; border-radius: 10px !important; }
+  .invoice-table th { position: relative !important; top: 0 !important; }
+  .grand-total { position: relative !important; bottom: 0 !important; border-radius: 12px !important; margin-top: 8px; }
+  /* Hide Sl.No on mobile */
+  .invoice-table th:first-child, .invoice-table td:first-child { display: none; }
+}
+
+@media (min-width: 601px) {
+  .quick-invoice-container { padding: 16px; background: #f8fafc; }
+  .invoice-card { border-radius: 16px !important; box-shadow: 0 4px 20px rgba(0,0,0,0.09) !important; min-height: auto !important; }
+  mat-card-header { border-radius: 16px 16px 0 0 !important; position: relative !important; }
+  .customer-section, .action-buttons { position: relative !important; top: 0 !important; }
+  .invoice-table th { position: relative !important; top: 0 !important; }
+  .grand-total { border-radius: 0 0 16px 16px !important; position: relative !important; }
+}

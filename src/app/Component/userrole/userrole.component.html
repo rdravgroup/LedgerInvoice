@@ -1,0 +1,120 @@
+<div class="page-content">
+
+  <!-- Page Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Role Permissions</h1>
+      <p class="page-subtitle">Assign menu access permissions per role</p>
+    </div>
+  </div>
+
+  <mat-card class="perm-card">
+    <mat-card-content>
+
+      <!-- Role selector -->
+      <div class="role-selector-row">
+        <mat-form-field appearance="outline" class="role-select-field">
+          <mat-label>Select Role</mat-label>
+          <mat-select [formControl]="roleSelectControl" (selectionChange)="rolechange($event)">
+            @for (item of rolelist; track item.code) {
+              <mat-option [value]="item.code">{{ item.name }}</mat-option>
+            }
+          </mat-select>
+          <mat-icon matPrefix aria-hidden="true">manage_accounts</mat-icon>
+        </mat-form-field>
+      </div>
+
+      <!-- Loading skeleton -->
+      @if (loadingPerms) {
+        <div class="perm-skeleton">
+          @for (i of [1,2,3,4,5]; track i) {
+            <div class="perm-skeleton-row"></div>
+          }
+        </div>
+      }
+
+      <!-- Permission matrix -->
+      @if (!loadingPerms && getrows.controls.length > 0) {
+        <form [formGroup]="roleform" (ngSubmit)="Saveroles()">
+          <div class="perm-table" role="table" aria-label="Permission matrix">
+
+            <!-- Header row -->
+            <div class="perm-row perm-header" role="row">
+              <div class="perm-menu-col" role="columnheader">Menu</div>
+              <div class="perm-check-col" role="columnheader">
+                <mat-icon aria-hidden="true" matTooltip="View">visibility</mat-icon>
+              </div>
+              <div class="perm-check-col" role="columnheader">
+                <mat-icon aria-hidden="true" matTooltip="Add">add_circle</mat-icon>
+              </div>
+              <div class="perm-check-col" role="columnheader">
+                <mat-icon aria-hidden="true" matTooltip="Edit">edit</mat-icon>
+              </div>
+              <div class="perm-check-col" role="columnheader">
+                <mat-icon aria-hidden="true" matTooltip="Delete">delete</mat-icon>
+              </div>
+            </div>
+
+            <!-- Data rows -->
+            <div formArrayName="access">
+              @for (ctrl of getrows.controls; track $index; let i = $index) {
+                <div class="perm-row" [formGroupName]="i" role="row"
+                     [class.perm-row-alt]="i % 2 === 1">
+                  <div class="perm-menu-col" role="cell">
+                    <mat-icon aria-hidden="true" class="menu-icon">{{ getMenuIcon(ctrl.value.menucode) }}</mat-icon>
+                    <span class="menu-name">{{ ctrl.value.menuname || ctrl.value.menucode }}</span>
+                  </div>
+                  <div class="perm-check-col" role="cell">
+                    <mat-checkbox formControlName="haveview" color="primary"
+                                  [attr.aria-label]="'View ' + ctrl.value.menucode"></mat-checkbox>
+                  </div>
+                  <div class="perm-check-col" role="cell">
+                    <mat-checkbox formControlName="haveadd" color="primary"
+                                  [attr.aria-label]="'Add ' + ctrl.value.menucode"></mat-checkbox>
+                  </div>
+                  <div class="perm-check-col" role="cell">
+                    <mat-checkbox formControlName="haveedit" color="primary"
+                                  [attr.aria-label]="'Edit ' + ctrl.value.menucode"></mat-checkbox>
+                  </div>
+                  <div class="perm-check-col" role="cell">
+                    <mat-checkbox formControlName="havedelete" color="warn"
+                                  [attr.aria-label]="'Delete ' + ctrl.value.menucode"></mat-checkbox>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Save button -->
+          <div class="save-row">
+            <button type="submit" mat-flat-button color="primary"
+                    [disabled]="saving || roleform.invalid">
+              @if (saving) {
+                <ng-container>
+                  <mat-spinner diameter="18" style="display:inline-block;margin-right:8px;"></mat-spinner>
+                  Saving...
+                </ng-container>
+              } @else {
+                <ng-container>
+                  <mat-icon aria-hidden="true">save</mat-icon>
+                  Save Permissions
+                </ng-container>
+              }
+            </button>
+          </div>
+        </form>
+      }
+
+      <!-- Empty state: no role selected -->
+      @if (!loadingPerms && getrows.controls.length === 0) {
+        <div class="empty-state">
+          <mat-icon aria-hidden="true">admin_panel_settings</mat-icon>
+          <h3>Select a role</h3>
+          <p>Choose a role above to manage its permissions</p>
+        </div>
+      }
+
+    </mat-card-content>
+  </mat-card>
+
+</div>

@@ -1,0 +1,5 @@
+<div class="oauth-login-container">
+  <h2>Login with Google</h2>
+  <button type="button" (click)="loginWithGoogle()">Login with Google</button>
+  <div *ngIf="errorMsg" class="error">{{ errorMsg }}</div>
+</div>

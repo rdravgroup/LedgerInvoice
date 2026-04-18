@@ -1,0 +1,144 @@
+<div class="maintenance-panel">
+  <!-- Header -->
+  <div class="header">
+    <h1>Maintenance Panel</h1>
+    <p class="subtitle">Manage ledger maintenance tasks</p>
+  </div>
+
+  <!-- Admin Only Warning -->
+  <mat-card *ngIf="!isAdmin()" class="warning-card">
+    <mat-card-content>
+      <div class="alert-warning">
+        <mat-icon>lock</mat-icon>
+        <div>
+          <p><strong>Super Admin Access Required</strong></p>
+          <p>Only users with the <strong>super_admin</strong> role can run maintenance jobs from this panel.</p>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Main Content (Admin Only) -->
+  <div *ngIf="isAdmin()" class="admin-content">
+    
+    <!-- Quick Actions -->
+    <div class="actions-header">
+      <h2>Quick Actions</h2>
+      <button mat-raised-button color="warn" (click)="triggerAllMaintenance()">
+        <mat-icon>flash_on</mat-icon> Run All Jobs
+      </button>
+    </div>
+
+    <!-- Jobs Grid -->
+    <div class="jobs-grid">
+      
+      <!-- Ageing Update Job -->
+      <mat-card class="job-card">
+        <mat-card-header>
+          <mat-card-title>Update Ageing Buckets</mat-card-title>
+          <mat-card-subtitle>Recalculate invoice age</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="job-description">
+            <p>Recalculates the ageing buckets (0-30, 30-60, 60-90, 90+ days) for all invoices.</p>
+            <div class="job-details">
+              <span class="label">Schedule:</span> Daily &#64; 1:00 AM
+            </div>
+          </div>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-raised-button color="primary" 
+            (click)="triggerAgeingUpdate()" 
+            [disabled]="loadingAgeing">
+            <mat-icon *ngIf="!loadingAgeing">play_arrow</mat-icon>
+            <mat-spinner *ngIf="loadingAgeing" diameter="20"></mat-spinner>
+            {{ loadingAgeing ? 'Running...' : 'Run Now' }}
+          </button>
+        </mat-card-actions>
+      </mat-card>
+
+      <!-- Outstanding Refresh Job -->
+      <mat-card class="job-card">
+        <mat-card-header>
+          <mat-card-title>Refresh Outstanding Summary</mat-card-title>
+          <mat-card-subtitle>Recalculate outstanding AR</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="job-description">
+            <p>Refreshes the outstanding summary including total AR, collection rates, and DSO.</p>
+            <div class="job-details">
+              <span class="label">Schedule:</span> Daily &#64; 1:15 AM
+            </div>
+          </div>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-raised-button color="primary" 
+            (click)="triggerOutstandingRefresh()" 
+            [disabled]="loadingOutstanding">
+            <mat-icon *ngIf="!loadingOutstanding">play_arrow</mat-icon>
+            <mat-spinner *ngIf="loadingOutstanding" diameter="20"></mat-spinner>
+            {{ loadingOutstanding ? 'Running...' : 'Run Now' }}
+          </button>
+        </mat-card-actions>
+      </mat-card>
+
+      <!-- Snapshot Creation Job -->
+      <mat-card class="job-card">
+        <mat-card-header>
+          <mat-card-title>Create Ageing Snapshot</mat-card-title>
+          <mat-card-subtitle>Archive monthly snapshot</mat-card-subtitle>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="job-description">
+            <p>Creates a monthly snapshot of ageing data for historical tracking and trend analysis.</p>
+            <div class="job-details">
+              <span class="label">Schedule:</span> 1st of month &#64; 2:00 AM
+            </div>
+          </div>
+        </mat-card-content>
+        <mat-card-actions>
+          <button mat-raised-button color="primary" 
+            (click)="triggerSnapshotCreation()" 
+            [disabled]="loadingSnapshot">
+            <mat-icon *ngIf="!loadingSnapshot">play_arrow</mat-icon>
+            <mat-spinner *ngIf="loadingSnapshot" diameter="20"></mat-spinner>
+            {{ loadingSnapshot ? 'Running...' : 'Run Now' }}
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+
+    <!-- Info Section -->
+    <mat-card class="info-card">
+      <mat-card-header>
+        <mat-card-title>About Maintenance Jobs</mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="info-content">
+          <h3>Automated Schedule</h3>
+          <p>These jobs run automatically on the schedule shown above. You can manually trigger them here if needed.</p>
+          
+          <h3>When to Trigger Manually</h3>
+          <ul>
+            <li>Before generating important reports</li>
+            <li>During month-end close process</li>
+            <li>After bulk invoice imports</li>
+            <li>When debugging data issues</li>
+          </ul>
+
+          <h3>What Each Job Does</h3>
+          <ul>
+            <li><strong>Update Ageing Buckets:</strong> Recalculates which invoices are past due and updates the ageing buckets</li>
+            <li><strong>Refresh Outstanding:</strong> Recalculates total outstanding AR, collection rates, and DSO metrics</li>
+            <li><strong>Create Snapshot:</strong> Creates a historical snapshot for trend analysis</li>
+          </ul>
+
+          <p class="warning-text">
+            <mat-icon>info</mat-icon>
+            Note: Running these jobs may take some time for large datasets. Please be patient.
+          </p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

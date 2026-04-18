@@ -1,0 +1,131 @@
+<div class="profile-page">
+
+  <!-- Page header -->
+  <div class="profile-page-header">
+    <div class="profile-avatar-block">
+      <div class="profile-avatar">
+        <mat-icon>account_circle</mat-icon>
+      </div>
+      <div class="profile-identity">
+        <h1 class="profile-name">{{ profileForm.get('name')?.value || 'Your Name' }}</h1>
+        <p class="profile-email">{{ userEmailDisplay || 'No email set' }}</p>
+        <span class="profile-badge">
+          <mat-icon>verified_user</mat-icon>
+          Active Account
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info dialog template -->
+  <ng-template #infoDialog>
+    <div class="info-dialog-inner">
+      <div class="info-avatar"><mat-icon>account_circle</mat-icon></div>
+      <h3>{{ profileForm.get('name')?.value || 'Your Name' }}</h3>
+      <p class="info-email">{{ userEmailDisplay || 'No email set' }}</p>
+      <p class="info-hint">Email cannot be changed here. Contact an administrator.</p>
+    </div>
+  </ng-template>
+
+  <!-- Logout dialog -->
+  <ng-template #logoutDialog>
+    <div class="logout-dialog">
+      <div class="logout-icon"><mat-icon>info</mat-icon></div>
+      <h3>Profile Updated</h3>
+      <p>You'll be signed out to apply your changes. Please sign in again.</p>
+      <button mat-flat-button color="primary" (click)="closeLogoutDialog()">OK, Sign Me Out</button>
+    </div>
+  </ng-template>
+
+  <!-- Form card -->
+  <mat-card class="profile-card">
+    <mat-card-header class="profile-card-header">
+      <mat-card-title>Edit Profile</mat-card-title>
+      <mat-card-subtitle>Keep your information up to date</mat-card-subtitle>
+    </mat-card-header>
+
+    <form [formGroup]="profileForm" (ngSubmit)="updateProfile()" novalidate>
+      <mat-card-content class="profile-form-content">
+
+        <button type="button" class="mobile-info-btn" mat-stroked-button (click)="openInfoDialog(infoDialog)">
+          <mat-icon>info_outline</mat-icon> View Account Info
+        </button>
+
+        <div class="form-row-2">
+
+          <!-- Username read-only -->
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Username</mat-label>
+            <input matInput formControlName="username" readonly />
+            <mat-icon matSuffix>badge</mat-icon>
+            <mat-hint>Your login identifier — read only</mat-hint>
+          </mat-form-field>
+
+          <!-- Change username -->
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>New Username <span class="opt-label">(optional)</span></mat-label>
+            <input matInput formControlName="newUsername" placeholder="Leave blank to keep current" />
+            <mat-icon matSuffix>edit</mat-icon>
+            <mat-hint>3–50 characters, letters and numbers only</mat-hint>
+            <mat-error *ngIf="profileForm.get('newUsername')?.hasError('minlength')">
+              Minimum 3 characters
+            </mat-error>
+            <mat-error *ngIf="profileForm.get('newUsername')?.hasError('maxlength')">
+              Maximum 50 characters
+            </mat-error>
+            <mat-error *ngIf="profileForm.get('newUsername')?.hasError('pattern')">
+              Letters, numbers and underscores only
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Full name -->
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Full Name <span class="req-star">*</span></mat-label>
+            <input matInput formControlName="name" placeholder="Enter your full name" />
+            <mat-icon matSuffix>person</mat-icon>
+            <mat-error *ngIf="profileForm.get('name')?.hasError('required')">
+              Full name is required
+            </mat-error>
+            <mat-error *ngIf="profileForm.get('name')?.hasError('minlength')">
+              Minimum 2 characters
+            </mat-error>
+          </mat-form-field>
+
+          <!-- Phone -->
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Phone Number</mat-label>
+            <input matInput formControlName="phone" placeholder="+91 98765 43210" type="tel" />
+            <mat-icon matSuffix>phone</mat-icon>
+            <mat-error *ngIf="profileForm.get('phone')?.hasError('pattern')">
+              Enter a valid 10-digit mobile number
+            </mat-error>
+          </mat-form-field>
+
+        </div>
+
+        <!-- Address (full width) -->
+        <mat-form-field appearance="outline" class="field-full" style="margin-top:4px">
+          <mat-label>Address</mat-label>
+          <textarea matInput formControlName="address" rows="3" placeholder="Enter your address"></textarea>
+          <mat-icon matSuffix>location_on</mat-icon>
+          <mat-error *ngIf="profileForm.get('address')?.hasError('maxlength')">
+            Maximum 250 characters
+          </mat-error>
+        </mat-form-field>
+
+      </mat-card-content>
+
+      <mat-card-actions class="profile-actions">
+        <button type="submit" mat-flat-button color="primary" [disabled]="isLoading" class="save-btn">
+          <mat-spinner *ngIf="isLoading" diameter="18" class="btn-spinner"></mat-spinner>
+          <mat-icon *ngIf="!isLoading">save</mat-icon>
+          <span>{{ isLoading ? 'Saving…' : 'Save Changes' }}</span>
+        </button>
+        <button type="button" mat-stroked-button (click)="cancelUpdate()" class="cancel-btn">
+          <mat-icon>close</mat-icon> Cancel
+        </button>
+      </mat-card-actions>
+    </form>
+  </mat-card>
+
+</div>

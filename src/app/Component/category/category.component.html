@@ -1,0 +1,101 @@
+<div class="category-page">
+  <!-- Hero Section -->
+  <div class="hero-section">
+    <div class="hero-content">
+      <h1 class="hero-title">
+        <mat-icon class="hero-icon">category</mat-icon>
+        Product Category Management
+      </h1>
+      <p class="hero-subtitle">Organize and manage your product categories efficiently</p>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-container">
+    <mat-card class="stat-card stat-total">
+      <mat-card-content>
+        <div class="stat-icon">
+          <mat-icon>inventory_2</mat-icon>
+        </div>
+        <div class="stat-info">
+          <h3>{{ totalCategories }}</h3>
+          <p>Total Categories</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card stat-active">
+      <mat-card-content>
+        <div class="stat-icon">
+          <mat-icon>check_circle</mat-icon>
+        </div>
+        <div class="stat-info">
+          <h3>{{ activeCategories }}</h3>
+          <p>Active Categories</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card stat-inactive">
+      <mat-card-content>
+        <div class="stat-icon">
+          <mat-icon>cancel</mat-icon>
+        </div>
+        <div class="stat-info">
+          <h3>{{ totalCategories - activeCategories }}</h3>
+          <p>Inactive Categories</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Main Content -->
+  <div class="content-container">
+    <mat-card class="form-card">
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>{{ isEditMode ? 'edit' : 'add_circle' }}</mat-icon>
+          {{ isEditMode ? 'Edit Category' : 'Add New Category' }}
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <form [formGroup]="categoryForm" (ngSubmit)="onSubmit()" class="category-form">
+          <div class="form-fields">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Category Name</mat-label>
+              <input matInput formControlName="name" placeholder="Enter category name" required>
+              <mat-icon matPrefix>label</mat-icon>
+              <mat-error *ngIf="categoryForm.get('name')?.hasError('required')">
+                Category name is required
+              </mat-error>
+            </mat-form-field>
+
+            <div class="status-toggle">
+              <mat-slide-toggle formControlName="isActive" color="primary">
+                <span class="toggle-label">
+                  <mat-icon>{{ categoryForm.value.isActive ? 'visibility' : 'visibility_off' }}</mat-icon>
+                  {{ categoryForm.value.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </mat-slide-toggle>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button mat-raised-button color="primary" type="submit" class="btn-save">
+              <mat-icon>{{ isEditMode ? 'update' : 'save' }}</mat-icon>
+              {{ isEditMode ? 'Update Category' : 'Save Category' }}
+            </button>
+            <button mat-raised-button color="warn" type="button" (click)="resetForm()" class="btn-cancel" *ngIf="isEditMode">
+              <mat-icon>close</mat-icon>
+              Cancel
+            </button>
+            <button mat-raised-button color="accent" type="button" (click)="openCategoryList()" class="btn-view">
+              <mat-icon>list</mat-icon>
+              View All Categories ({{ totalCategories }})
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </div>
+</div>

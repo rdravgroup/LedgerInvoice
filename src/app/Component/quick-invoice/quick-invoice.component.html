@@ -1,0 +1,214 @@
+<div class="quick-invoice-container">
+  <mat-card class="invoice-card">
+    <mat-card-header>
+      <mat-card-title>Quick Invoice Calculator</mat-card-title>
+    </mat-card-header>
+    
+    <mat-card-content>
+      <!-- Saved Invoices Section -->
+      <div class="saved-invoices-section" *ngIf="invoices.length > 0">
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Load Saved Invoice</mat-label>
+         <mat-select [(ngModel)]="selectedInvoiceId" (selectionChange)="loadInvoice($event.value)">
+  <mat-option value="">Select an invoice...</mat-option>
+  <mat-option *ngFor="let inv of invoices" [value]="inv.quickInvoiceId">
+    {{ inv.customerName }} - ₹{{ inv.grandTotal | number:'1.2-2' }} ({{ inv.invoiceDate | date:'short' }})
+  </mat-option>
+</mat-select>
+        </mat-form-field>
+      </div>
+
+      <!-- Customer Section -->
+      <div class="customer-section">
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Customer Name</mat-label>
+          <input matInput [(ngModel)]="customerName" (input)="onCustomerSearch($event)" 
+                 [matAutocomplete]="customerAuto" placeholder="Enter or select customer"
+                 aria-label="Customer name input">
+          <mat-autocomplete #customerAuto="matAutocomplete">
+            <mat-optgroup label="Customers" *ngIf="filteredCustomers.length > 0">
+              <mat-option *ngFor="let cust of filteredCustomers" (click)="selectCustomer(cust)">
+                {{ cust.name }} ({{ cust.phone }})
+              </mat-option>
+            </mat-optgroup>
+            <mat-option *ngIf="filteredCustomers.length === 0" disabled>
+              No customers found
+            </mat-option>
+          </mat-autocomplete>
+        </mat-form-field>
+      </div>
+      
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+        <button mat-icon-button 
+                color="primary" 
+                (click)="toggleInvoiceList()"
+                matTooltip="View saved invoices"
+                matTooltipPosition="above"
+                aria-label="View saved invoices list">
+          <mat-icon>list</mat-icon>
+        </button>
+        <button mat-icon-button 
+                color="primary" 
+                (click)="addProduct()"
+                matTooltip="Add product line"
+                matTooltipPosition="above"
+                aria-label="Add product line to invoice">
+          <mat-icon>add_circle</mat-icon>
+        </button>
+        <button mat-icon-button 
+                color="accent" 
+                (click)="saveInvoice()"
+                [disabled]="isSavingInvoice"
+                matTooltip="Save invoice"
+                matTooltipPosition="above"
+                aria-label="Save invoice">
+          <mat-spinner *ngIf="isSavingInvoice" diameter="20" class="button-spinner"></mat-spinner>
+          <mat-icon *ngIf="!isSavingInvoice">save</mat-icon>
+        </button>
+        <button mat-icon-button 
+                color="warn" 
+                (click)="newInvoice()" 
+                [disabled]="items.length === 0"
+                matTooltip="Create new invoice"
+                matTooltipPosition="above"
+                aria-label="Create new invoice">
+          <mat-icon>add_notes</mat-icon>
+        </button>
+        <button mat-icon-button 
+                color="accent" 
+                (click)="downloadPDF()" 
+                [disabled]="!isValidForPrint()"
+                matTooltip="Download as PDF"
+                matTooltipPosition="above"
+                aria-label="Download invoice as PDF"
+                class="always-visible">
+          <mat-icon>download</mat-icon>
+        </button>
+        <button mat-icon-button 
+                color="accent" 
+                (click)="shareToWhatsApp()" 
+                [disabled]="!isValidForPrint()"
+                matTooltip="Share via WhatsApp"
+                matTooltipPosition="above"
+                aria-label="Share invoice via WhatsApp"
+                class="always-visible">
+          <mat-icon>share</mat-icon>
+        </button>
+        <button mat-icon-button 
+                color="accent" 
+                (click)="printInvoice()" 
+                [disabled]="!isValidForPrint()"
+                matTooltip="Print invoice"
+                matTooltipPosition="above"
+                aria-label="Print invoice"
+                class="always-visible">
+          <mat-icon>print</mat-icon>
+        </button>
+      </div>
+
+      <!-- Product Items Table -->
+      <div class="table-container" *ngIf="items.length > 0">
+        <table class="invoice-table">
+          <thead>
+            <tr>
+              <th>Sl.No</th>
+              <th>Product Name</th>
+              <th>Quantity</th>
+              <th>Rate</th>
+              <th>Total</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of items; let i = index">
+              <td class="sl-no-cell">{{ i + 1 }}</td>
+              <td class="product-cell">
+                <mat-form-field appearance="outline" class="table-form-field">
+                  <mat-label>Product</mat-label>
+                  <input matInput [(ngModel)]="item.product" (input)="onProductSearch($event, item)" 
+                         [matAutocomplete]="productAuto" placeholder="Select product">
+                  <mat-autocomplete #productAuto="matAutocomplete">
+                    <mat-optgroup label="Products" *ngIf="item.filteredProducts && item.filteredProducts.length > 0">
+                      <mat-option *ngFor="let prod of item.filteredProducts" (click)="selectProduct(prod, item)">
+                        {{ prod.productName }} - ₹{{ prod.rateWithTax || prod.rateWithoutTax || 0 | number:'1.2-2' }}
+                      </mat-option>
+                    </mat-optgroup>
+                    <mat-option *ngIf="!item.filteredProducts || item.filteredProducts.length === 0" disabled>
+                      No products found
+                    </mat-option>
+                  </mat-autocomplete>
+                </mat-form-field>
+              </td>
+              <td class="quantity-cell">
+                <mat-form-field appearance="outline" class="table-form-field">
+                  <mat-label>Qty</mat-label>
+                  <input matInput type="number" [(ngModel)]="item.quantity" 
+                         (ngModelChange)="calculateTotal(item)" 
+                         [max]="MAX_QUANTITY" placeholder="Qty"
+                         aria-label="Quantity">
+                </mat-form-field>
+              </td>
+              <td class="rate-cell">
+                <mat-form-field appearance="outline" class="table-form-field">
+                  <mat-label>Rate</mat-label>
+                  <input matInput type="number" [(ngModel)]="item.rate" 
+                         (ngModelChange)="calculateTotal(item)" 
+                         [max]="MAX_RATE" step="0.01" placeholder="Rate"
+                         aria-label="Rate per unit">
+                  <mat-currency-format matSuffix>₹</mat-currency-format>
+                </mat-form-field>
+              </td>
+              <td class="total-cell">₹{{ item.total | number:'1.2-2' }}</td>
+              <td class="action-cell">
+                <button mat-icon-button color="warn" (click)="deleteItem(i)" matTooltip="Delete item">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="grand-total">
+          <strong>Grand Total: ₹{{ getGrandTotal() | number:'1.2-2' }}</strong>
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="items.length === 0">
+        <mat-icon>receipt_long</mat-icon>
+        <p>No items added yet. Click "Add Product" to start.</p>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Hidden print area -->
+  <div id="invoice-print-area" style="display: none;">
+    <h1>Quick Invoice</h1>
+    <p><strong>Date:</strong> {{ today | date:'dd/MM/yyyy' }}</p>
+    <p><strong>Customer:</strong> {{ customerName || 'N/A' }}</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Sl.No</th>
+          <th>Product Name</th>
+          <th>Quantity</th>
+          <th>Rate</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of items; let i = index">
+          <td>{{ i + 1 }}</td>
+          <td>{{ item.product }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>₹{{ item.rate | number:'1.2-2' }}</td>
+          <td>₹{{ item.total | number:'1.2-2' }}</td>
+        </tr>
+        <tr class="total-row">
+          <td colspan="4" style="text-align: right;"><strong>Grand Total:</strong></td>
+          <td><strong>₹{{ getGrandTotal() | number:'1.2-2' }}</strong></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,19 @@
+<h2 mat-dialog-title>Map Company</h2>
+<mat-dialog-content [formGroup]="form">
+  <mat-form-field appearance="fill" style="width:100%">
+    <mat-label>Company</mat-label>
+    <mat-select formControlName="companyId" [disabled]="isLoading">
+      <mat-select-trigger>
+        {{ selectedCompanyName }}
+      </mat-select-trigger>
+      <mat-option *ngFor="let company of companies" [value]="company.companyId">
+        {{ company.name }} ({{ company.companyId }})
+      </mat-option>
+    </mat-select>
+    <mat-error *ngIf="form.get('companyId')?.hasError('required')">Company is required</mat-error>
+  </mat-form-field>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancel</button>
+  <button mat-flat-button color="primary" (click)="submit()" [disabled]="form.invalid || isLoading">Save</button>
+</mat-dialog-actions>

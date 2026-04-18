@@ -1,0 +1,182 @@
+/* ADD / EDIT CUSTOMER - Mobile First Responsive Design */
+.responsive-form {
+  padding: 8px;
+  max-width: 960px;
+  margin: 0 auto;
+  background: transparent;
+}
+
+/* Main card */
+.responsive-form mat-card {
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06) !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+/* Card header */
+.responsive-form mat-card-header {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  padding: 12px 16px !important;
+  margin: 0 !important;
+}
+.responsive-form mat-card mat-card-title {
+  color: white !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+}
+
+/* Card content - mobile first */
+.responsive-form mat-card-content {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  padding: 12px 12px 8px !important;
+}
+
+/* Form fields */
+.responsive-form mat-form-field {
+  width: 100% !important;
+}
+
+/* Checkbox styling */
+.responsive-form mat-checkbox {
+  display: block !important;
+  padding: 8px 0 !important;
+}
+
+/* Optional toggle button container */
+.responsive-form mat-card-content > div:has(button) {
+  display: flex !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+  align-items: stretch !important;
+}
+
+.responsive-form mat-card-content > div:has(button) mat-form-field {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.responsive-form mat-card-content > div:has(button) button {
+  border-radius: 6px !important;
+  font-size: 11px !important;
+  height: 38px !important;
+  padding: 0 10px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+/* Actions */
+.action-buttons {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  justify-content: center !important;
+  padding: 12px 12px 16px !important;
+  border-top: 1px solid #f1f5f9;
+}
+
+.action-buttons button,
+.action-buttons a {
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  height: 40px !important;
+  width: 100% !important;
+  padding: 0 12px !important;
+}
+
+/* Small screens (600px+) */
+@media (min-width: 600px) {
+  .responsive-form {
+    padding: 12px;
+  }
+
+  .responsive-form mat-card-header {
+    padding: 14px 18px !important;
+  }
+
+  .responsive-form mat-card mat-card-title {
+    font-size: 16px !important;
+  }
+
+  .responsive-form mat-card-content {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px !important;
+    padding: 14px 16px 8px !important;
+  }
+
+  .responsive-form mat-card-content > div:has(button) {
+    grid-column: 1 / -1 !important;
+  }
+
+  .responsive-form mat-card-content mat-form-field[fxFlex="100"] {
+    grid-column: 1 / -1 !important;
+  }
+
+  .action-buttons {
+    flex-direction: row !important;
+    justify-content: flex-end !important;
+    padding: 14px 16px 16px !important;
+  }
+
+  .action-buttons button,
+  .action-buttons a {
+    width: auto !important;
+    min-width: 110px !important;
+  }
+}
+
+/* Medium screens (768px+) */
+@media (min-width: 768px) {
+  .responsive-form {
+    padding: 16px;
+  }
+
+  .responsive-form mat-card-header {
+    padding: 16px 20px !important;
+  }
+
+  .responsive-form mat-card mat-card-title {
+    font-size: 18px !important;
+  }
+
+  .responsive-form mat-card-content {
+    padding: 16px 20px 8px !important;
+  }
+
+  .responsive-form mat-card-content > div:has(button) button {
+    font-size: 12px !important;
+  }
+
+  .action-buttons {
+    padding: 14px 20px 18px !important;
+  }
+
+  .action-buttons button,
+  .action-buttons a {
+    font-size: 14px !important;
+    height: 44px !important;
+    min-width: 130px !important;
+  }
+}
+
+/* Large screens (1024px+) */
+@media (min-width: 1024px) {
+  .responsive-form {
+    padding: 20px 24px;
+  }
+
+  .responsive-form mat-card-header {
+    padding: 18px 24px !important;
+  }
+
+  .responsive-form mat-card-content {
+    padding: 20px 24px 8px !important;
+    gap: 0 16px !important;
+  }
+}

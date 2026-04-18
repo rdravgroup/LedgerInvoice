@@ -1,0 +1,2 @@
+﻿outstanding_id,company_id,customer_id,total_invoiced,total_paid,outstanding_amount,current_0_30,overdue_31_60,overdue_61_90,overdue_90_plus,last_transaction_date,last_payment_date,highest_outstanding,average_days_to_pay,update_date
+7,COMP1,CUST00000025,1200.00,0.00,1200.00,1200.00,0.00,0.00,0.00,2026-04-01 00:00:00.000,NULL,0.00,0,2026-04-12 17:33:59.257

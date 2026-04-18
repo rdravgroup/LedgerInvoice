@@ -1,0 +1,6 @@
+{
+  "buildCommand": "ng build --configuration=production",
+  "outputDirectory": "dist/store-app/browser",
+  "framework": "angular",
+  "installCommand": "npm install"
+}

@@ -1,0 +1,233 @@
+<div class="auth-layout">
+  <!-- Left panel — brand (desktop only) -->
+  <div class="auth-brand" aria-hidden="true">
+    <div class="brand-content">
+      <img src="assets/logo/logo.png" alt="CodeXClear" class="brand-logo" />
+      <h1 class="brand-title">CodeXClear</h1>
+      <p class="brand-sub">Login Management System</p>
+      <div class="brand-tagline">Manage invoices, customers &amp; ledger in one place.</div>
+      <div class="brand-pills">
+        <span class="pill">📄 Invoicing</span>
+        <span class="pill">💰 Ledger</span>
+        <span class="pill">👥 Customers</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right panel — form -->
+  <div class="auth-form-panel">
+    <div class="auth-form-inner">
+      <a href="https://codexclear.com" target="_self" rel="noopener noreferrer" class="header-home-link" aria-label="Go to CodeXClear homepage">
+        <mat-icon aria-hidden="true">home</mat-icon>
+      </a>
+
+      <!-- Mobile logo (hidden on desktop) -->
+      <div class="mobile-logo">
+        <img src="assets/logo/logo.png" alt="CodeXClear" class="mobile-logo-img" />
+        <span class="mobile-brand-name">CodeXClear</span>
+      </div>
+
+      <h2 class="form-title">Welcome back</h2>
+      <p class="form-subtitle"> Sign in to your account</p>
+
+      <!-- Registration success banner -->
+      @if (registrationMessage) {
+        <div class="info-banner" role="alert">
+          <mat-icon aria-hidden="true">info</mat-icon>
+          <span>{{ registrationMessage }}</span>
+        </div>
+      }
+
+      <!-- Mode toggle (Password / OTP) -->
+      <div class="mode-toggle" role="tablist" aria-label="Login method">
+        <button
+          role="tab"
+          [attr.aria-selected]="loginMode === 'password'"
+          class="mode-btn"
+          [class.active]="loginMode === 'password'"
+          (click)="switchLoginMode('password')">
+          <mat-icon aria-hidden="true">lock</mat-icon>
+          Password
+        </button>
+        <button
+          role="tab"
+          [attr.aria-selected]="loginMode === 'otp'"
+          class="mode-btn"
+          [class.active]="loginMode === 'otp'"
+          (click)="switchLoginMode('otp')">
+          <mat-icon aria-hidden="true">mail</mat-icon>
+          OTP
+        </button>
+      </div>
+
+      <!-- PASSWORD LOGIN -->
+      @if (loginMode === 'password') {
+        <form [formGroup]="_loginForm" (ngSubmit)="proceedLogin()" novalidate>
+
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Username or Email</mat-label>
+            <input matInput formControlName="username" type="text"
+                   autocomplete="username" autocapitalize="none"
+                   placeholder="Enter username or email" />
+            <mat-icon matPrefix aria-hidden="true">person_outline</mat-icon>
+            <mat-error *ngIf="_loginForm.get('username')?.hasError('required')">
+              Username or email is required
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="field-full">
+            <mat-label>Password</mat-label>
+            <input matInput formControlName="password"
+                   [type]="showPassword ? 'text' : 'password'"
+                   autocomplete="current-password"
+                   placeholder="Enter your password" />
+            <mat-icon matPrefix aria-hidden="true">lock_outline</mat-icon>
+            <button mat-icon-button matSuffix type="button"
+                    (click)="togglePasswordVisibility()"
+                    [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
+              <mat-icon aria-hidden="true">{{ showPassword ? 'visibility' : 'visibility_off' }}</mat-icon>
+            </button>
+            <mat-error *ngIf="_loginForm.get('password')?.hasError('required')">
+              Password is required
+            </mat-error>
+          </mat-form-field>
+
+          <div class="form-row-between">
+            <mat-checkbox formControlName="rememberMe" color="primary">
+              Remember me
+            </mat-checkbox>
+           
+            <a routerLink="/forgetpassword" class="link-text">Forgot password?</a>
+          </div>
+
+          <button
+            type="submit"
+            mat-flat-button
+            color="primary"
+            class="submit-btn"
+            [disabled]="isLoading || _loginForm.invalid">
+            @if (isLoading) {
+              <mat-spinner diameter="18" style="display:inline-block;margin-right:8px;"></mat-spinner>
+              Signing in...
+            } @else {
+              <ng-container>
+                <mat-icon aria-hidden="true">login</mat-icon>
+                Sign In
+              </ng-container>
+            }
+          </button>
+        </form>
+
+        <!-- Google OAuth removed as requested -->
+      }
+
+      <!-- OTP LOGIN -->
+      @if (loginMode === 'otp') {
+        <form [formGroup]="_otpLoginForm" novalidate>
+
+          @if (!otpSent) {
+            <mat-form-field appearance="outline" class="field-full">
+              <mat-label>Email Address</mat-label>
+              <input matInput formControlName="email" type="email"
+                     autocomplete="email"
+                     placeholder="example@email.com" />
+              <mat-icon matPrefix aria-hidden="true">mail_outline</mat-icon>
+              <mat-error *ngIf="_otpLoginForm.get('email')?.hasError('required')">
+                Email is required
+              </mat-error>
+              <mat-error *ngIf="_otpLoginForm.get('email')?.hasError('email')">
+                Please enter a valid email address
+              </mat-error>
+            </mat-form-field>
+
+            <button
+              type="button"
+              mat-flat-button
+              color="primary"
+              class="submit-btn"
+              [disabled]="isLoading || _otpLoginForm.get('email')?.invalid || otpCooldown"
+              (click)="requestLoginOtp()">
+              @if (isLoading) {
+                <mat-spinner diameter="18" style="display:inline-block;margin-right:8px;"></mat-spinner>
+                Sending...
+              } @else if (otpCooldown) {
+                Wait {{ otpCooldownSeconds }}s
+              } @else {
+                <ng-container>
+                  <mat-icon aria-hidden="true">send</mat-icon>
+                  Send OTP
+                </ng-container>
+              }
+            </button>
+          }
+
+          @if (otpSent) {
+            <div class="otp-sent-banner" role="status">
+              <mat-icon aria-hidden="true">mark_email_read</mat-icon>
+              <div>
+                <div class="otp-sent-title">OTP sent to your email</div>
+                <div class="otp-sent-sub">{{ _otpLoginForm.get('email')?.value }}</div>
+              </div>
+            </div>
+
+            <mat-form-field appearance="outline" class="field-full">
+              <mat-label>6-Digit OTP Code</mat-label>
+              <input matInput formControlName="otp"
+                     type="text" maxlength="6"
+                     inputmode="numeric" autocomplete="one-time-code"
+                     placeholder="000000" class="otp-input"
+                     (input)="onOtpInput($event)" />
+              <mat-icon matPrefix aria-hidden="true">pin</mat-icon>
+              <mat-error *ngIf="_otpLoginForm.get('otp')?.hasError('required')">
+                OTP code is required
+              </mat-error>
+              <mat-error *ngIf="_otpLoginForm.get('otp')?.hasError('minlength')">
+                OTP must be 6 digits
+              </mat-error>
+            </mat-form-field>
+
+            <div class="otp-actions">
+              <button
+                type="button"
+                mat-flat-button
+                color="primary"
+                class="submit-btn"
+                [disabled]="otpVerifyLoading || _otpLoginForm.get('otp')?.invalid"
+                (click)="verifyOtpLogin()">
+                @if (otpVerifyLoading) {
+                  <mat-spinner diameter="18" style="display:inline-block;margin-right:8px;"></mat-spinner>
+                  Verifying...
+                } @else {
+                  <ng-container>
+                    <mat-icon aria-hidden="true">verified</mat-icon>
+                    Verify & Sign In
+                  </ng-container>
+                }
+              </button>
+
+              <button
+                type="button"
+                mat-button
+                color="primary"
+                [disabled]="otpCooldown"
+                (click)="requestLoginOtp()">
+                {{ otpCooldown ? 'Resend in ' + otpCooldownSeconds + 's' : 'Resend OTP' }}
+              </button>
+            </div>
+          }
+        </form>
+      }
+
+      <!-- Footer -->
+      <div class="auth-footer">
+        <span>Don't have an account?</span>
+        <a routerLink="/register" class="link-text" style="margin-left:6px;font-weight:600">
+          Create account
+        </a>
+
+        
+      </div>
+
+    </div>
+  </div>
+</div>
