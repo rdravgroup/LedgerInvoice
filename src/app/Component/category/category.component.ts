@@ -77,8 +77,10 @@ import { MatDialog, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dial
       right: -10px;
     }
     mat-dialog-content {
-      min-width: 600px;
+      min-width: clamp(320px, 70vw, 800px);
       max-height: 70vh;
+      box-sizing: border-box;
+      padding: 0 12px;
     }
     .search-field {
       width: 100%;
@@ -88,11 +90,17 @@ import { MatDialog, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dial
       width: 100%;
     }
     .status-badge {
-      padding: 6px 12px;
+      padding: clamp(4px,0.8vw,8px) clamp(8px,1.4vw,12px);
       border-radius: 12px;
-      font-size: 0.85rem;
+      font-size: clamp(11px,1.2vw,14px);
       font-weight: 500;
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .chip-active {
       background-color: #4caf50 !important;

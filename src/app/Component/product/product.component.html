@@ -91,7 +91,7 @@
         </mat-form-field>
 
         <div class="checkbox-field">
-          <mat-checkbox [(ngModel)]="showExtraFields" [ngModelOptions]="{standalone: true}">
+          <mat-checkbox [(ngModel)]="showExtraFields" (ngModelChange)="onShowExtraFieldsChange($event)" [ngModelOptions]="{standalone: true}">
             Show Extra Fields
           </mat-checkbox>
         </div>

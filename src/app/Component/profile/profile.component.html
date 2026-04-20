@@ -19,7 +19,7 @@
 
   <!-- Info dialog template -->
   <ng-template #infoDialog>
-    <div class="info-dialog-inner">
+    <div mat-dialog-content class="info-dialog-inner">
       <div class="info-avatar"><mat-icon>account_circle</mat-icon></div>
       <h3>{{ profileForm.get('name')?.value || 'Your Name' }}</h3>
       <p class="info-email">{{ userEmailDisplay || 'No email set' }}</p>
@@ -29,10 +29,12 @@
 
   <!-- Logout dialog -->
   <ng-template #logoutDialog>
-    <div class="logout-dialog">
+    <div mat-dialog-content class="logout-dialog">
       <div class="logout-icon"><mat-icon>info</mat-icon></div>
       <h3>Profile Updated</h3>
       <p>You'll be signed out to apply your changes. Please sign in again.</p>
+    </div>
+    <div mat-dialog-actions align="end">
       <button mat-flat-button color="primary" (click)="closeLogoutDialog()">OK, Sign Me Out</button>
     </div>
   </ng-template>

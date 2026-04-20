@@ -24,13 +24,11 @@
   margin-bottom: var(--space-2);
 }
 .list-card-avatar {
-  width: clamp(36px, 6vw, 44px);
-  height: clamp(36px, 6vw, 44px);
-  border-radius: 50%;
+  width: 44px; height: 44px; border-radius: 50%;
   background: var(--md-sys-color-primary-container);
   color: var(--md-sys-color-on-primary-container);
   display: flex; align-items: center; justify-content: center;
-  font-size: clamp(14px, 2.4vw, 18px); font-weight: 700; flex-shrink: 0;
+  font-size: 18px; font-weight: 700; flex-shrink: 0;
 }
 .list-card-info { flex: 1; min-width: 0; }
 .list-card-name {
@@ -78,17 +76,15 @@
 .table-row { transition: background var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard); }
 .table-row:hover { background: rgba(79, 70, 229, 0.04); }
 
-.cell-with-avatar { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.cell-with-avatar { display: flex; align-items: center; gap: 10px; }
 .cell-avatar {
-  width: clamp(28px, 4.5vw, 32px);
-  height: clamp(28px, 4.5vw, 32px);
-  border-radius: 50%;
+  width: 32px; height: 32px; border-radius: 50%;
   background: var(--md-sys-color-primary-container);
   color: var(--md-sys-color-on-primary-container);
   display: flex; align-items: center; justify-content: center;
-  font-size: clamp(11px, 1.6vw, 13px); font-weight: 700; flex-shrink: 0;
+  font-size: 13px; font-weight: 700; flex-shrink: 0;
 }
-.cell-primary { font-size: clamp(12px, 1.6vw, 13px); font-weight: 600; color: var(--md-sys-color-on-surface); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.cell-primary { font-size: 13px; font-weight: 600; color: var(--md-sys-color-on-surface); }
 .cell-sub     { font-size: 12px; color: var(--md-sys-color-on-surface-variant); }
 .actions-cell { display: flex; }
 .actions-cell button { min-width: 44px !important; min-height: 44px !important; }

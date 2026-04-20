@@ -1,0 +1,194 @@
+/* ============================================================
+   tokens.css — Material Design 3 System Tokens
+   Import as the FIRST stylesheet in styles.css
+   ============================================================ */
+
+:root {
+  /* ── MD3 Primary role ───────────────────────────────────── */
+  --md-sys-color-primary:              #4f46e5;
+  --md-sys-color-on-primary:           #ffffff;
+  --md-sys-color-primary-container:    #e0e7ff;
+  --md-sys-color-on-primary-container: #1e1b4b;
+  --md-sys-color-primary-fixed:        #e0e7ff;
+  --md-sys-color-primary-fixed-dim:    #c7d2fe;
+
+  /* ── MD3 Secondary role ─────────────────────────────────── */
+  --md-sys-color-secondary:              #6366f1;
+  --md-sys-color-on-secondary:           #ffffff;
+  --md-sys-color-secondary-container:    #e0e7ff;
+  --md-sys-color-on-secondary-container: #312e81;
+
+  /* ── MD3 Tertiary role ──────────────────────────────────── */
+  --md-sys-color-tertiary:              #7c3aed;
+  --md-sys-color-on-tertiary:           #ffffff;
+  --md-sys-color-tertiary-container:    #ede9fe;
+  --md-sys-color-on-tertiary-container: #4c1d95;
+
+  /* ── MD3 Error role ─────────────────────────────────────── */
+  --md-sys-color-error:              #dc2626;
+  --md-sys-color-on-error:           #ffffff;
+  --md-sys-color-error-container:    #fef2f2;
+  --md-sys-color-on-error-container: #7f1d1d;
+
+  /* ── MD3 Custom semantic roles ──────────────────────────── */
+  --md-sys-color-success:              #059669;
+  --md-sys-color-on-success:           #ffffff;
+  --md-sys-color-success-container:    #ecfdf5;
+  --md-sys-color-on-success-container: #064e3b;
+
+  --md-sys-color-warning:              #d97706;
+  --md-sys-color-on-warning:           #ffffff;
+  --md-sys-color-warning-container:    #fffbeb;
+  --md-sys-color-on-warning-container: #78350f;
+
+  /* ── MD3 Surface / Background roles ────────────────────── */
+  --md-sys-color-background:           #f8fafc;
+  --md-sys-color-on-background:        #0f172a;
+  --md-sys-color-surface:              #ffffff;
+  --md-sys-color-on-surface:           #0f172a;
+  --md-sys-color-surface-variant:      #f1f5f9;
+  --md-sys-color-on-surface-variant:   #64748b;
+  --md-sys-color-surface-container:    #f1f5f9;
+  --md-sys-color-surface-container-high: #e2e8f0;
+  --md-sys-color-surface-bright:       #ffffff;
+  --md-sys-color-surface-dim:          #f1f5f9;
+
+  /* ── MD3 Outline roles ──────────────────────────────────── */
+  --md-sys-color-outline:         #e2e8f0;
+  --md-sys-color-outline-variant: #cbd5e1;
+
+  /* ── MD3 Inverse roles ──────────────────────────────────── */
+  --md-sys-color-inverse-surface:    #1e293b;
+  --md-sys-color-inverse-on-surface: #f1f5f9;
+
+  /* ── MD3 Scrim / Shadow ─────────────────────────────────── */
+  --md-sys-color-scrim:   rgba(0, 0, 0, 0.32);
+  --md-sys-color-shadow:  rgba(0, 0, 0, 0.08);
+
+  /* ── MD3 Elevation (tonal surface overlays) ─────────────── */
+  --md-sys-elevation-0: none;
+  --md-sys-elevation-1: 0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
+  --md-sys-elevation-2: 0 3px 8px rgba(0,0,0,.09), 0 1px 3px rgba(0,0,0,.05);
+  --md-sys-elevation-3: 0 6px 16px rgba(0,0,0,.10), 0 2px 6px rgba(0,0,0,.06);
+  --md-sys-elevation-4: 0 8px 24px rgba(0,0,0,.12), 0 3px 8px rgba(0,0,0,.07);
+  --md-sys-elevation-5: 0 12px 32px rgba(0,0,0,.14), 0 4px 12px rgba(0,0,0,.08);
+
+  /* ── MD3 Shape (corner radius) ──────────────────────────── */
+  --md-sys-shape-corner-none:        0px;
+  --md-sys-shape-corner-extra-small: 4px;
+  --md-sys-shape-corner-small:       8px;
+  --md-sys-shape-corner-medium:      12px;
+  --md-sys-shape-corner-large:       16px;
+  --md-sys-shape-corner-extra-large: 28px;
+  --md-sys-shape-corner-full:        9999px;
+
+  /* ── MD3 Typography ─────────────────────────────────────── */
+  --md-sys-typescale-font-family:          'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --md-sys-typescale-mono-family:          'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+
+  --md-sys-typescale-display-large-size:   57px;
+  --md-sys-typescale-display-medium-size:  45px;
+  --md-sys-typescale-display-small-size:   36px;
+  --md-sys-typescale-headline-large-size:  32px;
+  --md-sys-typescale-headline-medium-size: 28px;
+  --md-sys-typescale-headline-small-size:  24px;
+  --md-sys-typescale-title-large-size:     22px;
+  --md-sys-typescale-title-medium-size:    16px;
+  --md-sys-typescale-title-small-size:     14px;
+  --md-sys-typescale-body-large-size:      16px;
+  --md-sys-typescale-body-medium-size:     14px;
+  --md-sys-typescale-body-small-size:      12px;
+  --md-sys-typescale-label-large-size:     14px;
+  --md-sys-typescale-label-medium-size:    12px;
+  --md-sys-typescale-label-small-size:     11px;
+
+  --md-sys-typescale-weight-regular: 400;
+  --md-sys-typescale-weight-medium:  500;
+  --md-sys-typescale-weight-bold:    700;
+
+  /* ── MD3 Motion ─────────────────────────────────────────── */
+  --md-sys-motion-easing-linear:           cubic-bezier(0, 0, 1, 1);
+  --md-sys-motion-easing-standard:         cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-standard-decel:   cubic-bezier(0, 0, 0, 1);
+  --md-sys-motion-easing-standard-accel:   cubic-bezier(0.3, 0, 1, 1);
+  --md-sys-motion-easing-emphasized:       cubic-bezier(0.2, 0, 0, 1);
+  --md-sys-motion-easing-emphasized-decel: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --md-sys-motion-easing-emphasized-accel: cubic-bezier(0.3, 0, 0.8, 0.15);
+
+  --md-sys-motion-duration-short1:  50ms;
+  --md-sys-motion-duration-short2:  100ms;
+  --md-sys-motion-duration-short3:  150ms;
+  --md-sys-motion-duration-short4:  200ms;
+  --md-sys-motion-duration-medium1: 250ms;
+  --md-sys-motion-duration-medium2: 300ms;
+  --md-sys-motion-duration-medium3: 350ms;
+  --md-sys-motion-duration-medium4: 400ms;
+  --md-sys-motion-duration-long1:   450ms;
+  --md-sys-motion-duration-long2:   500ms;
+
+  /* ── Spacing (4-pt grid) ────────────────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  24px;
+  --space-6:  32px;
+  --space-7:  48px;
+  --space-8:  64px;
+
+  /* ── Legacy aliases (keep existing code working) ─────────── */
+  --color-primary:        var(--md-sys-color-primary);
+  --color-primary-light:  var(--md-sys-color-primary-container);
+  --color-primary-dark:   var(--md-sys-color-on-primary-container);
+  --color-primary-50:     var(--md-sys-color-primary-container);
+  --color-primary-100:    var(--md-sys-color-primary-fixed);
+  --color-success:        var(--md-sys-color-success);
+  --color-success-light:  var(--md-sys-color-success-container);
+  --color-warning:        var(--md-sys-color-warning);
+  --color-warning-light:  var(--md-sys-color-warning-container);
+  --color-danger:         var(--md-sys-color-error);
+  --color-danger-light:   var(--md-sys-color-error-container);
+  --color-bg:             var(--md-sys-color-background);
+  --color-surface:        var(--md-sys-color-surface);
+  --color-surface-2:      var(--md-sys-color-surface-variant);
+  --color-surface-3:      var(--md-sys-color-surface-container-high);
+  --color-ink:            var(--md-sys-color-on-background);
+  --color-ink-2:          #334155;
+  --color-ink-3:          var(--md-sys-color-on-surface-variant);
+  --color-ink-4:          #94a3b8;
+  --color-border:         var(--md-sys-color-outline);
+  --color-border-strong:  var(--md-sys-color-outline-variant);
+  --shadow-sm:            var(--md-sys-elevation-1);
+  --shadow-md:            var(--md-sys-elevation-2);
+  --shadow-lg:            var(--md-sys-elevation-3);
+  --radius-sm:            var(--md-sys-shape-corner-small);
+  --radius-md:            var(--md-sys-shape-corner-medium);
+  --radius-lg:            var(--md-sys-shape-corner-large);
+  --radius-xl:            var(--md-sys-shape-corner-extra-large);
+  --radius-full:          var(--md-sys-shape-corner-full);
+  --font-sans:            var(--md-sys-typescale-font-family);
+  --font-mono:            var(--md-sys-typescale-mono-family);
+  --sidenav-width:        240px;
+  --toolbar-height:       56px;
+  --bottom-nav-height:    56px;
+}
+
+/* ── Dark mode overrides ─────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --md-sys-color-primary:              #a5b4fc;
+    --md-sys-color-on-primary:           #1e1b4b;
+    --md-sys-color-primary-container:    #3730a3;
+    --md-sys-color-on-primary-container: #c7d2fe;
+    --md-sys-color-background:           #0f1117;
+    --md-sys-color-on-background:        #f1f5f9;
+    --md-sys-color-surface:              #1a1f2e;
+    --md-sys-color-on-surface:           #f1f5f9;
+    --md-sys-color-surface-variant:      #252d3d;
+    --md-sys-color-on-surface-variant:   #94a3b8;
+    --md-sys-color-surface-container:    #252d3d;
+    --md-sys-color-surface-container-high: #2e3a4e;
+    --md-sys-color-outline:              #334155;
+    --md-sys-color-outline-variant:      #475569;
+  }
+}

@@ -126,8 +126,8 @@
       <mat-icon matPrefix>search</mat-icon>
     </mat-form-field>
 
-    <!-- Table -->
-    <mat-card class="table-card">
+    <!-- Desktop Table View -->
+    <mat-card class="table-card desktop-view">
       <table mat-table [dataSource]="dataSource" matSort class="outstanding-table">
         
         <!-- Customer Name -->
@@ -228,6 +228,73 @@
       <!-- Paginator (server-side) -->
       <mat-paginator [pageSizeOptions]="[5, 10, 20, 50]" [pageSize]="pageSize" [pageIndex]="currentPage - 1" [length]="totalRecords" showFirstLastButtons></mat-paginator>
     </mat-card>
+
+    <!-- Mobile Card View -->
+    <div class="mobile-list mobile-view">
+      <div class="mobile-card" *ngFor="let element of dataSource.data">
+        <!-- Card Header: Customer Name -->
+        <div class="card-header">
+          <div class="customer-info">
+            <div class="customer-name">{{ element.customerName }}</div>
+            <div class="customer-id">ID: {{ element.customerId }}</div>
+          </div>
+          <div class="outstanding-badge" [ngClass]="getStatusCss(element.daysOutstanding)">
+            {{ getStatusLabel(element.daysOutstanding) }}
+          </div>
+        </div>
+
+        <!-- Card Body: Key Metrics -->
+        <div class="card-body">
+          <div class="metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Total Invoiced</span>
+              <span class="metric-value">{{ formatCurrency(element.totalInvoiced) }}</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Total Paid</span>
+              <span class="metric-value paid">{{ formatCurrency(element.totalPaid) }}</span>
+            </div>
+          </div>
+
+          <div class="metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Outstanding</span>
+              <span class="metric-value outstanding">{{ formatCurrency(getCalculatedBalance(element.totalInvoiced, element.totalPaid)) }}</span>
+            </div>
+            <div class="metric-item">
+              <span class="metric-label">Days Overdue</span>
+              <span class="metric-value days" [ngClass]="getStatusCss(element.daysOutstanding)">{{ element.daysOutstanding }} days</span>
+            </div>
+          </div>
+
+          <div class="metric-row">
+            <div class="metric-item">
+              <span class="metric-label">Last Payment</span>
+              <span class="metric-value">{{ formatDate(element.lastPaymentDate) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card Actions -->
+        <div class="card-actions">
+          <button mat-icon-button color="primary" (click)="viewCustomer(element.customerId)" matTooltip="View Details">
+            <mat-icon>visibility</mat-icon>
+          </button>
+          <button mat-icon-button color="info" (click)="viewPayments(element.customerId, element.customerName)" matTooltip="View Payments">
+            <mat-icon>receipt_long</mat-icon>
+          </button>
+          <button mat-icon-button color="warn" (click)="openPaymentPrompt(element)" matTooltip="Record Payment">
+            <mat-icon>attach_money</mat-icon>
+          </button>
+          <button mat-icon-button color="accent" (click)="sendReminder(element.customerId, element.customerName)" matTooltip="Send Reminder">
+            <mat-icon>mail</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Mobile Paginator -->
+      <mat-paginator [pageSizeOptions]="[5, 10]" [pageSize]="pageSize" [pageIndex]="currentPage - 1" [length]="totalRecords" showFirstLastButtons class="mobile-paginator"></mat-paginator>
+    </div>
 
     <!-- No Data Message -->
     <mat-card *ngIf="dataSource.data.length === 0" class="no-data-card">

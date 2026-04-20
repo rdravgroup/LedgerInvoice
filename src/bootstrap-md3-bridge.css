@@ -1,0 +1,121 @@
+/* ============================================================
+   bootstrap-md3-bridge.css
+   Import AFTER Bootstrap and AFTER tokens.css in styles.css
+   Maps Bootstrap CSS variables → MD3 tokens so Bootstrap
+   utilities (grid, spacing, flexbox) use MD3 colors.
+   ============================================================ */
+
+:root {
+  /* ── Bootstrap color system → MD3 ──────────────────────── */
+  --bs-primary:        var(--md-sys-color-primary);
+  --bs-primary-rgb:    79, 70, 229;
+  --bs-secondary:      var(--md-sys-color-secondary);
+  --bs-secondary-rgb:  99, 102, 241;
+  --bs-success:        var(--md-sys-color-success);
+  --bs-success-rgb:    5, 150, 105;
+  --bs-danger:         var(--md-sys-color-error);
+  --bs-danger-rgb:     220, 38, 38;
+  --bs-warning:        var(--md-sys-color-warning);
+  --bs-warning-rgb:    217, 119, 6;
+  --bs-info:           #0284c7;
+  --bs-info-rgb:       2, 132, 199;
+  --bs-light:          var(--md-sys-color-surface-variant);
+  --bs-dark:           var(--md-sys-color-inverse-surface);
+
+  /* ── Bootstrap body / surface ───────────────────────────── */
+  --bs-body-color:      var(--md-sys-color-on-surface);
+  --bs-body-bg:         var(--md-sys-color-background);
+  --bs-body-font-family: var(--md-sys-typescale-font-family);
+  --bs-body-font-size:  var(--md-sys-typescale-body-large-size);
+  --bs-body-font-weight: var(--md-sys-typescale-weight-regular);
+  --bs-body-line-height: 1.6;
+
+  /* ── Bootstrap border ───────────────────────────────────── */
+  --bs-border-color:         var(--md-sys-color-outline);
+  --bs-border-color-translucent: rgba(0,0,0,.08);
+  --bs-border-radius:        var(--md-sys-shape-corner-small);
+  --bs-border-radius-sm:     var(--md-sys-shape-corner-extra-small);
+  --bs-border-radius-lg:     var(--md-sys-shape-corner-medium);
+  --bs-border-radius-xl:     var(--md-sys-shape-corner-large);
+  --bs-border-radius-xxl:    var(--md-sys-shape-corner-extra-large);
+  --bs-border-radius-pill:   var(--md-sys-shape-corner-full);
+
+  /* ── Bootstrap card ─────────────────────────────────────── */
+  --bs-card-spacer-y:        var(--space-4);
+  --bs-card-spacer-x:        var(--space-4);
+  --bs-card-bg:              var(--md-sys-color-surface);
+  --bs-card-border-color:    var(--md-sys-color-outline);
+  --bs-card-border-radius:   var(--md-sys-shape-corner-large);
+  --bs-card-box-shadow:      var(--md-sys-elevation-2);
+  --bs-card-cap-bg:          var(--md-sys-color-surface-variant);
+
+  /* ── Bootstrap table ────────────────────────────────────── */
+  --bs-table-color:             var(--md-sys-color-on-surface);
+  --bs-table-bg:                transparent;
+  --bs-table-border-color:      var(--md-sys-color-outline);
+  --bs-table-striped-bg:        var(--md-sys-color-surface-variant);
+  --bs-table-hover-bg:          rgba(79, 70, 229, 0.04);
+  --bs-table-active-bg:         rgba(79, 70, 229, 0.08);
+
+  /* ── Bootstrap form ─────────────────────────────────────── */
+  --bs-form-control-bg:             var(--md-sys-color-surface);
+  --bs-form-control-border-color:   var(--md-sys-color-outline-variant);
+  --bs-form-control-focus-border-color: var(--md-sys-color-primary);
+  --bs-form-control-focus-box-shadow: 0 0 0 3px rgba(79,70,229,.12);
+
+  /* ── Bootstrap breakpoints aligned to MD3 ──────────────── */
+  /* Note: Bootstrap breakpoints are compile-time SCSS variables,
+     these are runtime overrides used by custom JS/CSS only.
+     For SCSS build, override $grid-breakpoints in _variables.scss */
+  --bs-breakpoint-sm:  600px;
+  --bs-breakpoint-md:  768px;
+  --bs-breakpoint-lg:  1024px;
+  --bs-breakpoint-xl:  1240px;
+  --bs-breakpoint-xxl: 1440px;
+}
+
+/* ── Override Bootstrap .btn to use MD3 shape ──────────────── */
+.btn {
+  border-radius: var(--md-sys-shape-corner-full) !important;
+  font-weight: var(--md-sys-typescale-weight-medium);
+  letter-spacing: 0.01em;
+  transition: box-shadow var(--md-sys-motion-duration-short3)
+              var(--md-sys-motion-easing-standard),
+              background-color var(--md-sys-motion-duration-short3)
+              var(--md-sys-motion-easing-standard);
+}
+
+/* ── Bootstrap table aligned to MD3 data table ─────────────── */
+.table th {
+  font-size: var(--md-sys-typescale-label-large-size);
+  font-weight: var(--md-sys-typescale-weight-medium);
+  color: var(--md-sys-color-on-surface-variant);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  background-color: var(--md-sys-color-surface-variant);
+  border-bottom: 2px solid var(--md-sys-color-outline-variant);
+}
+
+.table td {
+  font-size: var(--md-sys-typescale-body-medium-size);
+  color: var(--md-sys-color-on-surface);
+  border-bottom-color: var(--md-sys-color-outline);
+  vertical-align: middle;
+}
+
+/* ── Bootstrap .form-control aligned to MD3 text field ──────── */
+.form-control,
+.form-select {
+  background-color: var(--md-sys-color-surface);
+  border-color: var(--md-sys-color-outline-variant);
+  color: var(--md-sys-color-on-surface);
+  border-radius: var(--md-sys-shape-corner-extra-small);
+  min-height: 44px;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--md-sys-color-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  background-color: var(--md-sys-color-surface);
+}

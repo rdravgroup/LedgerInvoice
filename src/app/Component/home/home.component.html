@@ -30,61 +30,61 @@
   <!-- KPI Cards -->
   @if (!loading) {
     <div class="kpi-grid">
-      <mat-card class="kpi-card kpi-primary" routerLink="/ledger-dashboard">
+      <mat-card class="kpi-card kpi-primary" routerLink="/ledger-dashboard" matTooltip="Total A/R: ₹{{ totalAR | number:'1.0-0' }}" matTooltipPosition="above">
         <mat-card-content>
           <div class="kpi-icon-wrap">
             <mat-icon aria-hidden="true">account_balance_wallet</mat-icon>
           </div>
           <div class="kpi-body">
-            <div class="kpi-value">₹{{ totalAR | number:'1.0-0' }}</div>
+            <div class="kpi-value" [title]="'₹' + (totalAR | number:'1.0-0')">₹{{ totalAR | number:'1.0-0' }}</div>
             <div class="kpi-label">Total A/R</div>
           </div>
         </mat-card-content>
       </mat-card>
 
-      <mat-card class="kpi-card kpi-success" routerLink="/ledger-dashboard">
+      <mat-card class="kpi-card kpi-success" routerLink="/ledger-dashboard" matTooltip="Total Paid: ₹{{ totalPaid | number:'1.0-0' }}" matTooltipPosition="above">
         <mat-card-content>
           <div class="kpi-icon-wrap">
             <mat-icon aria-hidden="true">check_circle</mat-icon>
           </div>
           <div class="kpi-body">
-            <div class="kpi-value">₹{{ totalPaid | number:'1.0-0' }}</div>
+            <div class="kpi-value" [title]="'₹' + (totalPaid | number:'1.0-0')">₹{{ totalPaid | number:'1.0-0' }}</div>
             <div class="kpi-label">Total Paid</div>
           </div>
         </mat-card-content>
       </mat-card>
 
-      <mat-card class="kpi-card kpi-danger" routerLink="/ledger-outstanding-ar">
+      <mat-card class="kpi-card kpi-danger" routerLink="/ledger-outstanding-ar" matTooltip="Overdue Amount: ₹{{ overdueAmount | number:'1.0-0' }}" matTooltipPosition="above">
         <mat-card-content>
           <div class="kpi-icon-wrap">
             <mat-icon aria-hidden="true">trending_up</mat-icon>
           </div>
           <div class="kpi-body">
-            <div class="kpi-value">₹{{ overdueAmount | number:'1.0-0' }}</div>
+            <div class="kpi-value" [title]="'₹' + (overdueAmount | number:'1.0-0')">₹{{ overdueAmount | number:'1.0-0' }}</div>
             <div class="kpi-label">Overdue Amount</div>
           </div>
         </mat-card-content>
       </mat-card>
 
-      <mat-card class="kpi-card kpi-success" routerLink="/customer">
+      <mat-card class="kpi-card kpi-success" routerLink="/customer" matTooltip="Active Customers: {{ customerCount }}" matTooltipPosition="above">
         <mat-card-content>
           <div class="kpi-icon-wrap">
             <mat-icon aria-hidden="true">people</mat-icon>
           </div>
           <div class="kpi-body">
-            <div class="kpi-value">{{ customerCount }}</div>
+            <div class="kpi-value" [title]="customerCount.toString()">{{ customerCount }}</div>
             <div class="kpi-label">Active Customers</div>
           </div>
         </mat-card-content>
       </mat-card>
 
-      <mat-card class="kpi-card kpi-info" routerLink="/listinvoice">
+      <mat-card class="kpi-card kpi-info" routerLink="/listinvoice" matTooltip="Invoices This Month: {{ invoiceCount }}" matTooltipPosition="above">
         <mat-card-content>
           <div class="kpi-icon-wrap">
             <mat-icon aria-hidden="true">receipt_long</mat-icon>
           </div>
           <div class="kpi-body">
-            <div class="kpi-value">{{ invoiceCount }}</div>
+            <div class="kpi-value" [title]="invoiceCount.toString()">{{ invoiceCount }}</div>
             <div class="kpi-label">Invoices This Month</div>
           </div>
         </mat-card-content>

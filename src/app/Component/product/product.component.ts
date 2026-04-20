@@ -27,7 +27,34 @@ import { MatDialog, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dial
         <mat-icon matPrefix>search</mat-icon>
       </mat-form-field>
 
-      <table mat-table [dataSource]="dataSource" matSort class="product-table">
+      <!-- Mobile card list (shown on small viewports) -->
+      <div class="mobile-only mobile-card-list">
+        <mat-card class="list-card" *ngFor="let element of dataSource.filteredData">
+          <mat-card-content>
+            <div class="list-card-header">
+              <div class="list-card-avatar">{{ element.productName?.charAt(0) }}</div>
+              <div class="list-card-info">
+                <div class="list-card-name">{{ element.productName }}</div>
+                <div class="list-card-sub">{{ element.categoryCode }} • {{ element.rateWithTax | currency:'INR' }}</div>
+              </div>
+            </div>
+            <div class="list-card-company">
+              <mat-icon>inventory_2</mat-icon>
+              <span>{{ element.measurement }}</span>
+            </div>
+            <div class="list-card-actions">
+              <button mat-icon-button color="primary" (click)="onEdit(element)" matTooltip="Edit">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="onDelete(element)" matTooltip="Delete">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <table mat-table [dataSource]="dataSource" matSort class="desktop-only product-table">
         <ng-container matColumnDef="productName">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Product Name</th>
           <td mat-cell *matCellDef="let element">{{ element.productName }}</td>
@@ -56,7 +83,7 @@ import { MatDialog, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dial
         <ng-container matColumnDef="isActive">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
           <td mat-cell *matCellDef="let element">
-            <span [class]="element.isActive ? 'chip-active' : 'chip-inactive'" class="status-badge">
+            <span class="status-badge" [ngClass]="{ 'active': element.isActive, 'inactive': !element.isActive }">
               {{ element.isActive ? 'Active' : 'Inactive' }}
             </span>
           </td>
@@ -99,15 +126,30 @@ import { MatDialog, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dial
       top: -10px;
       right: -10px;
     }
-    mat-dialog-content { min-width: 800px; max-height: 70vh; }
+    mat-dialog-content { min-width: clamp(320px, 70vw, 800px); max-height: 70vh; box-sizing: border-box; padding: 0 12px; }
     .search-field { width: 100%; margin-bottom: 20px; }
     .product-table { width: 100%; }
-    .status-badge { padding: 6px 12px; border-radius: 12px; font-size: 0.85rem; font-weight: 500; display: inline-block; }
-    .chip-active { background-color: #4caf50 !important; color: white; }
-    .chip-inactive { background-color: #f44336 !important; color: white; }
-      .purchase-highlight { background-color: #8B0000 !important; color: #fff !important; padding: 4px 8px; border-radius: 6px; display: inline-block; }
+    .status-badge { padding: clamp(4px,0.8vw,8px) clamp(8px,1.4vw,12px); border-radius: 12px; font-size: clamp(11px,1.2vw,14px); font-weight: 500; display: inline-flex; align-items:center; justify-content:center; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    /* Use MD3 semantic token classes (defined in md3-utilities.css) for colors */
+    /* .status-badge.active / .status-badge.inactive are handled globally by md3-utilities */
+    .purchase-highlight { background-color: var(--md-sys-color-surface-container-high) !important; color: var(--md-sys-color-on-surface) !important; padding: 4px 8px; border-radius: 6px; display: inline-block; }
+    /* Mobile card list styling (spacing & card appearance) */
+    .mobile-card-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+    .mobile-card-list.hidden { display: none; }
+    .list-card {
+      border-radius: var(--md-sys-shape-corner-medium) !important;
+      box-shadow: var(--md-sys-elevation-1) !important;
+      border: 1px solid var(--md-sys-color-outline) !important;
+      margin-bottom: var(--space-2);
+    }
+    .list-card mat-card-content { padding: var(--space-3) var(--space-4) !important; }
+    .list-card-actions { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
     @media (max-width: 768px) { mat-dialog-content { min-width: 90vw; } }
-  `]
+  `],
 })
 export class ProductListDialogComponent implements OnInit {
   dataSource: any;
@@ -150,7 +192,7 @@ export class ProductListDialogComponent implements OnInit {
   standalone: true,
   imports: [CommonModule, MaterialModule, ReactiveFormsModule, FormsModule],
   templateUrl: './product.component.html',
-  styleUrl: './product.component.css'
+  styleUrls: ['./product.component.css']
 })
 export class ProductComponent implements OnInit {
   productForm!: FormGroup;
@@ -161,7 +203,7 @@ export class ProductComponent implements OnInit {
   editProductCode: string = '';
   totalProducts = 0;
   activeProducts = 0;
-  showExtraFields = false;
+  showExtraFields = true;
 
   constructor(
     private fb: FormBuilder,
@@ -183,10 +225,10 @@ export class ProductComponent implements OnInit {
       measurement: ['', Validators.required],
       hsnSacNumber: [''],
       categoryCode: ['', Validators.required],
-      cgstRate: [{value: 9, disabled: true}, [Validators.required, Validators.min(0)]],
-      scgstRate: [{value: 9, disabled: true}, [Validators.required, Validators.min(0)]],
-      totalGstRate: [{value: 18, disabled: true}, [Validators.required, Validators.min(0)]],
-      rateWithoutTax: [{value: 0, disabled: true}, Validators.min(0)],
+      cgstRate: [9, [Validators.required, Validators.min(0)]],
+      scgstRate: [9, [Validators.required, Validators.min(0)]],
+      totalGstRate: [18, [Validators.required, Validators.min(0)]],
+      rateWithoutTax: [0, Validators.min(0)],
       rateWithTax: [0, [Validators.required, Validators.min(0)]],
       // Purchase fields
       purchaseRate: [null, [Validators.min(0)]],
@@ -194,6 +236,22 @@ export class ProductComponent implements OnInit {
       remark: [''],
       isActive: [true]
     });
+    // Ensure form controls match initial showExtraFields state
+    this.setExtraFieldsState(this.showExtraFields);
+  }
+
+  private setExtraFieldsState(enabled: boolean) {
+    const keys = ['cgstRate', 'scgstRate', 'totalGstRate', 'rateWithoutTax'];
+    for (const k of keys) {
+      const c = this.productForm.get(k);
+      if (!c) { continue; }
+      if (enabled) { c.enable({ emitEvent: false }); } else { c.disable({ emitEvent: false }); }
+    }
+  }
+
+  onShowExtraFieldsChange(checked: boolean) {
+    this.showExtraFields = !!checked;
+    if (this.productForm) { this.setExtraFieldsState(this.showExtraFields); }
   }
 
   loadProducts() {
@@ -272,6 +330,9 @@ export class ProductComponent implements OnInit {
   editProduct(product: any) {
     this.isEditMode = true;
     this.editProductCode = product.uniqueKeyID;
+    // show extra fields when editing so values are visible
+    this.showExtraFields = true;
+    this.setExtraFieldsState(true);
     this.productForm.patchValue({
       productName: product.productName,
       measurement: product.measurement,
@@ -308,8 +369,10 @@ export class ProductComponent implements OnInit {
   resetForm() {
     this.isEditMode = false;
     this.editProductCode = '';
-    this.showExtraFields = false;
+    this.showExtraFields = true;
     this.productForm.reset({ isActive: true, rateWithTax: 0, purchaseRate: null, purchaseRateDate: null });
     this.productForm.patchValue({ cgstRate: 9, scgstRate: 9, totalGstRate: 18, rateWithoutTax: 0 });
+    // Ensure controls are enabled for default state
+    this.setExtraFieldsState(this.showExtraFields);
   }
 }

@@ -1,189 +1,79 @@
 /* ============================================================
-   APPMENU — LAYOUT & STYLE REDESIGN (logic unchanged)
+   appmenu.component.css — MD3 redesign (v2)
    ============================================================ */
 
-/* Toolbar */
-
-
+/* ── Toolbar ─────────────────────────────────────────────────── */
+.mat-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  height: 56px;
+  background: var(--md-sys-color-primary) !important;
+  color: var(--md-sys-color-on-primary) !important;
+  box-shadow: var(--md-sys-elevation-2) !important;
+  font-family: var(--md-sys-typescale-font-family) !important;
+}
 
 .brand-logo {
-  height: 60px;
+  height: 40px;
   width: auto;
   object-fit: contain;
-  margin-bottom: 2px;
-  filter: drop-shadow(0 4px 8px rgba(0,0,0,.2));
+  /* Preserve original logo colors — remove invert which forced white */
+  filter: drop-shadow(0 1px 4px rgba(0,0,0,.16));
 }
 
-.brand-title {
-  font-size: 36px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  margin: 0 0 8px;
+/* ── Drawer container ───────────────────────────────────────── */
+.drawer-container {
+  height: calc(100vh - 56px);
 }
 
-.brand-sub {
-  font-size: 14px;
-  opacity: 0.7;
-  margin: 0 0 32px;
-}
-
-.brand-tagline {
-  font-size: 16px;
-  opacity: 0.85;
-  line-height: 1.6;
-  max-width: 280px;
-  margin: 0 auto 24px;
-}
-
-.brand-pills {
-  display: flex;
-  gap: 10px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.pill {
-  background: rgba(255,255,255,.12);
-  border: 1px solid rgba(255,255,255,.2);
-  border-radius: 20px;
-  padding: 6px 14px;
-  font-size: 13px;
-  font-weight: 500;
-}
-
-
-.mat-toolbar {
-  position: sticky; top: 0; z-index: 1000; height: 60px;
-  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
-  box-shadow: 0 2px 16px rgba(79,70,229,0.4) !important;
-}
-
-/* Brand */
-.brand-container {
-  display: flex; align-items: center; gap: 10px; margin-right: 16px; cursor: pointer;
-}
-.logo {
-  height: 36px; width: auto; object-fit: contain;
-  border-radius: 8px; background: rgba(255,255,255,0.15); padding: 3px;
-  transition: transform 0.2s;
-}
-.logo:hover { transform: scale(1.05); }
-.brand-name {
-  font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.3px; white-space: nowrap;
-}
-
-/* Company pill */
-.company-display {
-  display: inline-flex; align-items: center;
-  padding: 4px 12px;
-  background: rgba(255,255,255,0.14);
-  border: 1px solid rgba(255,255,255,0.25);
-  border-radius: 20px;
-  font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.95);
-  max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  transition: background 0.2s;
-}
-.company-display:hover { background: rgba(255,255,255,0.22); }
-.example-spacer { flex: 1 1 auto; }
-
-/* Toolbar icon buttons */
-.mat-toolbar .mat-icon-button {
-  color: rgba(255,255,255,0.9) !important;
-  border-radius: 10px !important;
-  transition: background 0.15s !important;
-}
-.mat-toolbar .mat-icon-button:hover {
-  background: rgba(255,255,255,0.15) !important;
-}
-
-/* Drawer container */
-.drawer-container { height: calc(100vh - 60px); }
-
-/* Sidenav */
+/* ── Sidenav drawer ─────────────────────────────────────────── */
 .drawer {
-  width: 256px;
-  background: #ffffff;
-  border-right: 1px solid #e2e8f0;
-  box-shadow: 4px 0 20px rgba(0,0,0,0.06);
-  overflow-x: hidden;
-}
-.drawer::-webkit-scrollbar { width: 4px; }
-.drawer::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-
-/* Nav list */
-.mat-nav-list { padding: 12px 10px !important; }
-
-.mat-nav-list mat-list-item {
-  height: auto !important;
-  border-radius: 10px !important;
-  margin-bottom: 2px !important;
-  transition: background 0.15s, transform 0.12s;
-  overflow: hidden;
-}
-.mat-nav-list mat-list-item:hover {
-  background: rgba(79,70,229,0.07) !important;
-  transform: translateX(3px);
+  width: var(--sidenav-width, 240px);
+  background: var(--md-sys-color-surface) !important;
+  border-right: 1px solid var(--md-sys-color-outline) !important;
+  box-shadow: none !important;
+  padding-top: var(--space-3);
 }
 
-/* Nav buttons */
-.mat-nav-list mat-list-item button {
-  display: flex !important; align-items: center !important; gap: 12px !important;
-  width: 100% !important; height: 46px !important;
-  padding: 0 14px !important;
-  border-radius: 10px !important;
-  font-size: 13.5px !important; font-weight: 500 !important;
-  color: #475569 !important;
-  background: transparent !important; border: none !important;
-  cursor: pointer !important; text-align: left !important;
-  letter-spacing: 0.1px;
-  transition: color 0.15s;
+/* Nav list items */
+.drawer mat-nav-list mat-list-item { padding: 0 !important; }
+.drawer mat-nav-list button {
+  width: 100% !important;
+  text-align: left !important;
+  justify-content: flex-start !important;
+  gap: var(--space-3) !important;
+  height: 48px !important;
+  border-radius: var(--md-sys-shape-corner-full) !important;
+  margin: 2px var(--space-2) !important;
+  padding: 0 var(--space-3) !important;
+  font-size: var(--md-sys-typescale-label-large-size) !important;
+  font-weight: var(--md-sys-typescale-weight-medium) !important;
+  color: var(--md-sys-color-on-surface-variant) !important;
+  transition: background var(--md-sys-motion-duration-short2)
+              var(--md-sys-motion-easing-standard) !important;
 }
-.mat-nav-list mat-list-item button:hover { color: #4f46e5 !important; }
+.drawer mat-nav-list button:hover {
+  background: var(--md-sys-color-surface-variant) !important;
+  color: var(--md-sys-color-primary) !important;
+}
+.drawer mat-nav-list button.active,
+.drawer mat-nav-list button[routerLinkActive="active"] {
+  background: var(--md-sys-color-primary-container) !important;
+  color: var(--md-sys-color-on-primary-container) !important;
+}
+.drawer mat-nav-list button mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: inherit !important;
+}
 
-.mat-nav-list mat-list-item button mat-icon {
-  font-size: 20px !important; width: 20px !important; height: 20px !important;
-  color: #94a3b8; flex-shrink: 0; transition: color 0.15s;
+/* ── Drawer content ──────────────────────────────────────────── */
+.drawer-content {
+  background: var(--md-sys-color-background) !important;
+  overflow-y: auto;
 }
-.mat-nav-list mat-list-item button:hover mat-icon { color: #4f46e5 !important; }
 
-/* Drawer content area */
-.drawer-content { padding: 20px 24px; background: #f8fafc; }
-
-/* Social links (toolbar) */
-.social-links { display: flex; margin: 0 8px; }
-
-/* Slide-in animation for nav items */
-@keyframes slideInLeft {
-  from { opacity: 0; transform: translateX(-14px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
-.mat-nav-list mat-list-item { animation: slideInLeft 0.22s ease forwards; }
-.mat-nav-list mat-list-item:nth-child(1) { animation-delay: 0.03s; }
-.mat-nav-list mat-list-item:nth-child(2) { animation-delay: 0.06s; }
-.mat-nav-list mat-list-item:nth-child(3) { animation-delay: 0.09s; }
-.mat-nav-list mat-list-item:nth-child(4) { animation-delay: 0.12s; }
-.mat-nav-list mat-list-item:nth-child(5) { animation-delay: 0.15s; }
-.mat-nav-list mat-list-item:nth-child(6) { animation-delay: 0.18s; }
-.mat-nav-list mat-list-item:nth-child(7) { animation-delay: 0.21s; }
-.mat-nav-list mat-list-item:nth-child(8) { animation-delay: 0.24s; }
-.mat-nav-list mat-list-item:nth-child(9) { animation-delay: 0.27s; }
-.mat-nav-list mat-list-item:nth-child(10){ animation-delay: 0.30s; }
-
-/* Responsive */
-@media (max-width: 600px) {
-  .mat-toolbar { height: 56px; }
-  .drawer-container { height: calc(100vh - 56px); }
-  .social-links { display: none; }
-  .company-display { font-size: 11px; max-width: 100px; padding: 3px 8px; }
-  .logo { height: 28px; }
-  .brand-name { font-size: 15px; }
-  .drawer { width: 82vw; max-width: 300px; }
-  .drawer-content { padding: 16px 12px 80px; }
-}
-@media (min-width: 601px) and (max-width: 1024px) {
-  .company-display { max-width: 140px; }
-  .logo { height: 32px; }
-}
-@media (min-width: 1025px) {
-  .drawer-content { padding: 24px 28px; }
-}
+/* ── Toolbar spacing utility ────────────────────────────────── */
+.example-spacer { flex: 1 1 auto; }

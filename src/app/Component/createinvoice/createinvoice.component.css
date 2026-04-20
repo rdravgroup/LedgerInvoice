@@ -599,6 +599,28 @@ mat-checkbox {
   font-weight: 500;
 }
 
+/* Responsive overrides — ensure amount cards scale and do not overflow */
+.card-icon, .amount-card .card-icon {
+  width: clamp(36px, 6vw, 48px) !important;
+  height: clamp(36px, 6vw, 48px) !important;
+}
+.card-icon mat-icon, .amount-card .card-icon mat-icon {
+  font-size: clamp(16px, 2vw, 28px) !important;
+  width: auto !important;
+  height: auto !important;
+}
+.card-amount, .amount-value {
+  font-size: clamp(16px, 2.2vw, 20px) !important;
+  font-weight: bold !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  min-width: 0 !important;
+}
+@media (max-width: 575px) {
+  .card-amount { font-size: clamp(14px, 4vw, 16px) !important; }
+}
+
 .customer-actions-buttons {
   display: flex;
   gap: 8px;

@@ -1,275 +1,201 @@
-/* =========================================================
-   STORE APP — GLOBAL STYLES & DESIGN TOKENS
-   Replace the entire content of src/styles.css with this
-   ========================================================= */
+/* ============================================================
+   styles.css — Store App Global Styles (v2, MD3 redesign)
+   Import order matters:
+     1. tokens.css         — MD3 design tokens
+     2. Bootstrap          — grid + utilities only
+     3. bootstrap-md3-bridge.css — maps BS vars → MD3
+     4. Angular Material prebuilt theme
+     5. md3-utilities.css  — semantic utility classes
+     6. Component overrides (below)
+   ============================================================ */
 
-/* 1. Font import */
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
+/* 1. MD3 Design Tokens */
+@import './tokens.css';
+
+/* 2. Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined');
+
+/* 3. Angular Material prebuilt theme */
 @import "@angular/material/prebuilt-themes/indigo-pink.css";
 
-/* 2. Design Tokens */
-:root {
-  /* Brand / Primary */
-  --color-primary:       #4f46e5;
-  --color-primary-light: #eef2ff;
-  --color-primary-dark:  #4338ca;
-  --color-primary-50:    #eef2ff;
-  --color-primary-100:   #e0e7ff;
-  --color-primary-600:   #4f46e5;
-  --color-primary-700:   #4338ca;
-  --color-primary-900:   #312e81;
+/* 3.5 Bootstrap (grid + utilities) - imported here so the bridge can map BS vars */
+@import "bootstrap/dist/css/bootstrap.min.css";
 
-  /* Semantic */
-  --color-success:       #059669;
-  --color-success-light: #ecfdf5;
-  --color-warning:       #d97706;
-  --color-warning-light: #fffbeb;
-  --color-danger:        #dc2626;
-  --color-danger-light:  #fef2f2;
-  --color-info:          #0284c7;
-  --color-info-light:    #f0f9ff;
+/* 4. Bootstrap MD3 bridge */
+@import './bootstrap-md3-bridge.css';
 
-  /* Surfaces */
-  --color-bg:        #f8fafc;
-  --color-surface:   #ffffff;
-  --color-surface-2: #f1f5f9;
-  --color-surface-3: #e2e8f0;
+/* 5. Utility classes */
+@import './md3-utilities.css';
 
-  /* Text */
-  --color-ink:   #0f172a;
-  --color-ink-2: #334155;
-  --color-ink-3: #64748b;
-  --color-ink-4: #94a3b8;
-
-  /* Borders */
-  --color-border:       #e2e8f0;
-  --color-border-strong:#cbd5e1;
-
-  /* Spacing (4px base) */
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 24px;
-  --space-6: 32px;
-  --space-7: 48px;
-  --space-8: 64px;
-
-  /* Border radius */
-  --radius-sm:   6px;
-  --radius-md:   10px;
-  --radius-lg:   14px;
-  --radius-xl:   20px;
-  --radius-full: 9999px;
-
-  /* Typography */
-  --font-sans: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-
-  /* Shadows */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
-  --shadow-md: 0 4px 16px rgba(0,0,0,.07), 0 1px 4px rgba(0,0,0,.04);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,.10), 0 2px 8px rgba(0,0,0,.06);
-
-  /* Sidenav */
-  --sidenav-width: 240px;
-
-  /* Toolbar */
-  --toolbar-height: 56px;
-
-  /* Bottom nav (mobile) */
-  --bottom-nav-height: 56px;
-}
-
-/* 3. Base Reset */
+/* ── Base Reset ─────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  font-family: var(--font-sans);
-  background: var(--color-bg);
-  color: var(--color-ink);
+  font-family: var(--md-sys-typescale-font-family);
+  background: var(--md-sys-color-background);
+  color: var(--md-sys-color-on-surface);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* 4. Override broken global mat-card rule (was max-width:800px) */
-/* REMOVED: mat-card { max-width: 800px; } */
-mat-card {
-  border-radius: var(--radius-lg) !important;
-  box-shadow: var(--shadow-md) !important;
-  border: 1px solid var(--color-border) !important;
+/* ── Material overrides ─────────────────────────────────────── */
+/* Use MD3 corner radius for all mat-cards */
+mat-card,
+.mat-mdc-card {
+  border-radius: var(--md-sys-shape-corner-large) !important;
+  box-shadow: var(--md-sys-elevation-1) !important;
+  border: 1px solid var(--md-sys-color-outline) !important;
+  background: var(--md-sys-color-surface) !important;
 }
 
-/* 5. Touch target minimum (accessibility) */
+/* Touch-target minimum for icon buttons */
 .mat-mdc-icon-button {
-  min-width: 44px !important;
+  min-width:  44px !important;
   min-height: 44px !important;
 }
 
-/* 6. Form fields — don't force 98% width globally; let components control */
-/* Removed old .mat-mdc-form-field { width: 98%; margin: 1%; } */
-
-/* 7. Utility classes */
-.example-spacer { flex: 1 1 auto; }
-
-.page-content {
-  padding: var(--space-5) var(--space-5);
-  max-width: 1200px;
-  margin: 0 auto;
+/* Form field font */
+.mat-mdc-form-field {
+  font-family: var(--md-sys-typescale-font-family);
 }
 
-@media (max-width: 768px) {
-  .page-content {
-    padding: var(--space-4) var(--space-3);
-    padding-bottom: calc(var(--bottom-nav-height) + var(--space-5));
+/* Toolbar — MD3 primary color */
+.mat-toolbar {
+  font-family: var(--md-sys-typescale-font-family) !important;
+}
+
+/* Table header rows */
+th.mat-mdc-header-cell {
+  font-size:   var(--md-sys-typescale-label-large-size) !important;
+  font-weight: var(--md-sys-typescale-weight-medium) !important;
+  color:       var(--md-sys-color-on-surface-variant) !important;
+  background:  var(--md-sys-color-surface-variant) !important;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* Table row hover */
+tr.mat-mdc-row:hover td.mat-mdc-cell {
+  background: rgba(79, 70, 229, 0.04);
+}
+
+/* Dialog rounded corners */
+.mat-mdc-dialog-container .mdc-dialog__surface {
+  border-radius: var(--md-sys-shape-corner-large) !important;
+}
+
+/* Dialog content padding — ensure MD3 spacing inside dialog surfaces */
+.mat-mdc-dialog-container .mdc-dialog__content,
+.mat-mdc-dialog-container [mat-dialog-content],
+.mat-mdc-dialog-container mat-dialog-content,
+.mat-mdc-dialog-container .info-dialog-inner,
+.mat-mdc-dialog-container .logout-dialog {
+  padding: var(--space-4) !important;
+}
+
+@media (max-width: 600px) {
+  .mat-mdc-dialog-container .mdc-dialog__content,
+  .mat-mdc-dialog-container [mat-dialog-content],
+  .mat-mdc-dialog-container mat-dialog-content,
+  .mat-mdc-dialog-container .info-dialog-inner,
+  .mat-mdc-dialog-container .logout-dialog {
+    padding: var(--space-3) !important;
   }
 }
 
-/* 8. Auth page wrapper (centers auth forms) */
+/* Snackbar */
+.mat-mdc-snack-bar-container {
+  --mdc-snackbar-container-color: var(--md-sys-color-inverse-surface);
+  --mdc-snackbar-supporting-text-color: var(--md-sys-color-inverse-on-surface);
+  border-radius: var(--md-sys-shape-corner-small) !important;
+}
+
+/* ── Auth page wrapper ───────────────────────────────────────── */
 .auth-page {
   min-height: 100vh;
-  background: var(--color-bg);
+  background: var(--md-sys-color-background);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--space-5) var(--space-4);
 }
-
 @media (max-width: 600px) {
   .auth-page {
     align-items: flex-start;
     padding: 0;
-    background: var(--color-surface);
+    background: var(--md-sys-color-surface);
   }
 }
 
-/* 9. Page header pattern */
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+/* ── Password strength hints ────────────────────────────────── */
+mat-hint.strength-weak   { color: var(--md-sys-color-error)   !important; }
+mat-hint.strength-fair   { color: var(--md-sys-color-warning) !important; }
+mat-hint.strength-strong { color: var(--md-sys-color-success) !important; }
+
+/* ── Mobile bottom nav safe area ────────────────────────────── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  .bottom-nav { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+/* ── KPI grid (dashboard) ───────────────────────────────────── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: var(--space-3);
   margin-bottom: var(--space-5);
-  flex-wrap: wrap;
 }
 
-.page-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--color-ink);
-  margin: 0;
-  letter-spacing: -0.3px;
-}
-
-.page-subtitle {
-  font-size: 13px;
-  color: var(--color-ink-3);
-  margin: 4px 0 0;
-}
-
-/* 10. Skeleton shimmer */
-.skeleton {
-  background: linear-gradient(90deg, var(--color-surface-2) 25%, var(--color-border) 50%, var(--color-surface-2) 75%);
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: var(--radius-md);
-}
-
-@keyframes shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* 11. Status chips */
-.status-badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: var(--radius-full);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-}
-
-.status-badge.active   { background: var(--color-success-light); color: var(--color-success); }
-.status-badge.inactive { background: var(--color-danger-light);  color: var(--color-danger); }
-.status-badge.pending  { background: var(--color-warning-light); color: var(--color-warning); }
-
-/* 12. Empty state */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-8) var(--space-5);
-  text-align: center;
-}
-
-.empty-state mat-icon {
-  font-size: 56px;
-  width: 56px;
-  height: 56px;
-  color: var(--color-border-strong);
-  margin-bottom: var(--space-4);
-}
-
-.empty-state h3 {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--color-ink-2);
-  margin: 0 0 var(--space-2);
-}
-
-.empty-state p {
-  color: var(--color-ink-3);
-  margin: 0 0 var(--space-5);
-}
-
-/* 13. Mobile bottom nav safe area */
-@supports (padding: env(safe-area-inset-bottom)) {
-  .bottom-nav {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-}
-
-/* 14. Material dialog — mobile bottom sheet */
-.mobile-dialog .mat-mdc-dialog-container {
-  border-radius: 20px 20px 0 0 !important;
-}
-
-.mobile-dialog {
-  align-self: flex-end !important;
-  margin: 0 !important;
-  max-width: 100vw !important;
-  width: 100vw !important;
-}
-
-/* 15. Password strength hints */
-mat-hint.strength-weak   { color: var(--color-danger)  !important; }
-mat-hint.strength-fair   { color: var(--color-warning) !important; }
-mat-hint.strength-good   { color: #ca8a04              !important; }
-mat-hint.strength-strong { color: var(--color-success) !important; }
-
-/* 16. Button helpers */
-.btn-row {
+/* ── Quick actions row ───────────────────────────────────────── */
+.quick-actions {
   display: flex;
   gap: var(--space-2);
   flex-wrap: wrap;
+  margin-bottom: var(--space-5);
 }
 
-.full-width-btn {
-  width: 100%;
+/* ── Table full-width ───────────────────────────────────────── */
+.full-table { width: 100%; }
+.full-table td, .full-table th { min-width: 0; }
+.table-card { border-radius: var(--md-sys-shape-corner-large) !important; overflow: hidden; }
+.table-row:hover { background: rgba(79,70,229,.04); }
+
+/* ── Card header with actions ───────────────────────────────── */
+.card-header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
-/* 17. Legacy compat (keep div-50 working) */
-.div-50 {
-  width: 48%;
-  margin: 1%;
-  display: inline-block;
+/* ── Cell helpers ───────────────────────────────────────────── */
+.cell-with-avatar { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.cell-avatar {
+  width: clamp(28px, 4.2vw, 30px);
+  height: clamp(28px, 4.2vw, 30px);
+  border-radius: 50%;
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  display: flex; align-items: center; justify-content: center;
+  font-size: clamp(11px, 1.6vw, 12px);
+  font-weight: 700; flex-shrink: 0;
 }
+.cell-primary  { font-size: clamp(12px, 1.6vw, 13px); font-weight: 600; color: var(--md-sys-color-on-surface); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.mono-text     { font-family: var(--md-sys-typescale-mono-family); font-size: clamp(11px, 1.5vw, 12px); font-weight: 600; }
+.amount-text   { font-size: clamp(12px, 1.8vw, 13px); font-weight: 700; color: var(--md-sys-color-primary); font-family: var(--md-sys-typescale-mono-family); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.actions-cell  { display: flex; }
 
-@media (max-width: 600px) {
-  .div-50 { width: 100%; margin: 4px 0; }
+/* ── Mobile invoice row ─────────────────────────────────────── */
+.mobile-invoice-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--md-sys-color-outline);
 }
+.mobile-invoice-customer { font-weight: 600; font-size: 14px; color: var(--md-sys-color-on-surface); }
+.mobile-invoice-num      { font-size: 12px; color: var(--md-sys-color-on-surface-variant); margin-top: 2px; }
+.mobile-invoice-amount   { font-size: 15px; font-weight: 700; color: var(--md-sys-color-primary); }
