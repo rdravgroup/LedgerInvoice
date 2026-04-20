@@ -225,9 +225,9 @@ export class ProductComponent implements OnInit {
       measurement: ['', Validators.required],
       hsnSacNumber: [''],
       categoryCode: ['', Validators.required],
-      cgstRate: [9, [Validators.required, Validators.min(0)]],
-      scgstRate: [9, [Validators.required, Validators.min(0)]],
-      totalGstRate: [18, [Validators.required, Validators.min(0)]],
+      cgstRate: [0, [Validators.required, Validators.min(0)]],
+      scgstRate: [0, [Validators.required, Validators.min(0)]],
+      totalGstRate: [0, [Validators.required, Validators.min(0)]],
       rateWithoutTax: [0, Validators.min(0)],
       rateWithTax: [0, [Validators.required, Validators.min(0)]],
       // Purchase fields
@@ -371,7 +371,7 @@ export class ProductComponent implements OnInit {
     this.editProductCode = '';
     this.showExtraFields = true;
     this.productForm.reset({ isActive: true, rateWithTax: 0, purchaseRate: null, purchaseRateDate: null });
-    this.productForm.patchValue({ cgstRate: 9, scgstRate: 9, totalGstRate: 18, rateWithoutTax: 0 });
+    this.productForm.patchValue({ cgstRate: 0, scgstRate: 0, totalGstRate: 0, rateWithoutTax: 0 });
     // Ensure controls are enabled for default state
     this.setExtraFieldsState(this.showExtraFields);
   }
