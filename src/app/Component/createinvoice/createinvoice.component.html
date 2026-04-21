@@ -1,199 +1,493 @@
-<!-- Loading Indicator (Shown While Data is Being Fetched) -->
-<div *ngIf="isLoading" class="loading-container">
-    <mat-spinner></mat-spinner> <!-- ✅ Use Material Spinner for better UI -->
-    <p>Loading invoice details...</p>
+<!-- ════════════════════════════════════════════════════════════
+     createinvoice.component.html — COMPLETE REPLACEMENT
+     Drop this file directly into:
+     src/app/Component/createinvoice/createinvoice.component.html
+     ════════════════════════════════════════════════════════════ -->
+
+<!-- ── Loading state ──────────────────────────────────────── -->
+<div *ngIf="isLoading" class="inv-loading">
+  <mat-spinner diameter="44"></mat-spinner>
+  <p class="inv-loading__text">Loading invoice details…</p>
 </div>
 
-<!-- Invoice Form (Hidden Until Data Loads) -->
+<!-- ════════════════════════════════════════════════════════════
+     MAIN FORM
+     ════════════════════════════════════════════════════════════ -->
+<form class="inv-wrap"
+      [formGroup]="invoiceform"
+      (ngSubmit)="SaveInvoice()"
+      *ngIf="!isLoading"
+      novalidate>
 
-<form class="invoice-form" [formGroup]="invoiceform" (ngSubmit)="SaveInvoice()" *ngIf="!isLoading">
-    <mat-card class="invoice-card">
-        <mat-card-header class="invoice-header">
-            <mat-card-title>{{pagetitle}}</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-            <label class="hidden-label">{{ companyId }}</label>
-            <label class="hidden-label">{{ invoiceform.get('createBy')?.value }}</label>
-            <label class="hidden-label">{{ invoiceform.get('updateBy')?.value }}</label>
-            <label class="hidden-label">{{ invoiceform.get('ipAddress')?.value }}</label>
-            <textarea formControlName="destination" class="form-control hidden-textarea"></textarea>
+  <!-- Hidden system fields — keep logic intact, hidden from users and screen readers -->
+  <span aria-hidden="true" style="display:none">{{ companyId }}</span>
+  <span aria-hidden="true" style="display:none">{{ invoiceform.get('createBy')?.value }}</span>
+  <span aria-hidden="true" style="display:none">{{ invoiceform.get('updateBy')?.value }}</span>
+  <textarea formControlName="destination" style="display:none" tabindex="-1" aria-hidden="true"></textarea>
 
-            <div class="form-grid">
-   <mat-form-field appearance="outline">
-                    <mat-label>Customer</mat-label>
-                    <mat-select formControlName="customerId" (selectionChange)="customerchange($event.value)" required [disabled]="isedit">
-                        <mat-option *ngFor="let item of mastercustomer" [value]="item.uniqueKeyID">
-                            {{ item.name }}
+  <!-- ── Main card ──────────────────────────────────────── -->
+  <mat-card class="inv-card">
+
+    <!-- Card header with title and action buttons -->
+    <mat-card-header class="inv-card-header">
+      <mat-card-title class="inv-card-title">
+        <mat-icon>receipt_long</mat-icon>
+        {{ pagetitle }}
+      </mat-card-title>
+      <div class="inv-header-actions">
+        <button mat-flat-button type="submit" class="inv-btn-save" matTooltip="Save invoice">
+          <mat-icon>save</mat-icon>
+          <span class="inv-btn-label">Save</span>
+        </button>
+        <button mat-stroked-button type="button" routerLink="/listinvoice" class="inv-btn-back" matTooltip="Back to list">
+          <mat-icon>arrow_back</mat-icon>
+          <span class="inv-btn-label">Back</span>
+        </button>
+      </div>
+    </mat-card-header>
+
+    <mat-card-content class="inv-card-body">
+
+      <!-- ── Header Fields Row ───────────────────────────── -->
+      <div class="inv-fields-grid">
+
+        <!-- Customer select -->
+        <mat-form-field appearance="outline" class="inv-field" subscriptSizing="dynamic">
+          <mat-label>Customer</mat-label>
+          <mat-select formControlName="customerId"
+                      (selectionChange)="customerchange($event.value)"
+                      [disabled]="isedit"
+                      required>
+            <mat-option value="" disabled>Select customer…</mat-option>
+            <mat-option *ngFor="let item of mastercustomer" [value]="item.uniqueKeyID">
+              {{ item.name }}
+            </mat-option>
+          </mat-select>
+          <mat-icon matSuffix>person</mat-icon>
+          <mat-error *ngIf="invoiceform.get('customerId')?.hasError('required')">Customer is required</mat-error>
+          <mat-hint *ngIf="isedit">Locked in edit mode</mat-hint>
+        </mat-form-field>
+
+        <!-- Invoice date -->
+        <mat-form-field appearance="outline" class="inv-field" subscriptSizing="dynamic">
+          <mat-label>Invoice Date</mat-label>
+          <input matInput [matDatepicker]="picker" formControlName="invoiceDate" required />
+          <mat-datepicker-toggle matIconSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+          <mat-error *ngIf="invoiceform.get('invoiceDate')?.hasError('required')">Date is required</mat-error>
+        </mat-form-field>
+
+        <!-- Invoice number -->
+        <mat-form-field appearance="outline" class="inv-field" subscriptSizing="dynamic">
+          <mat-label>Invoice No</mat-label>
+          <input matInput formControlName="invoiceNumber" required autocomplete="off" />
+          <mat-icon matPrefix>tag</mat-icon>
+          <mat-error *ngIf="invoiceform.get('invoiceNumber')?.hasError('required')">Invoice number is required</mat-error>
+        </mat-form-field>
+
+        <!-- Remarks -->
+        <mat-form-field appearance="outline" class="inv-field" subscriptSizing="dynamic">
+          <mat-label>Remarks</mat-label>
+          <input matInput formControlName="remark" placeholder="Optional…" />
+          <mat-icon matPrefix>notes</mat-icon>
+        </mat-form-field>
+
+        <!-- Optional fields toggle -->
+        <div class="inv-optional-toggle">
+          <mat-checkbox [formControl]="showOptionalFieldsControl" color="primary">
+            Additional shipping details
+          </mat-checkbox>
+        </div>
+
+      </div>
+
+      <!-- ── Optional shipping fields ───────────────────── -->
+      <div class="inv-optional-fields" *ngIf="showOptionalFieldsControl.value">
+        <div class="inv-fields-grid inv-fields-grid--optional">
+          <mat-form-field appearance="outline" class="inv-field" subscriptSizing="dynamic">
+            <mat-label>Dispatched Through</mat-label>
+            <input matInput formControlName="dispatchedThrough" />
+            <mat-icon matPrefix>local_shipping</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="inv-field" subscriptSizing="dynamic">
+            <mat-label>Delivery Note</mat-label>
+            <input matInput formControlName="deliveryNote" />
+            <mat-icon matPrefix>assignment</mat-icon>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════
+           CUSTOMER ACTIONS PANEL
+           Shown only when a customer is selected.
+           Collapses/expands via "Show Customer Actions" checkbox.
+           ════════════════════════════════════════════════ -->
+      <div class="inv-ca-section" *ngIf="showCustomerActions">
+
+        <!-- Toggle checkbox -->
+        <div class="inv-ca-toggle">
+          <mat-checkbox [(ngModel)]="showCustomerActionsPanel"
+                        [ngModelOptions]="{standalone: true}"
+                        color="primary">
+            Show Customer Actions
+          </mat-checkbox>
+          <!-- Outstanding badge always visible -->
+          <span class="inv-ca-badge" *ngIf="outstandingAmount > 0">
+            <mat-icon>warning_amber</mat-icon>
+            ₹{{ displayOutstandingAmount | number:'1.2-2' }} outstanding
+          </span>
+        </div>
+
+        <!-- Collapsible panel -->
+        <div class="inv-ca-panel" [class.inv-ca-panel--open]="showCustomerActionsPanel">
+          <div class="inv-ca-panel-header">
+            <mat-icon>person_pin</mat-icon>
+            <span>{{ selectedCustomerName }}</span>
+          </div>
+          <div class="inv-ca-buttons">
+            <button mat-stroked-button type="button"
+                    (click)="viewCustomer(selectedCustomerId)"
+                    class="inv-ca-btn" matTooltip="View ledger details">
+              <mat-icon>visibility</mat-icon>
+              <span>View Details</span>
+            </button>
+            <button mat-stroked-button type="button"
+                    (click)="viewPayments(selectedCustomerId, selectedCustomerName)"
+                    class="inv-ca-btn" matTooltip="Payment history">
+              <mat-icon>receipt_long</mat-icon>
+              <span>Payments</span>
+            </button>
+            <button mat-flat-button color="primary" type="button"
+                    (click)="openPaymentPrompt()"
+                    class="inv-ca-btn" matTooltip="Record payment">
+              <mat-icon>attach_money</mat-icon>
+              <span>Record Payment</span>
+            </button>
+            <button mat-stroked-button type="button"
+                    (click)="sendReminder(selectedCustomerId, selectedCustomerName)"
+                    class="inv-ca-btn" matTooltip="Send email reminder">
+              <mat-icon>mail_outline</mat-icon>
+              <span>Reminder</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════
+           ITEMS SECTION
+           ════════════════════════════════════════════════ -->
+      <div class="inv-items-section">
+
+        <!-- Items header bar -->
+        <div class="inv-items-bar">
+          <h2 class="inv-items-title">
+            <mat-icon>shopping_cart</mat-icon>
+            Line Items
+            <span class="inv-items-count" *ngIf="invproducts.length > 0">{{ invproducts.length }}</span>
+          </h2>
+          <!-- Desktop Add button -->
+          <button mat-flat-button color="primary" type="button"
+                  (click)="addnewproduct()"
+                  class="inv-add-desktop"
+                  aria-label="Add product row">
+            <mat-icon>add</mat-icon> Add Item
+          </button>
+          <!-- Mobile Add button -->
+          <button mat-flat-button color="primary" type="button"
+                  (click)="openMobileItemEntry()"
+                  class="inv-add-mobile"
+                  aria-label="Add item">
+            <mat-icon>add</mat-icon> Add Item
+          </button>
+        </div>
+
+        <!-- Empty state -->
+        <div class="inv-empty" *ngIf="invproducts.length === 0">
+          <mat-icon>inventory_2</mat-icon>
+          <p>No items yet — click <strong>Add Item</strong> to begin</p>
+        </div>
+
+        <!-- ── DESKTOP / TABLET: compact data grid ───────── -->
+        <div class="inv-grid-outer" *ngIf="invproducts.length > 0">
+          <div class="inv-grid-scroll">
+            <table class="inv-grid" formArrayName="sales_product_info">
+              <thead>
+                <tr class="inv-grid-head">
+                  <th class="inv-th inv-th-sl">#</th>
+                  <th class="inv-th inv-th-product">Product</th>
+                  <th class="inv-th inv-th-qty">Qty</th>
+                  <th class="inv-th inv-th-rate">Rate (incl. tax)</th>
+                  <th class="inv-th inv-th-total">Total</th>
+                  <th class="inv-th inv-th-action"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of invproducts.controls; let i = index"
+                    [formGroupName]="i"
+                    class="inv-grid-row">
+
+                  <td class="inv-td inv-td-sl">{{ i + 1 }}</td>
+
+                  <td class="inv-td inv-td-product">
+                    <mat-form-field appearance="outline" class="inv-cell-field inv-cell-field-product" subscriptSizing="dynamic">
+                      <mat-select formControlName="productId"
+                                  (selectionChange)="productchange(i)"
+                                  required>
+                        <mat-option value="" disabled>Select…</mat-option>
+                        <mat-option *ngFor="let prod of masterproduct" [value]="prod.uniqueKeyID">
+                          {{ prod.productName }}
                         </mat-option>
-                    </mat-select>
-                    <mat-error *ngIf="invoiceform.get('customerId')?.hasError('required')">Customer is required</mat-error>
-                    <mat-hint *ngIf="isedit" class="hint-text">Customer cannot be changed in edit mode</mat-hint>
-                </mat-form-field>
+                      </mat-select>
+                      <mat-error>Required</mat-error>
+                    </mat-form-field>
+                  </td>
 
-                <mat-form-field appearance="outline">
-                    <mat-label>Invoice Date</mat-label>
-                    <input matInput [matDatepicker]="picker" formControlName="invoiceDate" required>
-                    <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-                    <mat-datepicker #picker></mat-datepicker>
-                    <mat-error *ngIf="invoiceform.get('invoiceDate')?.hasError('required')">Invoice Date is required</mat-error>
-                </mat-form-field>
+                  <td class="inv-td inv-td-qty">
+                    <mat-form-field appearance="outline" class="inv-cell-field inv-cell-field-num" subscriptSizing="dynamic">
+                      <input matInput type="number" step="0.001" min="0"
+                             formControlName="quantity"
+                             (change)="Itemcalculation(i)"
+                             required />
+                      <mat-error>Required</mat-error>
+                    </mat-form-field>
+                  </td>
 
-                <mat-form-field appearance="outline">
-                    <mat-label>Invoice No</mat-label>
-                    <input matInput formControlName="invoiceNumber" required>
-                    <mat-error *ngIf="invoiceform.get('invoiceNumber')?.hasError('required')">Invoice Number is required</mat-error>
-                </mat-form-field>
+                  <td class="inv-td inv-td-rate">
+                    <mat-form-field appearance="outline" class="inv-cell-field inv-cell-field-num" subscriptSizing="dynamic">
+                      <input matInput type="number" step="0.01" min="0"
+                             formControlName="rateWithTax"
+                             (change)="Itemcalculation(i)"
+                             required />
+                      <mat-error>Required</mat-error>
+                    </mat-form-field>
+                  </td>
 
-             
+                  <td class="inv-td inv-td-total">
+                    <span class="inv-row-total">
+                      ₹{{ item.get('amount')?.value | number:'1.2-2' }}
+                    </span>
+                  </td>
 
-                <mat-form-field appearance="outline">
-                    <mat-label>Remarks</mat-label>
-                    <textarea matInput formControlName="remark"></textarea>
-                </mat-form-field>
-
-                <div class="checkbox-container">
-                    <mat-checkbox [formControl]="showOptionalFieldsControl">Fill Additional Details</mat-checkbox>
-                </div>
-            </div>
-
-            <div class="form-grid" *ngIf="showOptionalFieldsControl.value">
-
-                <!-- Dispatched Through -->
-                <mat-form-field appearance="outline" *ngIf="showOptionalFieldsControl.value">
-                    <mat-label>Dispatched Through</mat-label>
-                    <textarea matInput formControlName="dispatchedThrough"></textarea>
-                </mat-form-field>
-
-                <!-- Delivery Note -->
-                <mat-form-field appearance="outline" *ngIf="showOptionalFieldsControl.value">
-                    <mat-label>Delivery Note</mat-label>
-                    <textarea matInput formControlName="deliveryNote"></textarea>
-                </mat-form-field>
-            </div>
-
-            <!-- Customer Action Buttons -->
-            <div *ngIf="showCustomerActions" class="customer-actions-section">
-                <div class="customer-actions-header">
-                    <h3>Customer Actions</h3>
-                    <p class="customer-name">{{ selectedCustomerName }}</p>
-                </div>
-                <div class="customer-actions-buttons">
-                    <button mat-raised-button type="button" (click)="viewCustomer(selectedCustomerId)" color="primary">
-                        <mat-icon>visibility</mat-icon> View Details
+                  <td class="inv-td inv-td-action">
+                    <button mat-icon-button color="warn" type="button"
+                            (click)="Removeproduct(i)"
+                            [attr.aria-label]="'Remove row ' + (i+1)">
+                      <mat-icon>delete_outline</mat-icon>
                     </button>
-                    <button mat-raised-button type="button" (click)="viewPayments(selectedCustomerId, selectedCustomerName)" color="info">
-                        <mat-icon>receipt_long</mat-icon> View Payments
-                    </button>
-                    <button mat-raised-button type="button" (click)="openPaymentPrompt()" color="warn">
-                        <mat-icon>attach_money</mat-icon> Record Payment
-                    </button>
-                    <button mat-raised-button type="button" (click)="sendReminder(selectedCustomerId, selectedCustomerName)" color="accent">
-                        <mat-icon>mail</mat-icon> Send Reminder
-                    </button>
-                </div>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="inv-grid-total-row">
+                  <td colspan="4" class="inv-total-label">Invoice Total</td>
+                  <td class="inv-total-value" aria-live="polite">
+                    ₹{{ totalAmountValue | number:'1.2-2' }}
+                  </td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- ── MOBILE: card list ──────────────────────────── -->
+        <div class="inv-mobile-list" *ngIf="invproducts.length > 0">
+          <div class="inv-mobile-card"
+               *ngFor="let item of invproducts.controls; let i = index">
+            <div class="inv-mobile-card-header">
+              <span class="inv-mobile-card-num">{{ i + 1 }}</span>
+              <span class="inv-mobile-card-name">
+                {{ getProductName(item.get('productId')?.value) || '— Select product —' }}
+              </span>
+              <span class="inv-mobile-card-total">
+                ₹{{ item.get('amount')?.value | number:'1.2-2' }}
+              </span>
             </div>
-
-            <div class="product-section">
-               
-
-                <div class="product-header">
-                    <!-- Outstanding and Invoice Summary Cards -->
-                    <div class="amounts-summary">
-                        <div class="amount-card outstanding">
-                            <div class="card-icon">
-                                <mat-icon>warning_amber</mat-icon>
-                            </div>
-                            <div class="card-content">
-                                <span class="card-label" style="font-weight: bold;">पिछला बक़ाया <span class="hindi-text">(Outstanding Due)</span></span>
-                                <span class="card-amount">₹{{ displayOutstandingAmount | number:'1.2-2' }}</span>
-                            </div>
-                        </div>
-                        <div class="amount-card payable">
-                            <div class="card-icon">
-                                <mat-icon>receipt</mat-icon>
-                            </div>
-                            <div class="card-content">
-                                <span class="card-label" style="font-weight: bold;">आज का ख़रीद <span class="hindi-text">(New Invoice Amount)</span></span>
-                                <span class="card-amount">₹{{ totalAmountValue | number:'1.2-2' }}</span>
-                            </div>
-                        </div>
-                        <div class="amount-card total">
-                            <div class="card-icon">
-                                <mat-icon>account_balance</mat-icon>
-                            </div>
-                            <div class="card-content">
-                                <span class="card-label" style="font-weight: bold;">कुल भुगतान करना है <span class="hindi-text">(Total to Pay)</span></span>
-                                <span class="card-amount">₹{{ displayTotalToPayAmount | number:'1.2-2' }}</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="action-buttons">
-                        <button mat-raised-button color="primary" type="button" (click)="addnewproduct()" class="add-product-btn">
-                            <mat-icon>add</mat-icon> Add Product
-                        </button>
-                        <button mat-raised-button color="primary" type="submit">Save</button>
-                        <button mat-raised-button color="warn" type="button" routerLink="/listinvoice">Back</button>
-                    </div>
-                </div>
- <!-- Display validation message if no products are selected -->
-                <p *ngIf="invproducts.length === 0" class="error-message">
-                    Please add at least one product before saving the invoice!
-                </p>
-                <div class="product-table-container">
-                    <table class="table table-responsive product-table" formArrayName="sales_product_info">
-                        <thead>
-                            <tr>
-                                <th>Sl.No</th>
-                                <th>Product</th>
-                                <th>Qty</th>
-                                <th>Rate (Inc. Tax)</th>
-                                <th>Total</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr *ngFor="let item of invproducts.controls; let i = index" [formGroupName]="i">
-                                <td>{{i+1}}</td>
-                                <td>
-                                    <mat-form-field appearance="outline" class="product-field">
-                                        <mat-label>Select Product</mat-label>
-                                        <mat-select formControlName="productId" (selectionChange)="productchange(i)" required>
-                                            <mat-option *ngFor="let prod of masterproduct" [value]="prod.uniqueKeyID">
-                                                {{ prod.productName }}
-                                            </mat-option>
-                                        </mat-select>
-                                        <mat-error *ngIf="item.get('productId')?.hasError('required')">Product is required</mat-error>
-                                    </mat-form-field>
-                                </td>
-                                <td>
-                                    <mat-form-field appearance="outline" class="number-field">
-                                        <input matInput type="number" step="0.001" (change)="Itemcalculation(i)" formControlName="quantity" required>
-                                        <mat-error *ngIf="item.get('quantity')?.hasError('required')">Quantity is required</mat-error>
-                                    </mat-form-field>
-                                </td>
-                                <td>
-                                    <mat-form-field appearance="outline" class="number-field">
-                                        <input matInput type="number" step="0.01" (change)="Itemcalculation(i)" formControlName="rateWithTax" required>
-                                        <mat-error *ngIf="item.get('rateWithTax')?.hasError('required')">Rate is required</mat-error>
-                                    </mat-form-field>
-                                </td>
-                                <td>
-                                    <mat-form-field appearance="outline" class="number-field">
-                                        <input matInput formControlName="amount" readonly>
-                                    </mat-form-field>
-                                </td>
-                                <td>
-                                    <button mat-icon-button color="warn" (click)="Removeproduct(i)">
-                                        <mat-icon>delete</mat-icon>
-                                    </button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+            <div class="inv-mobile-card-meta">
+              <span>Qty: {{ item.get('quantity')?.value }}</span>
+              <span>Rate: ₹{{ item.get('rateWithTax')?.value | number:'1.2-2' }}</span>
             </div>
+            <div class="inv-mobile-card-actions">
+              <button mat-stroked-button type="button" color="primary"
+                      (click)="openMobileItemEntry(i)"
+                      class="inv-mobile-edit-btn">
+                <mat-icon>edit</mat-icon> Edit
+              </button>
+              <button mat-icon-button color="warn" type="button"
+                      (click)="Removeproduct(i)"
+                      [attr.aria-label]="'Remove item ' + (i+1)">
+                <mat-icon>delete_outline</mat-icon>
+              </button>
+            </div>
+          </div>
+        </div>
 
-        </mat-card-content>
-    </mat-card>
+      </div>
+      <!-- /inv-items-section -->
+
+    </mat-card-content>
+  </mat-card>
+
+  <!-- ════════════════════════════════════════════════════════
+       SUMMARY PANEL — sticky on desktop, slide-up on mobile
+       Shows: पिछला बक़ाया / आज का ख़रीद / कुल भुगतान करना है
+       ════════════════════════════════════════════════════════ -->
+  <aside class="inv-summary"
+         [class.inv-summary--collapsed]="summaryCollapsed">
+
+    <!-- Mobile handle (tap to expand / collapse) -->
+    <button class="inv-summary-handle" type="button"
+            (click)="summaryCollapsed = !summaryCollapsed"
+            [attr.aria-expanded]="!summaryCollapsed">
+      <mat-icon>{{ summaryCollapsed ? 'expand_more' : 'expand_less' }}</mat-icon>
+
+      <span class="inv-summary-mini" *ngIf="summaryCollapsed">
+        Total ₹{{ displayTotalToPayAmount | number:'1.2-2' }}
+      </span>
+    </button>
+
+    <div class="inv-summary-body">
+
+      <!-- Loading -->
+      <div class="inv-summary-loading" *ngIf="isLoadingOutstanding">
+        <mat-spinner diameter="14"></mat-spinner>
+        <span>Loading…</span>
+      </div>
+
+      <!-- Row 1: Outstanding Due / पिछला बक़ाया -->
+      <div class="inv-summary-row inv-summary-row--warn">
+        <div class="inv-summary-icon inv-summary-icon--warn">
+          <mat-icon>warning_amber</mat-icon>
+        </div>
+        <div class="inv-summary-content">
+          <span class="inv-summary-hindi" lang="hi" title="Outstanding Due">पिछला बक़ाया</span>
+          <span class="inv-summary-eng">Outstanding Due</span>
+          <span class="inv-summary-amount" aria-live="polite">
+            ₹{{ displayOutstandingAmount | number:'1.2-2' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Row 2: New Invoice Amount / आज का ख़रीद -->
+      <div class="inv-summary-row inv-summary-row--blue">
+        <div class="inv-summary-icon inv-summary-icon--blue">
+          <mat-icon>receipt</mat-icon>
+        </div>
+        <div class="inv-summary-content">
+          <span class="inv-summary-hindi" lang="hi" title="New Invoice Amount">आज का ख़रीद</span>
+          <span class="inv-summary-eng">New Invoice Amount</span>
+          <span class="inv-summary-amount" aria-live="polite">
+            ₹{{ totalAmountValue | number:'1.2-2' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Row 3: Total to Pay / कुल भुगतान करना है -->
+      <div class="inv-summary-row inv-summary-row--green">
+        <div class="inv-summary-icon inv-summary-icon--green">
+          <mat-icon>account_balance</mat-icon>
+        </div>
+        <div class="inv-summary-content">
+          <span class="inv-summary-hindi" lang="hi" title="Total to Pay">कुल भुगतान करना है</span>
+          <span class="inv-summary-eng">Total to Pay</span>
+          <span class="inv-summary-amount inv-summary-amount--big" aria-live="polite">
+            ₹{{ displayTotalToPayAmount | number:'1.2-2' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Save shortcut inside panel -->
+      <div class="inv-summary-footer">
+        <button mat-flat-button color="primary" type="submit" class="inv-summary-save">
+          <mat-icon>save</mat-icon> Save Invoice
+        </button>
+      </div>
+
+    </div>
+  </aside>
+
 </form>
+
+<!-- ════════════════════════════════════════════════════════════
+     MOBILE ITEM ENTRY BOTTOM SHEET TEMPLATE
+     Angular Material bottom sheet opens this template.
+     Bound to TS via @ViewChild('mobileItemSheet')
+     ════════════════════════════════════════════════════════════ -->
+<ng-template #mobileItemSheet>
+  <div class="mob-sheet">
+    <div class="mob-sheet-drag"></div>
+    <h3 class="mob-sheet-title">
+      {{ mobileEditIndex >= 0 ? 'Edit Item ' + (mobileEditIndex + 1) : 'Add Item' }}
+    </h3>
+
+    <form [formGroup]="mobileItemForm" class="mob-sheet-form" novalidate>
+
+      <!-- Product -->
+      <mat-form-field appearance="outline" class="mob-sheet-field" subscriptSizing="dynamic">
+        <mat-label>Product</mat-label>
+        <mat-select formControlName="productId" required
+                    (selectionChange)="onMobileProductSelected()">
+          <mat-option value="" disabled>Select a product…</mat-option>
+          <mat-option *ngFor="let prod of masterproduct" [value]="prod.uniqueKeyID">
+            {{ prod.productName }}
+          </mat-option>
+        </mat-select>
+        <mat-error>Product is required</mat-error>
+      </mat-form-field>
+
+      <!-- Quantity with +/- stepper buttons -->
+      <div class="mob-sheet-qty-wrap">
+        <label class="mob-sheet-qty-label">Quantity</label>
+        <div class="mob-sheet-stepper">
+          <button mat-icon-button type="button" color="primary"
+                  (click)="decrementMobileQty()"
+                  aria-label="Decrease quantity">
+            <mat-icon>remove</mat-icon>
+          </button>
+          <mat-form-field appearance="outline" class="mob-sheet-qty-field" subscriptSizing="dynamic">
+            <input matInput type="number" step="0.001" min="0.001"
+                   formControlName="quantity"
+                   inputmode="decimal"
+                   aria-label="Item quantity" />
+          </mat-form-field>
+          <button mat-icon-button type="button" color="primary"
+                  (click)="incrementMobileQty()"
+                  aria-label="Increase quantity">
+            <mat-icon>add</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Rate -->
+      <mat-form-field appearance="outline" class="mob-sheet-field" subscriptSizing="dynamic">
+        <mat-label>Rate (incl. tax) ₹</mat-label>
+        <input matInput type="number" step="0.01" min="0"
+               formControlName="rateWithTax"
+               inputmode="decimal"
+               required />
+        <mat-icon matPrefix>currency_rupee</mat-icon>
+        <mat-error>Rate is required</mat-error>
+      </mat-form-field>
+
+      <!-- Live total preview -->
+      <div class="mob-sheet-preview">
+        <span>Subtotal</span>
+        <strong>₹{{ mobileItemTotal | number:'1.2-2' }}</strong>
+      </div>
+
+    </form>
+
+    <!-- Sheet footer buttons -->
+    <div class="mob-sheet-footer">
+      <button mat-stroked-button type="button" (click)="closeMobileItemEntry()">
+        Cancel
+      </button>
+      <button mat-flat-button color="primary" type="button"
+              (click)="saveMobileItem()"
+              [disabled]="mobileItemForm.invalid">
+        <mat-icon>check</mat-icon>
+        {{ mobileEditIndex >= 0 ? 'Update' : 'Add Item' }}
+      </button>
+    </div>
+  </div>
+</ng-template>

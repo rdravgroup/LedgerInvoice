@@ -21,6 +21,13 @@ import { MatNativeDateModule } from "@angular/material/core"
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner"
 import { MatAutocompleteModule } from "@angular/material/autocomplete"
 import { MatOptionModule } from "@angular/material/core"
+import { MatBottomSheetModule } from "@angular/material/bottom-sheet"
+import { MatExpansionModule } from "@angular/material/expansion"
+import { MatBadgeModule } from "@angular/material/badge"
+import { MatChipsModule } from "@angular/material/chips"
+import { MatDividerModule } from "@angular/material/divider"
+import { MatTabsModule } from "@angular/material/tabs"
+
 @NgModule({
     exports: [
         MatCardModule,
@@ -44,7 +51,13 @@ import { MatOptionModule } from "@angular/material/core"
         MatNativeDateModule,
         MatProgressSpinnerModule,
         MatAutocompleteModule,
-        MatOptionModule
+        MatOptionModule,
+        MatBottomSheetModule,
+        MatExpansionModule,
+        MatBadgeModule,
+        MatChipsModule,
+        MatDividerModule,
+        MatTabsModule
     ]
 })
 export class MaterialModule { }
