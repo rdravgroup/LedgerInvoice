@@ -42,12 +42,10 @@ export class LoginComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Clear only auth-related items from localStorage when entering login page
-    // This ensures a fresh login state without clearing other browser data
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    localStorage.removeItem('username');
-    localStorage.removeItem('userrole');
+    // Ensure AuthService cleans up stale auth state so other components
+    // do not perform protected API calls with inconsistent localStorage.
+    // Use AuthService.logout() instead of manipulating localStorage directly.
+    this.authService.logout();
     
     // TODO: Refactor menu list management if needed. No _menulist property on UserService.
 
@@ -241,18 +239,20 @@ export class LoginComponent implements OnInit, OnDestroy {
             this.authService.login(this._response, usernameFromResponse);
             this.proceedWithMenuLoad(usernameFromResponse, response.userRole);
           } else {
-            // Fetch user details to get the actual username
+            // Login immediately so token is available for any subsequent protected requests
+            this.authService.login(this._response, payload.identifier);
+
+            // Fetch user details to get the actual username for later use
             console.log('LOGIN_COMPONENT: Fetching user details using identifier:', payload.identifier);
             this.service.getUserByCode(payload.identifier).subscribe({
               next: (user) => {
                 const actualUsername = user?.username || payload.identifier;
                 console.log('LOGIN_COMPONENT: Got username from GetBycode:', actualUsername);
-                this.authService.login(this._response, actualUsername);
+                localStorage.setItem('username', actualUsername);
                 this.proceedWithMenuLoad(actualUsername, response.userRole);
               },
               error: (err) => {
                 console.warn('LOGIN_COMPONENT: Failed to fetch user details, using identifier:', err);
-                this.authService.login(this._response, payload.identifier);
                 this.proceedWithMenuLoad(payload.identifier, response.userRole);
               }
             });
@@ -343,9 +343,9 @@ export class LoginComponent implements OnInit, OnDestroy {
   /**
    * Helper method to load menu and redirect after successful login
    */
-  private proceedWithMenuLoad(username: string, userRole: string): void {
+  private proceedWithMenuLoad(username?: string | null, userRole?: string | null): void {
     this.logger.info('LOGIN_COMPONENT', 'Login successful, loading menu', { username, userRole });
-    const role = userRole || this.authService.getUserRole() || '';
+    const role = (userRole as string) || this.authService.getUserRole() || '';
     this.service.loadMenuByRole(role).subscribe({
       next: (menuItems) => {
         console.log('LOGIN_COMPONENT: Menu items loaded:', menuItems);

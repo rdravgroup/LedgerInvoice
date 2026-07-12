@@ -1,0 +1,78 @@
+<h2 mat-dialog-title class="dlg-title">
+  <mat-icon>receipt_long</mat-icon>
+  Vendor Ledger
+  <span class="dlg-vendor-name">{{ data.vendorName }}</span>
+</h2>
+
+<mat-dialog-content class="dlg-content">
+  <div class="ledger-summary">
+    <div class="ledger-summary-item">
+      <span class="ledger-summary-label">Net Outstanding</span>
+      <span class="ledger-summary-value" [class.amount-warn]="ledgerBalance > 0" [class.amount-ok]="ledgerBalance <= 0">
+        &#8377;{{ ledgerBalance | number:'1.2-2' }}
+      </span>
+    </div>
+    <div class="ledger-summary-item">
+      <span class="ledger-summary-label">Credit Limit</span>
+      <span class="ledger-summary-value">&#8377;{{ data.creditLimit | number:'1.2-2' }}</span>
+    </div>
+  </div>
+
+  @if (loading) {
+    <div class="dlg-loading">
+      <mat-progress-spinner mode="indeterminate" diameter="36"></mat-progress-spinner>
+      <p>Loading ledger…</p>
+    </div>
+  }
+  @if (!loading && errorMsg) {
+    <div class="dlg-error-banner"><mat-icon>error_outline</mat-icon> {{ errorMsg }}</div>
+  }
+  @if (!loading && !errorMsg) {
+    @if (ledgerRows.length === 0) {
+      <div class="empty-state"><mat-icon>receipt</mat-icon><p>No ledger entries yet</p></div>
+    } @else {
+      <div class="ledger-table-wrap">
+        <table mat-table [dataSource]="ledgerRows" class="ledger-table">
+          <ng-container matColumnDef="referenceDate">
+            <th mat-header-cell *matHeaderCellDef>Date</th>
+            <td mat-cell *matCellDef="let r">{{ r.referenceDate | date:'dd MMM yy' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="referenceType">
+            <th mat-header-cell *matHeaderCellDef>Type</th>
+            <td mat-cell *matCellDef="let r"><span class="ref-type-badge">{{ r.referenceType }}</span></td>
+          </ng-container>
+          <ng-container matColumnDef="referenceNumber">
+            <th mat-header-cell *matHeaderCellDef>Reference</th>
+            <td mat-cell *matCellDef="let r"><code>{{ r.referenceNumber }}</code></td>
+          </ng-container>
+          <ng-container matColumnDef="debitAmount">
+            <th mat-header-cell *matHeaderCellDef class="text-right">Debit</th>
+            <td mat-cell *matCellDef="let r" class="text-right">
+              @if (r.debitAmount > 0) { <span class="amount-debit">&#8377;{{ r.debitAmount | number:'1.2-2' }}</span> } @else { — }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="creditAmount">
+            <th mat-header-cell *matHeaderCellDef class="text-right">Credit</th>
+            <td mat-cell *matCellDef="let r" class="text-right">
+              @if (r.creditAmount > 0) { <span class="amount-credit">&#8377;{{ r.creditAmount | number:'1.2-2' }}</span> } @else { — }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="outstandingAmount">
+            <th mat-header-cell *matHeaderCellDef class="text-right">Balance</th>
+            <td mat-cell *matCellDef="let r" class="text-right fw-600">&#8377;{{ r.outstandingAmount | number:'1.2-2' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="description">
+            <th mat-header-cell *matHeaderCellDef>Description</th>
+            <td mat-cell *matCellDef="let r" class="text-muted text-sm">{{ r.description }}</td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="ledgerColumns; sticky: true"></tr>
+          <tr mat-row *matRowDef="let row; columns: ledgerColumns;" class="table-row"></tr>
+        </table>
+      </div>
+    }
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="dlg-actions">
+  <button mat-flat-button color="primary" (click)="close()">Close</button>
+</mat-dialog-actions>

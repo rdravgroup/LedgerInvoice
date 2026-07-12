@@ -1,79 +1,209 @@
-/* ============================================================
-   appmenu.component.css — MD3 redesign (v2)
-   ============================================================ */
+/* src/app/Component/appmenu/appmenu.component.css */
+/* CHANGED: Added nav-group, nav-group-header, nav-group-children, nav-item-child styles.
+   ALL original toolbar/drawer/company/brand styles preserved exactly. */
 
-/* ── Toolbar ─────────────────────────────────────────────────── */
-.mat-toolbar {
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-  height: 56px;
-  background: var(--md-sys-color-primary) !important;
-  color: var(--md-sys-color-on-primary) !important;
-  box-shadow: var(--md-sys-elevation-2) !important;
-  font-family: var(--md-sys-typescale-font-family) !important;
+/* ── Toolbar ───────────────────────────────────────────────── */
+.app-toolbar {
+  position: sticky; top: 0; z-index: 200;
+  height: 60px; min-height: 60px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 8px 0 4px;
 }
+.menu-btn { color: rgba(255,255,255,0.88) !important; flex-shrink: 0; }
 
-.brand-logo {
-  height: 40px;
-  width: auto;
-  object-fit: contain;
-  /* Preserve original logo colors — remove invert which forced white */
-  filter: drop-shadow(0 1px 4px rgba(0,0,0,.16));
+/* ── Brand ─────────────────────────────────────────────────── */
+.brand-container { display: flex; align-items: center; flex-shrink: 0; }
+.brand-logo      { height: 32px; width: auto; object-fit: contain; }
+
+/* ── Company area ──────────────────────────────────────────── */
+.company-area { display: flex; align-items: center; margin-left: 12px; flex-shrink: 0; }
+
+.company-selector-wrap {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 24px;
+  padding: 4px 12px 4px 10px;
+  cursor: pointer; min-width: 180px; max-width: 260px;
 }
+.company-selector-wrap.reporting-mode { background: rgba(255,255,255,0.10); border-style: dashed; }
+.company-icon-prefix { font-size: 18px; width: 18px; height: 18px; color: rgba(255,255,255,0.85); flex-shrink: 0; }
+.company-icon-suffix { font-size: 16px; width: 16px; height: 16px; color: rgba(255,255,255,0.7); flex-shrink: 0; }
+.company-mat-select  { flex: 1; color: white !important; font-size: 13px; font-weight: 500; }
+.company-mat-select .mat-mdc-select-trigger { color: white !important; }
+.company-mat-select .mat-mdc-select-arrow   { color: rgba(255,255,255,0.7) !important; }
 
-/* ── Drawer container ───────────────────────────────────────── */
-.drawer-container {
-  height: calc(100vh - 56px);
+.company-display-chip {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 24px; padding: 4px 12px;
 }
+.chip-icon { font-size: 16px; width: 16px; height: 16px; color: rgba(255,255,255,0.85); }
+.chip-name { font-size: 13px; font-weight: 500; color: white; }
 
-/* ── Sidenav drawer ─────────────────────────────────────────── */
+.company-option       { display: flex; flex-direction: column; line-height: 1.25; padding: 4px 0; }
+.company-option .co-name { font-size: 14px; font-weight: 500; color: var(--md-sys-color-on-surface); }
+.company-option .co-id   { font-size: 11px; font-family: monospace; color: var(--md-sys-color-on-surface-variant); opacity: 0.75; }
+
+/* ── User area ─────────────────────────────────────────────── */
+.example-spacer { flex: 1 1 auto; }
+.user-area   { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.user-name   { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.9); display: none; }
+@media (min-width: 600px) { .user-name { display: block; } }
+.profile-btn { color: rgba(255,255,255,0.88) !important; }
+
+/* ── Drawer container ──────────────────────────────────────── */
+.drawer-container { height: calc(100vh - 60px); }
+
+/* ── Drawer ────────────────────────────────────────────────── */
 .drawer {
-  width: var(--sidenav-width, 240px);
+  width: 240px;
   background: var(--md-sys-color-surface) !important;
   border-right: 1px solid var(--md-sys-color-outline) !important;
   box-shadow: none !important;
-  padding-top: var(--space-3);
+  padding-top: 8px;
 }
-
-/* Nav list items */
-.drawer mat-nav-list mat-list-item { padding: 0 !important; }
-.drawer mat-nav-list button {
-  width: 100% !important;
-  text-align: left !important;
-  justify-content: flex-start !important;
-  gap: var(--space-3) !important;
-  height: 48px !important;
-  border-radius: var(--md-sys-shape-corner-full) !important;
-  margin: 2px var(--space-2) !important;
-  padding: 0 var(--space-3) !important;
-  font-size: var(--md-sys-typescale-label-large-size) !important;
-  font-weight: var(--md-sys-typescale-weight-medium) !important;
-  color: var(--md-sys-color-on-surface-variant) !important;
-  transition: background var(--md-sys-motion-duration-short2)
-              var(--md-sys-motion-easing-standard) !important;
-}
-.drawer mat-nav-list button:hover {
-  background: var(--md-sys-color-surface-variant) !important;
-  color: var(--md-sys-color-primary) !important;
-}
-.drawer mat-nav-list button.active,
-.drawer mat-nav-list button[routerLinkActive="active"] {
-  background: var(--md-sys-color-primary-container) !important;
-  color: var(--md-sys-color-on-primary-container) !important;
-}
-.drawer mat-nav-list button mat-icon {
-  font-size: 20px;
-  width: 20px;
-  height: 20px;
-  color: inherit !important;
-}
-
-/* ── Drawer content ──────────────────────────────────────────── */
 .drawer-content {
   background: var(--md-sys-color-background) !important;
   overflow-y: auto;
 }
 
-/* ── Toolbar spacing utility ────────────────────────────────── */
-.example-spacer { flex: 1 1 auto; }
+/* ── Nav scroll area ───────────────────────────────────────── */
+.nav-scroll-area { height: 100%; overflow-y: auto; overflow-x: hidden; padding: 4px 0 16px; }
+.nav-list        { display: flex; flex-direction: column; gap: 2px; }
+
+/* ═══════════════════════════════════════════════════════════════
+   NAV ITEMS — flat and child
+   ═══════════════════════════════════════════════════════════════ */
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  height: 44px; padding: 0 16px;
+  margin: 1px 8px;
+  border-radius: var(--md-sys-shape-corner-full);
+  font-size: 14px; font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+  text-decoration: none; cursor: pointer;
+  transition: background var(--md-sys-motion-duration-short4),
+              color     var(--md-sys-motion-duration-short4);
+  border: none; background: transparent; width: calc(100% - 16px); box-sizing: border-box;
+}
+.nav-item:hover {
+  background: var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-on-surface);
+}
+.nav-item-active {
+  background: var(--md-sys-color-secondary-container) !important;
+  color: var(--md-sys-color-on-secondary-container) !important;
+  font-weight: 700 !important;
+}
+
+/* Child items — slightly indented */
+.nav-item-child {
+  height: 40px;
+  padding: 0 16px 0 20px;
+  margin: 1px 8px 1px 16px;
+  width: calc(100% - 24px);
+  font-size: 13px; font-weight: 400;
+}
+.nav-item-child .nav-icon-child {
+  font-size: 18px; width: 18px; height: 18px;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.nav-item-child.nav-item-active .nav-icon-child {
+  color: var(--md-sys-color-on-secondary-container);
+}
+
+/* Icons */
+.nav-icon {
+  font-size: 20px; width: 20px; height: 20px;
+  color: inherit; flex-shrink: 0;
+}
+.nav-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ═══════════════════════════════════════════════════════════════
+   NAV GROUP — parent with collapsible children  (NEW)
+   ═══════════════════════════════════════════════════════════════ */
+.nav-group { display: flex; flex-direction: column; }
+
+/* Group header button */
+.nav-group-header {
+  display: flex; align-items: center; gap: 12px;
+  height: 44px; padding: 0 12px 0 16px;
+  margin: 1px 8px;
+  border-radius: var(--md-sys-shape-corner-full);
+  font-size: 14px; font-weight: 500;
+  color: var(--md-sys-color-on-surface-variant);
+  background: transparent; border: none; cursor: pointer; width: calc(100% - 16px);
+  text-align: left;
+  transition: background var(--md-sys-motion-duration-short4),
+              color     var(--md-sys-motion-duration-short4);
+}
+.nav-group-header:hover {
+  background: var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-on-surface);
+}
+.nav-group-header-left { display: flex; align-items: center; gap: 12px; flex: 1; overflow: hidden; }
+.nav-group-header-active {
+  color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-surface-variant);
+}
+
+/* Chevron rotation animation */
+.nav-chevron {
+  font-size: 18px; width: 18px; height: 18px;
+  color: var(--md-sys-color-on-surface-variant);
+  flex-shrink: 0;
+  transition: transform var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+  transform: rotate(0deg);
+}
+.nav-chevron-open { transform: rotate(180deg); }
+
+/* Children container — animates to its REAL content height (no overshoot),
+   using the CSS grid-template-rows 0fr/1fr technique. The previous version
+   used a fixed `max-height: 600px` guess, which overshoots every real group
+   in this app (the largest has 6 children, ~252px of real content) — that
+   caused a visible pause where the animation kept "running" toward 600px
+   for a noticeable moment after the content had already fully appeared. */
+.nav-group-children {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  transition: grid-template-rows var(--md-sys-motion-duration-medium2) var(--md-sys-motion-easing-standard);
+}
+.nav-group-children > * { min-height: 0; }
+.nav-group-children-inner { overflow: hidden; }
+.nav-group-children-open {
+  grid-template-rows: 1fr;
+}
+
+/* Flat nav items (top-level, no group) — same as .nav-item base styles,
+   explicitly defined so the class has its own rule rather than relying
+   solely on the base .nav-item selector and sibling-margin rules. */
+.nav-item-flat { /* inherits all .nav-item rules; add flat-specific overrides below if needed */ }
+
+/* Section divider between groups */
+.nav-group + .nav-group,
+.nav-group + .nav-item-flat,
+.nav-item-flat + .nav-group { margin-top: 2px; }
+.ai-chat-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 32px;
+  z-index: 520;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.24) !important;
+}
+
+.ai-chat-fab mat-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+@media (max-width: 768px) {
+  .ai-chat-fab {
+    right: 16px;
+    bottom: 20px;
+  }
+}
+

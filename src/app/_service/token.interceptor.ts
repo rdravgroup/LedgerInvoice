@@ -162,8 +162,9 @@ function shouldSkipTokenInsertion(request: any): boolean {
     'confirmregisteration',             // Confirm registration
     'resendregistrationotp',            // Resend registration OTP
     'requestforgotpasswordotp',         // Request forgot password OTP
-    'resetpasswordwithotp',             // Reset password with OTP
-    // Note: removed 'GenerateRefreshToken' from public endpoints so the
+    'resetpasswordwithotp',             // Reset password with OTP    'GetBycode',                        // Login helper endpoint used before token storage
+    'Getbycode',                        // Same endpoint variant
+    'GetbycodeDetailed',                // User detail endpoint used during login    // Note: removed 'GenerateRefreshToken' from public endpoints so the
     // Authorization header is included. Some backends require the bearer
     // token to validate refresh requests.
     'userregistration',                 // Legacy registration endpoint

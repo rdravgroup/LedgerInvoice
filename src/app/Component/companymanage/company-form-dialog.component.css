@@ -1,0 +1,47 @@
+/* company-form-dialog.component.css */
+.cfd-wrap { display: flex; flex-direction: column; }
+
+.cfd-header {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);
+  color: white; flex-shrink: 0;
+}
+.cfd-header-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: rgba(255,255,255,.2);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.cfd-header-icon mat-icon { font-size: 24px !important; color: white !important; }
+.cfd-title { font-size: 18px; font-weight: 700; margin: 0 0 2px; letter-spacing: -.2px; }
+.cfd-sub   { font-size: 12px; opacity: .8; margin: 0; }
+.cfd-close { margin-left: auto; color: rgba(255,255,255,.9) !important; }
+
+.cfd-content { padding: 16px 24px !important; overflow-y: auto; }
+
+.cfd-form { display: flex; flex-direction: column; gap: 0; }
+.cfd-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+.cfd-field      { width: 100%; }
+.cfd-field-full { width: 100%; }
+.req { color: #dc2626; font-weight: 700; }
+
+.cfd-actions {
+  padding: 14px 24px 16px !important;
+  border-top: 1px solid #e2e8f0;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.cfd-btn-cancel, .cfd-btn-save { height: 44px !important; border-radius: 10px !important; font-weight: 700 !important; gap: 6px; display: flex !important; align-items: center !important; }
+.cfd-btn-save { min-width: 160px; }
+.btn-spin { display: inline-block; }
+
+@media (max-width: 599px) {
+  .cfd-header { padding: 16px; }
+  .cfd-content { padding: 12px 16px !important; }
+  .cfd-row { grid-template-columns: 1fr; }
+  .cfd-actions { padding: 12px 16px !important; flex-direction: column; }
+  .cfd-btn-cancel, .cfd-btn-save { width: 100% !important; justify-content: center !important; }
+}

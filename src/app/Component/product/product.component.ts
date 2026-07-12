@@ -1,13 +1,17 @@
-import { Component, OnInit, ViewChild, Inject } from '@angular/core';
+import { Component, OnInit, ViewChild, Inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MaterialModule } from '../../material.module';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { MasterService } from '../../_service/master.service';
 import { ToastrService } from 'ngx-toastr';
+import { SelectedCompanyService } from '../../_service/selected-company.service';
+import { AuthService } from '../../_service/authentication.service';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatDialog, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-product-list-dialog',
@@ -32,7 +36,7 @@ import { MatDialog, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dial
         <mat-card class="list-card" *ngFor="let element of dataSource.filteredData">
           <mat-card-content>
             <div class="list-card-header">
-              <div class="list-card-avatar">{{ element.productName?.charAt(0) }}</div>
+              <div class="list-card-avatar">{{ (element.productName || '').charAt(0) }}</div>
               <div class="list-card-info">
                 <div class="list-card-name">{{ element.productName }}</div>
                 <div class="list-card-sub">{{ element.categoryCode }} • {{ element.rateWithTax | currency:'INR' }}</div>
@@ -194,7 +198,8 @@ export class ProductListDialogComponent implements OnInit {
   templateUrl: './product.component.html',
   styleUrls: ['./product.component.css']
 })
-export class ProductComponent implements OnInit {
+export class ProductComponent implements OnInit, OnDestroy {
+  private destroy$ = new Subject<void>();
   productForm!: FormGroup;
   productList: any[] = [];
   categoryList: any[] = [];
@@ -210,6 +215,8 @@ export class ProductComponent implements OnInit {
     private service: MasterService,
     private toastr: ToastrService,
     private dialog: MatDialog
+    , private selectedCompanyService: SelectedCompanyService
+    , private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -217,6 +224,16 @@ export class ProductComponent implements OnInit {
     this.loadProducts();
     this.loadCategories();
     this.loadMeasurements();
+
+    // Reload products when selected company changes
+    this.selectedCompanyService.selectedCompanyId$.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.loadProducts();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   initForm() {
@@ -255,7 +272,8 @@ export class ProductComponent implements OnInit {
   }
 
   loadProducts() {
-    this.service.GetProducts().subscribe({
+    const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+    this.service.GetProducts(effectiveCompanyId ?? undefined).subscribe({
       next: (res: any) => {
         this.productList = res || [];
         // Sort by uniqueKeyID in descending order
@@ -310,7 +328,8 @@ export class ProductComponent implements OnInit {
       rateWithoutTax: formValue.rateWithoutTax || 0
     };
 
-    this.service.SaveProduct(payload).subscribe({
+    const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+    this.service.SaveProduct(payload, effectiveCompanyId ?? undefined).subscribe({
       next: (res: any) => {
         if (res.result === 'pass') {
           this.toastr.success(
@@ -352,7 +371,8 @@ export class ProductComponent implements OnInit {
 
   deleteProduct(product: any) {
     if (confirm(`Delete product "${product.productName}"?`)) {
-      this.service.RemoveProduct(product.uniqueKeyID).subscribe({
+      const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+      this.service.RemoveProduct(product.uniqueKeyID, effectiveCompanyId ?? undefined).subscribe({
         next: (res: any) => {
           if (res.result === 'pass') {
             this.toastr.success('Deleted successfully', 'Product');

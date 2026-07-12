@@ -1,0 +1,17 @@
+/* purchase-reports.component.css */
+@import '../purchase-shared.css';
+
+.rpt-tab-content   { padding: 20px 0; }
+.rpt-table-scroll  { overflow-x: auto; }
+.rpt-table         { min-width: 700px; }
+.rpt-table tfoot   { background: var(--md-sys-color-surface-variant); }
+.rpt-table .num    { text-align: right; font-family: monospace; }
+.rpt-foot td       { font-weight: 600; padding: 10px; border-top: 2px solid var(--md-sys-color-outline); }
+.rpt-overdue-row   { background: rgba(198,40,40,0.05) !important; }
+.rpt-low-stock     { background: rgba(245,127,23,0.07) !important; }
+.rpt-out-stock     { background: rgba(198,40,40,0.08) !important; }
+.rpt-overdue-tag   { font-size:10px; background:#fce4ec; color:#c62828; border-radius:8px; padding:2px 7px; margin-left:4px; }
+.rpt-ledger-header { display:flex; justify-content:space-between; align-items:center; padding:10px 0 14px; flex-wrap:wrap; gap:8px; }
+.rpt-vendor-name   { font-size:16px; font-weight:600; }
+.rpt-balance       { font-size:18px; font-weight:700; font-family:monospace; color:var(--md-sys-color-primary); }
+.success { color: #2e7d32; font-weight: 600; }

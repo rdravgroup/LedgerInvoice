@@ -1,0 +1,10 @@
+
+// PATCH for companymanage.component.ts
+// 1. Add styleUrls if not present: styleUrls: ['./companymanage.component.css']
+// 2. Add this method:
+
+applyFilter(event: Event): void {
+  const val = (event.target as HTMLInputElement).value;
+  this.datasource.filter = val.trim().toLowerCase();
+  if (this.datasource.paginator) this.datasource.paginator.firstPage();
+}

@@ -158,7 +158,7 @@ export class ConfirmotpComponent implements OnInit {
       confirmPassword: this.passwordForm.get('confirmPassword')?.value
     };
 
-    this.authService.createPassword(passwordData.newPassword, passwordData.confirmPassword).subscribe({
+    this.authService.createPassword(passwordData.newPassword!, passwordData.confirmPassword!).subscribe({
       next: (response) => {
         this.isCreatingPassword = false;
         // Defensive: check for missing/invalid response

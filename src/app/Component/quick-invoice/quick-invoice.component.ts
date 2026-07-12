@@ -7,6 +7,8 @@ import { QuickInvoiceService } from '../../_service/quick-invoice.service';
 import { ProductService } from '../../_service/product.service';
 import { CustomerService } from '../../_service/customer.service';
 import { ToastrService } from 'ngx-toastr';
+import { SelectedCompanyService } from '../../_service/selected-company.service';
+import { AuthService } from '../../_service/authentication.service';
 import { Subject } from 'rxjs';
 import { debounceTime, takeUntil } from 'rxjs/operators';
 import { customer } from '../../_model/customer.model';
@@ -53,6 +55,7 @@ export class QuickInvoiceComponent implements OnInit, OnDestroy {
   
   @ViewChildren('productInput') productInputs!: QueryList<ElementRef>;
   private destroy$ = new Subject<void>();
+  private firstCompanySub = true;
 
   showInvoiceList = false;
   hoveredInvoiceId: string | null = null;
@@ -66,14 +69,34 @@ export class QuickInvoiceComponent implements OnInit, OnDestroy {
     private quickInvoiceService: QuickInvoiceService,
     private productService: ProductService,
     private customerService: CustomerService,
-    private toastr: ToastrService,private dialog: MatDialog
+    private toastr: ToastrService,private dialog: MatDialog,
+    private selectedCompanyService: SelectedCompanyService,
+    private authService: AuthService
   ) {}
 
   ngOnInit() {
-    this.loadCustomers();
-    this.loadProducts();
-    this.loadInvoices();
+    // Setup customer search first
     this.setupCustomerSearch();
+
+    // React to selected company changes and drive initial load via subscription
+    this.selectedCompanyService.selectedCompanyId$.pipe(takeUntil(this.destroy$)).subscribe((cid: string | null) => {
+      const prev = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+      // If not the first emission and the company actually changed, show a small toast
+      if (!this.firstCompanySub && (cid || this.authService.getCompanyId()) !== prev) {
+        this.toastr.info('Company changed — reloading quick invoices', 'Company');
+        // reset selection to avoid stale state
+        this.selectedInvoiceId = '';
+        this.customerName = '';
+        this.customerId = '';
+        this.items = [];
+      }
+      this.firstCompanySub = false;
+
+      // Load data for the effective company
+      this.loadCustomers();
+      this.loadProducts();
+      this.loadInvoices();
+    });
   }
 
 toggleInvoiceList() {
@@ -186,7 +209,8 @@ toggleInvoiceList() {
 
  loadCustomers() {
   this.isLoading = true;
-  this.customerService.Getall()
+  const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+  this.customerService.Getall(effectiveCompanyId ?? undefined)
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (data: customer[]) => {
@@ -202,7 +226,8 @@ toggleInvoiceList() {
     });
 }
  loadProducts() {
-    this.productService.getAllProducts()
+    const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+    this.productService.getAllProducts(effectiveCompanyId ?? undefined)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data: any) => {
@@ -217,7 +242,8 @@ toggleInvoiceList() {
   }
 
   loadInvoices() {
-    this.quickInvoiceService.getAllInvoices()
+    const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+    this.quickInvoiceService.getAllInvoices(effectiveCompanyId ?? undefined)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (data: any) => {
@@ -403,9 +429,10 @@ toggleInvoiceList() {
     };
 
     this.isSavingInvoice = true;
+    const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
     const saveOperation = this.selectedInvoiceId
-      ? this.quickInvoiceService.updateInvoice(invoice as any)
-      : this.quickInvoiceService.createInvoice(invoice as any);
+      ? this.quickInvoiceService.updateInvoice(invoice as any, effectiveCompanyId ?? undefined)
+      : this.quickInvoiceService.createInvoice(invoice as any, effectiveCompanyId ?? undefined);
 
     saveOperation.pipe(takeUntil(this.destroy$)).subscribe({
       next: (response) => {
@@ -490,7 +517,8 @@ loadInvoice(selectedInvoiceId: string) {
   }
 
   this.isDeletingInvoice = true;
-  this.quickInvoiceService.deleteInvoice(invoiceId)
+  const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+  this.quickInvoiceService.deleteInvoice(invoiceId, effectiveCompanyId ?? undefined)
     .pipe(takeUntil(this.destroy$))
     .subscribe({
       next: (response: any) => {

@@ -4,7 +4,7 @@ import { MaterialModule } from '../../material.module';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { Roles, UpdateUser, Users } from '../../_model/user.model';
+import { Roles, UpdateRole, UpdateStatus, Users } from '../../_model/user.model';
 import { UserService } from '../../_service/user.service';
 
 @Component({
@@ -69,14 +69,13 @@ export class UserupdateComponent implements OnInit {
 
   proceedchange() {
     if (this.userform.valid) {
-      let _obj: UpdateUser = {
-        username: this.dialogdata.username,
-        role: this.userform.value.role as string,
-        status:this.userform.value.status as boolean
-      }
+      const username = this.dialogdata.username;
+      const roleObj: UpdateRole = { username, role: this.userform.value.role as string };
+      const statusObj: UpdateStatus = { username, isactive: this.userform.value.status as boolean };
+
       if (this.type === 'role') {
-        this.service.updateRole(_obj).subscribe(item => {
-          this._response=item;
+        this.service.updateRole(roleObj).subscribe(item => {
+          this._response = item;
           if (this._response.result == 'pass') {
             this.toastr.success('Updated successfully', 'Role Update');
             this.closepopup();
@@ -84,9 +83,9 @@ export class UserupdateComponent implements OnInit {
             this.toastr.error('Failed due to : ' + this._response.message, 'Role Update')
           }
         })
-      }else{
-        this.service.updateStatus(_obj).subscribe(item => {
-          this._response=item;
+      } else {
+        this.service.updateStatus(statusObj).subscribe(item => {
+          this._response = item;
           if (this._response.result == 'pass') {
             this.toastr.success('Updated successfully', 'Status Update');
             this.closepopup();

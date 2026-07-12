@@ -21,28 +21,38 @@ export class CustomerService {
     return throwError(() => new Error(error.message || 'An unexpected error occurred'));
   }
 
-  Getall(): Observable<customer[]> {
-    return this.http.get<customer[]>(this.baseUrl + 'Customer/GetAll')
+  Getall(companyId?: string): Observable<customer[]> {
+    let url = this.baseUrl + 'Customer/GetAll';
+    if (companyId) url += '?companyId=' + encodeURIComponent(companyId);
+    return this.http.get<customer[]>(url)
       .pipe(catchError(err => this.handleError(err)));
   }
 
-  Getbycode(code: string): Observable<customer> {
-    return this.http.get<customer>(this.baseUrl + 'Customer/GetByUniqueKeyID?code=' + code)
+  Getbycode(code: string, companyId?: string): Observable<customer> {
+    let url = this.baseUrl + 'Customer/GetByUniqueKeyID?code=' + encodeURIComponent(code);
+    if (companyId) url += '&companyId=' + encodeURIComponent(companyId);
+    return this.http.get<customer>(url)
       .pipe(catchError(err => this.handleError(err)));
   }
 
-  Createcustomer(_data: customer): Observable<CustomerApiResult> {
-    return this.http.post<CustomerApiResult>(this.baseUrl + 'Customer/create', _data)
+  Createcustomer(_data: customer, companyId?: string): Observable<CustomerApiResult> {
+    let url = this.baseUrl + 'Customer/Create';
+    if (companyId) url += '?companyId=' + encodeURIComponent(companyId);
+    return this.http.post<CustomerApiResult>(url, _data)
       .pipe(catchError(err => this.handleError(err)));
   }
 
-  Updatecustomer(_data: customer): Observable<CustomerApiResult> {
-    return this.http.put<CustomerApiResult>(this.baseUrl + 'Customer/Update?code=' + _data.uniqueKeyID, _data)
+  Updatecustomer(_data: customer, companyId?: string): Observable<CustomerApiResult> {
+    let url = this.baseUrl + 'Customer/Update?code=' + encodeURIComponent(_data.uniqueKeyID);
+    if (companyId) url += '&companyId=' + encodeURIComponent(companyId);
+    return this.http.put<CustomerApiResult>(url, _data)
       .pipe(catchError(err => this.handleError(err)));
   }
 
-  Deletecustomer(code: string): Observable<any> {
-    return this.http.delete(this.baseUrl + 'Customer/Remove?code=' + code)
+  Deletecustomer(code: string, companyId?: string): Observable<any> {
+    let url = this.baseUrl + 'Customer/Remove?code=' + encodeURIComponent(code);
+    if (companyId) url += '&companyId=' + encodeURIComponent(companyId);
+    return this.http.delete(url)
       .pipe(catchError(err => this.handleError(err)));
   }
 

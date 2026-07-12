@@ -1,53 +1,119 @@
-<div class="page-header">
-  <h2>Company Declarations</h2>
-  <div class="actions">
-    <button mat-flat-button color="primary" (click)="openCreate()" *ngIf="isAdmin || isSuperAdmin">Create Declaration</button>
+<!-- compandeclaration.component.html — MD3 + Bootstrap D3 redesign -->
+<div class="cd-page">
+
+  <div class="cd-header">
+    <div class="cd-header-left">
+      <mat-icon class="cd-header-icon">description</mat-icon>
+      <div>
+        <h1 class="cd-title">Company Declarations</h1>
+        <p class="cd-sub">Manage declaration text printed on invoices</p>
+      </div>
+    </div>
+    <div class="cd-header-actions">
+      <!-- Super admin: company filter -->
+      <mat-form-field appearance="outline" class="cd-company-select" subscriptSizing="dynamic" *ngIf="isSuperAdmin">
+        <mat-label>Company</mat-label>
+        <mat-select [(value)]="selectedCompanyId" (selectionChange)="onCompanyChange()">
+          <mat-option *ngFor="let c of companies" [value]="c.companyId">{{ c.name }} ({{ c.companyId }})</mat-option>
+        </mat-select>
+        <mat-icon matPrefix>business</mat-icon>
+      </mat-form-field>
+
+      <button mat-flat-button color="primary" (click)="openCreate()"
+              *ngIf="isAdmin || isSuperAdmin" class="cd-create-btn">
+        <mat-icon>add</mat-icon> Create Declaration
+      </button>
+    </div>
   </div>
-</div>
 
-<div class="filter-row" *ngIf="isSuperAdmin">
-  <mat-form-field appearance="outline">
-    <mat-label>Company</mat-label>
-    <mat-select [(value)]="selectedCompanyId" (selectionChange)="onCompanyChange()">
-      <mat-option *ngFor="let c of companies" [value]="c.companyId">{{ c.name }} ({{ c.companyId }})</mat-option>
-    </mat-select>
-  </mat-form-field>
-</div>
+  <!-- Search -->
+  <div class="cd-search-row">
+    <mat-form-field appearance="outline" class="cd-search-field" subscriptSizing="dynamic">
+      <mat-label>Search declarations</mat-label>
+      <input matInput (input)="applyFilter($event)" placeholder="Search…" />
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+  </div>
 
-<div class="table-container">
-  <table mat-table [dataSource]="datasource" class="mat-elevation-z8">
+  <!-- ── DESKTOP TABLE ──────────────────────────────────── -->
+  <mat-card class="cd-table-card hide-mobile">
+    <div class="cd-table-wrap">
+      <table mat-table [dataSource]="datasource" matSort class="cd-table">
 
-    <ng-container matColumnDef="recId">
-      <th mat-header-cell *matHeaderCellDef>Id</th>
-      <td mat-cell *matCellDef="let e">{{ e.recId || e.RecId || e.Rec_Id }}</td>
-    </ng-container>
+        <ng-container matColumnDef="recId">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>ID</th>
+          <td mat-cell *matCellDef="let e">
+            <span class="cd-id-chip">{{ e.recId || e.RecId || e.Rec_Id }}</span>
+          </td>
+        </ng-container>
 
-    <ng-container matColumnDef="declaration">
-      <th mat-header-cell *matHeaderCellDef>Declaration</th>
-      <td mat-cell *matCellDef="let e">{{ e.declaration || e.Declaration }}</td>
-    </ng-container>
+        <ng-container matColumnDef="declaration">
+          <th mat-header-cell *matHeaderCellDef>Declaration Text</th>
+          <td mat-cell *matCellDef="let e">
+            <div class="cd-declaration-text">{{ e.declaration || e.Declaration }}</div>
+          </td>
+        </ng-container>
 
-    <ng-container matColumnDef="active">
-      <th mat-header-cell *matHeaderCellDef>Active</th>
-      <td mat-cell *matCellDef="let e">{{ e.active || e.Active }}</td>
-    </ng-container>
+        <ng-container matColumnDef="active">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+          <td mat-cell *matCellDef="let e">
+            <span class="cd-status" [class.cd-status--yes]="(e.active||e.Active)==='Y'" [class.cd-status--no]="(e.active||e.Active)!=='Y'">
+              {{ (e.active || e.Active) === 'Y' ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+        </ng-container>
 
-    <ng-container matColumnDef="createdDate">
-      <th mat-header-cell *matHeaderCellDef>Created</th>
-      <td mat-cell *matCellDef="let e">{{ e.createdDate | date:'short' }}</td>
-    </ng-container>
+        <ng-container matColumnDef="createdDate">
+          <th mat-header-cell *matHeaderCellDef>Created</th>
+          <td mat-cell *matCellDef="let e" class="cd-date">{{ e.createdDate | date:'dd MMM yyyy' }}</td>
+        </ng-container>
 
-    <ng-container matColumnDef="action">
-      <th mat-header-cell *matHeaderCellDef>Action</th>
-      <td mat-cell *matCellDef="let e">
-        <button mat-icon-button color="primary" (click)="openEdit(e)" *ngIf="isAdmin || isSuperAdmin"><mat-icon>edit</mat-icon></button>
-        <button mat-icon-button color="warn" (click)="deleteItem(e.recId || e.RecId || e.Rec_Id)" *ngIf="isAdmin || isSuperAdmin"><mat-icon>delete</mat-icon></button>
-      </td>
-    </ng-container>
+        <ng-container matColumnDef="action">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let e" class="cd-actions-cell">
+            <button mat-icon-button color="primary" (click)="openEdit(e)" *ngIf="isAdmin || isSuperAdmin" matTooltip="Edit">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="deleteItem(e.recId || e.RecId || e.Rec_Id)" *ngIf="isAdmin || isSuperAdmin" matTooltip="Delete">
+              <mat-icon>delete_outline</mat-icon>
+            </button>
+          </td>
+        </ng-container>
 
-    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-  </table>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="cd-table-row"></tr>
+      </table>
+      <mat-paginator [pageSizeOptions]="[10,25,50]" showFirstLastButtons></mat-paginator>
+    </div>
+  </mat-card>
 
-  <mat-paginator [pageSizeOptions]="[10,25,50]" showFirstLastButtons></mat-paginator>
+  <!-- ── MOBILE CARD LIST ───────────────────────────────── -->
+  <div class="cd-card-list show-mobile">
+    <mat-card *ngFor="let e of declarations" class="cd-item-card">
+      <mat-card-content>
+        <div class="cd-item-header">
+          <span class="cd-id-chip">{{ e.recId || e.RecId || e.Rec_Id }}</span>
+          <span class="cd-status" [class.cd-status--yes]="(e.active||e.Active)==='Y'" [class.cd-status--no]="(e.active||e.Active)!=='Y'">
+            {{ (e.active || e.Active) === 'Y' ? 'Active' : 'Inactive' }}
+          </span>
+          <span class="cd-date" style="margin-left:auto;font-size:11px;color:#94a3b8">{{ e.createdDate | date:'dd MMM yy' }}</span>
+        </div>
+        <p class="cd-decl-text">{{ e.declaration || e.Declaration }}</p>
+        <div class="cd-item-actions" *ngIf="isAdmin || isSuperAdmin">
+          <button mat-stroked-button color="primary" (click)="openEdit(e)" class="cd-item-btn">
+            <mat-icon>edit</mat-icon> Edit
+          </button>
+          <button mat-stroked-button color="warn" (click)="deleteItem(e.recId || e.RecId || e.Rec_Id)" class="cd-item-btn">
+            <mat-icon>delete_outline</mat-icon> Delete
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="cd-empty" *ngIf="declarations.length === 0">
+      <mat-icon>description</mat-icon>
+      <p>No declarations found</p>
+    </div>
+  </div>
+
 </div>

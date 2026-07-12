@@ -15,6 +15,7 @@ import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { customerOutstanding, paymentEntryRequest, ledgerApiResponse } from '../../../_model/ledger.model';
+import { SelectedCompanyService } from '../../../_service/selected-company.service';
 
 
 @Component({
@@ -74,18 +75,31 @@ export class OutstandingARComponent implements OnInit, OnDestroy, AfterViewInit 
 
   // Lifecycle
   private destroy$ = new Subject<void>();
+  private firstCompanySub = true;
 
   constructor(
     private ledgerService: LedgerService,
     private dialog: MatDialog,
     private authService: AuthService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    private selectedCompanyService: SelectedCompanyService
   ) {
     this.companyId = this.authService.getCompanyId() || '';
   }
 
   ngOnInit(): void {
-    this.loadOutstandingCustomers();
+    // react to selected company changes (single subscription drives initial + subsequent reloads)
+    this.selectedCompanyService.selectedCompanyId$.pipe(takeUntil(this.destroy$)).subscribe((cid: string | null) => {
+      const newCompanyId = cid || this.authService.getCompanyId() || '';
+      const prev = this.companyId;
+      this.companyId = newCompanyId;
+      // Skip toast on first subscription emission (initial load)
+      if (!this.firstCompanySub && prev !== newCompanyId) {
+        this.toastr.info('Company changed — reloading outstanding list', 'Company');
+      }
+      this.firstCompanySub = false;
+      this.loadOutstandingCustomers();
+    });
   }
 
   ngAfterViewInit(): void {

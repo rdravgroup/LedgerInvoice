@@ -10,7 +10,9 @@ import { AuthService } from '../../_service/authentication.service';
 import { CustomerService } from '../../_service/customer.service';
 import { MasterService } from '../../_service/master.service';
 import { LedgerService } from '../../_service/ledger.service';
+import { SelectedCompanyService } from '../../_service/selected-company.service';
 import { Company } from '../../_model/company.model';
+import { LoggerService } from '../../_service/logger.service';
 
 @Component({
   selector: 'app-home',
@@ -41,50 +43,68 @@ export class HomeComponent implements OnInit, OnDestroy {
     private customerSvc: CustomerService,
     private masterSvc: MasterService,
     private ledgerSvc: LedgerService,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private logger: LoggerService,
+    private selectedCompanyService: SelectedCompanyService
   ) {}
 
   ngOnInit(): void {
-    const companyId = this.authService.getCompanyId();
-    if (companyId) {
-      this.userSvc.getCompanyById(companyId).pipe(takeUntil(this.destroy$)).subscribe({
+    const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+    if (effectiveCompanyId) {
+      this.userSvc.getCompanyById(effectiveCompanyId).pipe(takeUntil(this.destroy$)).subscribe({
         next: (co) => { this.company = co; },
         error: () => {}
       });
     }
 
     this.loadDashboardData();
+
+    // React to company selection changes and reload dashboard data
+    this.selectedCompanyService.selectedCompanyId$.pipe(takeUntil(this.destroy$)).subscribe((cid) => {
+      const effective = cid || this.authService.getCompanyId();
+      if (effective) {
+        this.userSvc.getCompanyById(effective).pipe(takeUntil(this.destroy$)).subscribe({ next: (co) => { this.company = co; }, error: () => { this.company = undefined; } });
+      } else {
+        this.company = undefined;
+      }
+      this.loadDashboardData();
+    });
   }
 
   private loadDashboardData(): void {
     this.loading = true;
 
-    // Load customers for count KPI
-    this.customerSvc.Getall().pipe(takeUntil(this.destroy$)).subscribe({
+    // Load customers for count KPI, reuse effectiveCompanyId already declared above
+    const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+    this.customerSvc.Getall(effectiveCompanyId ?? undefined).pipe(takeUntil(this.destroy$)).subscribe({
       next: (customers: any[]) => {
         this.customerCount = customers?.filter((c: any) => c.isActive)?.length || 0;
       },
       error: () => { this.customerCount = 0; }
     });
 
-    // Load recent invoices (from GetAllInvoice endpoint)
-    (this.masterSvc.GetAllInvoice() as any)?.pipe(takeUntil(this.destroy$)).subscribe({
-      next: (invoices: any[]) => {
-        this.invoiceCount = invoices?.length || 0;
-        // Show 5 most recent
-        this.recentInvoices = (invoices || []).slice(0, 5);
-        this.loading = false;
-      },
-      error: () => {
-        this.recentInvoices = [];
-        this.loading = false;
-      }
-    });
+    // Load recent invoices (from GetAllInvoice endpoint) but first check subscription
+    const companyIdForCheck = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+    const performLoadInvoices = () => {
+      (this.masterSvc.GetAllInvoice(companyIdForCheck ?? undefined) as any)?.pipe(takeUntil(this.destroy$)).subscribe({
+        next: (invoices: any[]) => {
+          this.invoiceCount = invoices?.length || 0;
+          // Show 5 most recent
+          this.recentInvoices = (invoices || []).slice(0, 5);
+          this.loading = false;
+        },
+        error: () => {
+          this.loading = false;
+          this.recentInvoices = [];
+        }
+      });
+    };
+
+    performLoadInvoices();
 
     // Load AR summary (total A/R, total due/overdue) for KPI cards
-    const companyId = this.authService.getCompanyId();
-    if (companyId) {
-      this.ledgerSvc.getCompanySummary(companyId).pipe(takeUntil(this.destroy$)).subscribe({
+    if (effectiveCompanyId) {
+      this.ledgerSvc.getCompanySummary(effectiveCompanyId).pipe(takeUntil(this.destroy$)).subscribe({
         next: (resp: any) => {
           console.debug('[Home] Company summary response:', resp);
           const summary = resp?.data || {};
@@ -93,7 +113,7 @@ export class HomeComponent implements OnInit, OnDestroy {
           this.overdueAmount = Number(summary?.totalDue ?? 0);
           console.debug('[Home] KPI values - totalAR:', this.totalAR, 'totalPaid:', this.totalPaid, 'overdueAmount:', this.overdueAmount);
         },
-        error: (err) => {
+        error: (err: any) => {
           console.error('[Home] Error loading company summary:', err);
           this.totalAR = 0;
           this.overdueAmount = 0;
@@ -112,6 +132,9 @@ export class HomeComponent implements OnInit, OnDestroy {
     }
   }
 
+  // If backend forbids access due to expired subscription, open activation dialog
+
+  // Open the activation dialog for the given company id
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();

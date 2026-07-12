@@ -9,14 +9,14 @@ export class LoadingService {
 
   show() {
     this._count++;
-    if (this._count > 0) this._loading$.next(true);
+    if (this._count > 0) Promise.resolve().then(() => this._loading$.next(true));
   }
 
   hide() {
     this._count--;
     if (this._count <= 0) {
       this._count = 0;
-      this._loading$.next(false);
+      Promise.resolve().then(() => this._loading$.next(false));
     }
   }
 }

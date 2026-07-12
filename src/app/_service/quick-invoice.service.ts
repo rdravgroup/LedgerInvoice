@@ -24,9 +24,11 @@ export class QuickInvoiceService {
     return throwError(() => new Error(message));
   }
 
-  getAllInvoices(): Observable<QuickInvoice[]> {
+  getAllInvoices(companyId?: string): Observable<QuickInvoice[]> {
+    let url = `${this.baseUrl}QuickInvoice/GetAll`;
+    if (companyId) url += '?companyId=' + encodeURIComponent(companyId);
     return this.http
-      .get<QuickInvoiceApiResponse>(`${this.baseUrl}QuickInvoice/GetAll`)
+      .get<QuickInvoiceApiResponse>(url)
       .pipe(
         map(res => {
           if (Array.isArray(res?.data)) {
@@ -41,9 +43,11 @@ export class QuickInvoiceService {
       );
   }
 
-  getInvoiceById(id: string): Observable<QuickInvoice> {
+  getInvoiceById(id: string, companyId?: string): Observable<QuickInvoice> {
+    let url = `${this.baseUrl}QuickInvoice?id=${encodeURIComponent(id)}`;
+    if (companyId) url += '&companyId=' + encodeURIComponent(companyId);
     return this.http
-      .get<QuickInvoiceApiResponse>(`${this.baseUrl}QuickInvoice?id=${id}`)
+      .get<QuickInvoiceApiResponse>(url)
       .pipe(
         map(res => {
           if (res?.data) {
@@ -55,21 +59,27 @@ export class QuickInvoiceService {
       );
   }
 
-  createInvoice(invoice: QuickInvoice): Observable<QuickInvoiceApiResponse> {
+  createInvoice(invoice: QuickInvoice, companyId?: string): Observable<QuickInvoiceApiResponse> {
+    let url = `${this.baseUrl}QuickInvoice/Create`;
+    if (companyId) url += '?companyId=' + encodeURIComponent(companyId);
     return this.http
-      .post<QuickInvoiceApiResponse>(`${this.baseUrl}QuickInvoice/Create`, invoice)
+      .post<QuickInvoiceApiResponse>(url, invoice)
       .pipe(catchError(err => this.handleError(err)));
   }
 
-  updateInvoice(invoice: QuickInvoice): Observable<QuickInvoiceApiResponse> {
+  updateInvoice(invoice: QuickInvoice, companyId?: string): Observable<QuickInvoiceApiResponse> {
+    let url = `${this.baseUrl}QuickInvoice/Update`;
+    if (companyId) url += '?companyId=' + encodeURIComponent(companyId);
     return this.http
-      .put<QuickInvoiceApiResponse>(`${this.baseUrl}QuickInvoice/Update`, invoice)
+      .put<QuickInvoiceApiResponse>(url, invoice)
       .pipe(catchError(err => this.handleError(err)));
   }
 
-  deleteInvoice(id: string): Observable<QuickInvoiceApiResponse> {
-  return this.http
-    .delete<QuickInvoiceApiResponse>(`${this.baseUrl}QuickInvoice/${id}`)
-    .pipe(catchError(err => this.handleError(err)));
-}
+  deleteInvoice(id: string, companyId?: string): Observable<QuickInvoiceApiResponse> {
+    let url = `${this.baseUrl}QuickInvoice/${encodeURIComponent(id)}`;
+    if (companyId) url += '?companyId=' + encodeURIComponent(companyId);
+    return this.http
+      .delete<QuickInvoiceApiResponse>(url)
+      .pipe(catchError(err => this.handleError(err)));
+  }
 }

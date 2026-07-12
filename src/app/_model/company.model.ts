@@ -2,6 +2,8 @@ export interface Company {
   companyId: string;
   name: string;
   status?: string;
+  // UI-only flag to highlight recently updated rows/cards
+  _justUpdated?: boolean;
   emailId?: string;
   mobileNo?: string;
   alternateMobile?: string;

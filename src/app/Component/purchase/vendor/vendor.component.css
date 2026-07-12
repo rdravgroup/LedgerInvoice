@@ -1,0 +1,209 @@
+/* ── Page Layout ──────────────────────────────────────────────────────────── */
+.page-content {
+  padding: 16px 20px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.page-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--md-sys-color-on-surface);
+  margin: 0 0 4px;
+}
+
+.title-icon { color: var(--md-sys-color-primary); }
+
+.page-subtitle {
+  font-size: 14px;
+  color: var(--md-sys-color-on-surface-variant);
+  margin: 0;
+}
+
+.btn-add {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 20px;
+}
+
+/* ── Summary strip ──────────────────────────────────────────────────────── */
+.stat-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.stat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--md-sys-color-surface-variant);
+  color: var(--md-sys-color-on-surface-variant);
+  border: 1px solid var(--md-sys-color-outline-variant);
+}
+
+.stat-chip mat-icon { font-size: 16px; width: 16px; height: 16px; }
+.stat-chip.active   { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); border-color: transparent; }
+.stat-chip.inactive { background: var(--md-sys-color-error-container);   color: var(--md-sys-color-on-error-container);   border-color: transparent; }
+.stat-chip.amount   { background: var(--md-sys-color-tertiary-container);color: var(--md-sys-color-on-tertiary-container);border-color: transparent; }
+.stat-chip.warn     { background: #fce4ec; color: #c62828; border-color: transparent; }
+
+/* ── Split layout ──────────────────────────────────────────────────────── */
+/* ── Table panel ───────────────────────────────────────────────────────── */
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.search-field {
+  flex: 1;
+  min-width: 220px;
+}
+
+.table-container {
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--md-sys-color-surface);
+}
+
+.vendor-table {
+  width: 100%;
+  background: var(--md-sys-color-surface);
+}
+
+/* Column widths */
+.vendor-table .mat-column-vendorName      { min-width: 200px; }
+.vendor-table .mat-column-contactPerson   { min-width: 130px; }
+.vendor-table .mat-column-phone           { display: none; }
+.vendor-table .mat-column-gstin           { min-width: 140px; }
+.vendor-table .mat-column-city            { min-width: 90px; }
+.vendor-table .mat-column-rating          { min-width: 110px; }
+.vendor-table .mat-column-outstandingBalance { min-width: 120px; text-align: right; }
+.vendor-table .mat-column-isActive        { min-width: 90px; }
+.vendor-table .mat-column-actions         { min-width: 120px; text-align: right; }
+
+.table-row:hover { background: var(--md-sys-color-surface-variant); }
+.row-selected    { background: var(--md-sys-color-primary-container) !important; }
+
+th.mat-header-cell {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-variant);
+  white-space: nowrap;
+}
+
+td.mat-cell { font-size: 13px; padding: 10px 16px !important; }
+
+/* Vendor name cell */
+.vendor-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vendor-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--md-sys-color-primary-container);
+  color: var(--md-sys-color-on-primary-container);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.fw-600 { font-weight: 600; }
+.fw-500 { font-weight: 500; }
+.text-muted { color: var(--md-sys-color-on-surface-variant); }
+.text-sm { font-size: 11px; }
+.d-none { display: none !important; }
+
+.gstin-code {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  background: var(--md-sys-color-surface-variant);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--md-sys-color-on-surface);
+}
+
+/* Stars in table */
+.star-display { display: flex; gap: 1px; }
+.star-icon { font-size: 16px; width: 16px; height: 16px; color: #ddd; }
+.star-icon.filled { color: #ffc107; }
+
+/* Amount colours */
+.amount-warn  { color: #d32f2f; font-weight: 600; }
+.amount-ok    { color: #2e7d32; font-weight: 600; }
+.amount-debit { color: #d32f2f; }
+.amount-credit { color: #2e7d32; }
+
+/* Status badge */
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.status-badge.active   { background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); }
+.status-badge.inactive { background: var(--md-sys-color-error-container);   color: var(--md-sys-color-on-error-container); }
+
+.action-btns { display: flex; align-items: center; gap: 2px; justify-content: flex-end; }
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--md-sys-color-on-surface-variant);
+}
+.empty-state mat-icon { font-size: 48px; width: 48px; height: 48px; opacity: .4; margin-bottom: 12px; }
+.empty-state h3 { margin: 0 0 6px; font-size: 16px; font-weight: 500; }
+.empty-state p  { margin: 0 0 16px; font-size: 14px; }
+.empty-state.small { padding: 24px 16px; }
+.empty-state.small mat-icon { font-size: 36px; width: 36px; height: 36px; }
+
+/* Skeleton */
+.skeleton-list { display: flex; flex-direction: column; gap: 8px; padding: 8px 0; }
+.skeleton-row  { height: 48px; border-radius: 8px; background: linear-gradient(90deg, var(--md-sys-color-surface-variant) 25%, var(--md-sys-color-surface) 50%, var(--md-sys-color-surface-variant) 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* Spin refresh */
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .page-content { padding: 12px; }
+  .vendor-table .mat-column-gstin,
+  .vendor-table .mat-column-city { display: none; }
+}

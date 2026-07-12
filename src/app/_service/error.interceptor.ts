@@ -10,8 +10,16 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const toastr = inject(ToastrService);
   const logger = inject(LoggerService);
 
+  // Note: determine current route at error time below so we respect navigation
+  // that may happen between request dispatch and error handling.
+
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
+      // Re-evaluate current URL at error time to correctly detect auth routes
+      const currentUrl = router.url || '';
+      const authRoutes = ['/login', '/oauth-login', '/confirmotp', '/register', '/resetpassword', '/forgetpassword'];
+      const onAuthRoute = authRoutes.some(r => currentUrl.startsWith(r));
+
       let errorMessage = 'An unexpected error occurred';
 
       // Log the API error
@@ -45,17 +53,37 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             break;
           case 401:
             errorMessage = 'Unauthorized. Please login again.';
-            logger.warn('ERROR_INTERCEPTOR', 'Unauthorized (401)', {
-              url: req.url
-            });
-            // Clear authentication data
+            logger.warn('ERROR_INTERCEPTOR', 'Unauthorized (401)', { url: req.url });
+            // Clear authentication data (always clear to avoid stuck tokens)
             localStorage.removeItem('token');
             localStorage.removeItem('username');
             localStorage.removeItem('userrole');
-            // Redirect to login
-            router.navigateByUrl('/login');
+            // If we're not already on an auth/login related route, navigate to login.
+            if (!onAuthRoute) {
+              router.navigateByUrl('/login');
+            }
+            break;
+          case 402:
+            errorMessage = error.error?.message || error.error?.errorMessage || 'Payment required. Please complete subscription.';
+            logger.warn('ERROR_INTERCEPTOR', 'Payment required (402)', {
+              url: req.url,
+              message: errorMessage
+            });
             break;
           case 403:
+            // Check for subscription-expired style responses and preserve them
+            // so components can open activation flows. Example body: { status: 'error', message: 'Subscription expired' }
+            {
+              const body = error.error;
+              const msg = typeof body === 'string' ? body : (body?.message || body?.errorMessage || '');
+              const isSubscription = typeof msg === 'string' && msg.toLowerCase().includes('subscription');
+              if (isSubscription) {
+                logger.warn('ERROR_INTERCEPTOR', 'Forbidden (403) - Subscription expired', { url: req.url });
+                // Preserve original HttpErrorResponse so callers can inspect status and error payload
+                return throwError(() => error);
+              }
+            }
+
             errorMessage = 'Access forbidden. You do not have permission to access this resource.';
             logger.warn('ERROR_INTERCEPTOR', 'Forbidden (403)', {
               url: req.url
@@ -91,8 +119,18 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         }
       }
 
-      toastr.error(errorMessage);
-      
+      // Show user-friendly toast. Suppress 401 toast when already on auth/login routes.
+      // For 402 Payment Required, let the component handle the prompt without an interceptor toast.
+      if (!(error?.status === 401 && onAuthRoute) && error?.status !== 402) {
+        toastr.error(errorMessage);
+      }
+
+      // Preserve original HttpErrorResponse for statuses the app needs to inspect
+      // (e.g. 402 Payment Required so UI can open payment dialog)
+      if (error?.status === 402) {
+        return throwError(() => error);
+      }
+
       return throwError(() => new Error(errorMessage));
     })
   );

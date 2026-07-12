@@ -1,0 +1,32 @@
+
+.pw-wrap { display:flex; flex-direction:column; min-width:300px; }
+.pw-header { display:flex; align-items:center; gap:10px; padding:16px 20px 14px; background:linear-gradient(135deg,#4f46e5,#7c3aed); color:white; }
+.pw-header mat-icon { font-size:28px!important; }
+.pw-header h2 { font-size:17px; font-weight:700; margin:0 0 2px; }
+.pw-header p  { font-size:12px; opacity:.8; margin:0; }
+.pw-close { margin-left:auto; color:rgba(255,255,255,.9)!important; }
+.pw-body { padding:16px 20px!important; overflow-y:auto; }
+.pw-section-lbl { font-size:13px; font-weight:700; color:#334155; margin:0 0 10px; }
+.pw-plan-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px; }
+.pw-plan { position:relative; border:2px solid #e2e8f0; border-radius:12px; padding:14px 12px; cursor:pointer; text-align:center; transition:all .18s; }
+.pw-plan:hover { border-color:#4f46e5; transform:translateY(-2px); }
+.pw-plan--sel { border-color:#4f46e5; background:#eef2ff; }
+.pw-plan--rec { border-color:#7c3aed; }
+.pw-rec-badge { position:absolute; top:-9px; left:50%; transform:translateX(-50%); background:#4f46e5; color:white; font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; white-space:nowrap; }
+.pw-plan-name  { font-size:14px; font-weight:700; color:#0f172a; margin-bottom:6px; }
+.pw-plan-price { font-size:22px; font-weight:800; color:#4f46e5; }
+.pw-plan-days  { font-size:11px; color:#94a3b8; margin:2px 0 5px; }
+.pw-plan-desc  { font-size:11px; color:#64748b; line-height:1.4; }
+.pw-loading { display:flex; flex-direction:column; align-items:center; gap:12px; padding:24px; color:#64748b; font-size:14px; }
+.pw-success { display:flex; flex-direction:column; align-items:center; gap:8px; padding:20px; text-align:center; }
+.pw-tick { font-size:56px!important; width:56px!important; height:56px!important; color:#059669!important; }
+.pw-success h3 { font-size:18px; font-weight:700; color:#0f172a; margin:0; }
+.pw-success p  { color:#64748b; margin:0; font-size:14px; }
+.pw-expiry { color:#059669!important; font-weight:600!important; }
+.pw-actions { padding:12px 20px 16px!important; border-top:1px solid #e2e8f0; display:flex!important; justify-content:flex-end!important; gap:10px; }
+.pw-actions button { height:44px!important; border-radius:10px!important; font-weight:700!important; min-width:100px; }
+@media (max-width:480px) {
+  .pw-plan-grid { grid-template-columns:1fr 1fr; }
+  .pw-actions { flex-direction:column-reverse; }
+  .pw-actions button { width:100%!important; }
+}

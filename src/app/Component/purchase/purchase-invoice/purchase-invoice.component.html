@@ -1,0 +1,420 @@
+<!-- src/app/Component/purchase/purchase-invoice/purchase-invoice.component.html -->
+<div class="pu-page">
+
+  <!-- ════════════════════════════════════════════════════════════
+       VIEW: LIST
+       ════════════════════════════════════════════════════════════ -->
+  @if (view === 'list') {
+    <div class="pu-page-header">
+      <div>
+        <h1 class="pu-page-title"><mat-icon class="pu-title-icon">receipt_long</mat-icon> Purchase Invoices</h1>
+        <p class="pu-page-sub">{{ dataSource.data.length }} bills</p>
+      </div>
+      <button mat-flat-button color="primary" class="pu-add-btn" (click)="openNew()">
+        <mat-icon>add</mat-icon> New Invoice
+      </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="pu-filter-row">
+      <mat-form-field appearance="outline">
+        <mat-label>Search</mat-label>
+        <input matInput (input)="applyFilter($event)" placeholder="Vendor, invoice no…" />
+        <mat-icon matPrefix>search</mat-icon>
+      </mat-form-field>
+      <mat-form-field appearance="outline" style="max-width:160px">
+        <mat-label>Status</mat-label>
+        <mat-select [(value)]="statusFilter" (selectionChange)="loadList()">
+          <mat-option value="">All</mat-option>
+          @for (s of piStatuses; track s) { <mat-option [value]="s">{{ s | titlecase }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <!-- Loading skeleton -->
+    @if (loading) {
+      <div class="pu-skeleton-list">@for (i of [1,2,3,4]; track i) { <div class="pu-skeleton-row"></div> }</div>
+    }
+
+    <!-- Empty state -->
+    @if (!loading && dataSource.data.length === 0) {
+      <div class="pu-empty">
+        <mat-icon>receipt_long</mat-icon>
+        <h3>No purchase invoices</h3>
+        <p>Create your first purchase bill to track payables</p>
+      </div>
+    }
+
+    <!-- Mobile: cards -->
+    @if (!loading && dataSource.data.length > 0) {
+      <div class="pu-card-list" [class.hidden]="!isMobile">
+        @for (inv of dataSource.filteredData; track inv.piNumber) {
+          <mat-card class="pu-vendor-card">
+            <mat-card-content>
+              <div class="pu-vc-row1">
+                <div class="pu-vc-avatar">{{ ((inv.vendorName || inv.vendorId) || '').charAt(0).toUpperCase() }}</div>
+                <div class="pu-vc-info">
+                  <div class="pu-vc-name">{{ inv.vendorName || inv.vendorId }}</div>
+                  <div class="pu-vc-meta">{{ inv.piNumber }} · {{ inv.invoiceDate | date:'dd MMM yyyy' }}</div>
+                  <div class="pu-vc-meta">Due: {{ inv.dueDate | date:'dd MMM yyyy' }}</div>
+                </div>
+                <span class="pu-status-badge {{ inv.status }}">{{ inv.status | titlecase }}</span>
+              </div>
+              <div class="pi-amounts-row">
+                <div class="pi-amt-item"><div class="pi-amt-label">Total</div><div class="pi-amt-val">₹{{ inv.grandTotal | number:'1.2-2' }}</div></div>
+                <div class="pi-amt-item"><div class="pi-amt-label">Paid</div><div class="pi-amt-val success">₹{{ inv.paidAmount | number:'1.2-2' }}</div></div>
+                <div class="pi-amt-item"><div class="pi-amt-label">Due</div><div class="pi-amt-val" [class.pu-overdue]="inv.outstandingAmount > 0">₹{{ inv.outstandingAmount | number:'1.2-2' }}</div></div>
+              </div>
+              <div class="pu-vc-actions">
+                <button mat-stroked-button (click)="openDetail(inv)"><mat-icon>visibility</mat-icon> View</button>
+                @if (inv.status === 'pending' || inv.status === 'partial') {
+                  <button mat-stroked-button (click)="openEdit(inv)"><mat-icon>edit</mat-icon></button>
+                }
+              </div>
+            </mat-card-content>
+          </mat-card>
+        }
+      </div>
+    }
+
+    <!-- Desktop: table -->
+    @if (!loading && dataSource.data.length > 0) {
+      <mat-card class="pu-table-card" [class.hidden]="isMobile">
+        <table mat-table [dataSource]="dataSource" matSort class="pu-table">
+          <ng-container matColumnDef="piNumber">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Invoice #</th>
+            <td mat-cell *matCellDef="let r"><code class="pu-code">{{ r.piNumber }}</code></td>
+          </ng-container>
+          <ng-container matColumnDef="invoiceDate">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+            <td mat-cell *matCellDef="let r">{{ r.invoiceDate | date:'dd MMM yyyy' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="vendorName">
+            <th mat-header-cell *matHeaderCellDef>Vendor</th>
+            <td mat-cell *matCellDef="let r">{{ r.vendorName || r.vendorId }}</td>
+          </ng-container>
+          <ng-container matColumnDef="grandTotal">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Total</th>
+            <td mat-cell *matCellDef="let r" class="pu-amount">₹{{ r.grandTotal | number:'1.2-2' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="paidAmount">
+            <th mat-header-cell *matHeaderCellDef>Paid</th>
+            <td mat-cell *matCellDef="let r" class="success">₹{{ r.paidAmount | number:'1.2-2' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="outstandingAmount">
+            <th mat-header-cell *matHeaderCellDef>Outstanding</th>
+            <td mat-cell *matCellDef="let r" [class.pu-overdue]="r.outstandingAmount > 0" class="pu-amount">
+              ₹{{ r.outstandingAmount | number:'1.2-2' }}
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let r"><span class="pu-status-badge {{ r.status }}">{{ r.status | titlecase }}</span></td>
+          </ng-container>
+          <ng-container matColumnDef="action">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let r" class="pu-td-actions">
+              <button mat-icon-button color="primary" (click)="openDetail(r)" matTooltip="View"><mat-icon>visibility</mat-icon></button>
+              @if (r.status === 'pending' || r.status === 'partial') {
+                <button mat-icon-button (click)="openEdit(r)" matTooltip="Edit"><mat-icon>edit</mat-icon></button>
+                <button mat-icon-button color="warn" (click)="cancel(r.piNumber)" matTooltip="Cancel"><mat-icon>cancel</mat-icon></button>
+              }
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="listColumns; sticky:true"></tr>
+          <tr mat-row *matRowDef="let row; columns:listColumns" class="pu-tr"></tr>
+        </table>
+        <mat-paginator [pageSizeOptions]="[10,20,50]" [pageSize]="20" showFirstLastButtons></mat-paginator>
+      </mat-card>
+    }
+  }<!-- end list view -->
+
+  <!-- ════════════════════════════════════════════════════════════
+       VIEW: FORM (create/edit)
+       ════════════════════════════════════════════════════════════ -->
+  @if (view === 'form') {
+    <div class="pi-form-shell">
+      <!-- Header -->
+      <div class="pu-page-header">
+        <div>
+          <h1 class="pu-page-title">
+            <mat-icon class="pu-title-icon">add_shopping_cart</mat-icon>
+            {{ invoiceForm.get('piNumber')?.value ? 'Edit' : 'New' }} Purchase Invoice
+          </h1>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button mat-stroked-button (click)="backToList()">
+            <mat-icon>arrow_back</mat-icon> Cancel
+          </button>
+          <button mat-flat-button color="primary" (click)="save()">
+            <mat-icon>save</mat-icon> Save Invoice
+          </button>
+        </div>
+      </div>
+
+      <form [formGroup]="invoiceForm">
+
+        <!-- Row 1: vendor, date, due date -->
+        <mat-card class="pi-card">
+          <mat-card-content>
+            <div class="pu-form-row3">
+              <mat-form-field appearance="outline" class="pu-field">
+                <mat-label>Vendor *</mat-label>
+                <mat-select formControlName="vendorId">
+                  @for (v of vendors; track v.vendorId) {
+                    <mat-option [value]="v.vendorId">{{ v.vendorName }}</mat-option>
+                  }
+                </mat-select>
+                <mat-error>Vendor is required</mat-error>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="pu-field">
+                <mat-label>Vendor Invoice No</mat-label>
+                <input matInput formControlName="vendorInvoiceNo" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="pu-field">
+                <mat-label>Linked PO</mat-label>
+                <input matInput formControlName="poNumber" placeholder="PO000001 (optional)" />
+              </mat-form-field>
+            </div>
+            <div class="pu-form-row3">
+              <mat-form-field appearance="outline" class="pu-field">
+                <mat-label>Invoice Date *</mat-label>
+                <input matInput type="date" formControlName="invoiceDate" />
+                <mat-error>Required</mat-error>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="pu-field">
+                <mat-label>Due Date</mat-label>
+                <input matInput type="date" formControlName="dueDate" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="pu-field">
+                <mat-label>Place of Supply</mat-label>
+                <input matInput formControlName="supplyPlace" />
+              </mat-form-field>
+            </div>
+            <!-- Interstate toggle -->
+            <div class="pi-gst-toggle">
+              <mat-slide-toggle color="primary" [checked]="isInterState" (change)="toggleInterState($event.checked)">
+                Inter-state supply (IGST)
+              </mat-slide-toggle>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Line items table -->
+        <mat-card class="pi-card">
+          <mat-card-header>
+            <mat-card-title>Items</mat-card-title>
+          </mat-card-header>
+          <mat-card-content class="pi-items-scroll">
+            <table class="pu-items-table" formArrayName="items">
+              <thead>
+                <tr>
+                  <th style="min-width:160px">Product *</th>
+                  <th style="min-width:70px">HSN</th>
+                  <th style="min-width:60px">Unit</th>
+                  <th style="min-width:80px" class="num">Qty</th>
+                  <th style="min-width:90px" class="num">Rate ₹</th>
+                  <th style="min-width:60px" class="num">Disc %</th>
+                  <th style="min-width:90px" class="num">Taxable ₹</th>
+                  <th style="min-width:70px" class="num">{{ isInterState ? 'IGST %' : 'GST %' }}</th>
+                  @if (!isInterState) {
+                    <th style="min-width:80px" class="num">CGST ₹</th>
+                    <th style="min-width:80px" class="num">SGST ₹</th>
+                  }
+                  @if (isInterState) {
+                    <th style="min-width:80px" class="num">IGST ₹</th>
+                  }
+                  <th style="min-width:100px" class="num">Total ₹</th>
+                  <th style="width:40px"></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (line of items.controls; track $index; let i = $index) {
+                  <tr [formGroupName]="i">
+                    <td>
+                      <mat-select formControlName="productId" (selectionChange)="onProductSelect(i, $event.value)" style="width:100%;font-size:13px">
+                        @for (p of products; track p.uniqueKeyID) {
+                          <mat-option [value]="p.uniqueKeyID">{{ p.productName || p.name }}</mat-option>
+                        }
+                      </mat-select>
+                    </td>
+                    <td><input formControlName="hsnSac" (change)="onLineChange(i)" /></td>
+                    <td><input formControlName="measurement" (change)="onLineChange(i)" /></td>
+                    <td><input formControlName="quantity" type="number" min="0.001" step="0.001" (input)="onLineChange(i)" class="num" /></td>
+                    <td><input formControlName="rate" type="number" min="0" step="0.01" (input)="onLineChange(i)" class="num" /></td>
+                    <td><input formControlName="discountPct" type="number" min="0" max="100" step="0.01" (input)="onLineChange(i)" class="num" /></td>
+                    <td class="num">{{ line.get('taxableAmount')?.value | number:'1.2-2' }}</td>
+                    <td>
+                      <mat-select [value]="isInterState ? line.get('igstRate')?.value : (line.get('cgstRate')?.value||0)*2"
+                                  (selectionChange)="onGstRateChange(i, $event.value)" style="font-size:13px">
+                        @for (r of gstRates; track r) { <mat-option [value]="r">{{ r }}%</mat-option> }
+                      </mat-select>
+                    </td>
+                    @if (!isInterState) {
+                      <td class="num">{{ line.get('cgstAmount')?.value | number:'1.2-2' }}</td>
+                      <td class="num">{{ line.get('sgstAmount')?.value | number:'1.2-2' }}</td>
+                    }
+                    @if (isInterState) {
+                      <td class="num">{{ line.get('igstAmount')?.value | number:'1.2-2' }}</td>
+                    }
+                    <td class="num pi-line-total">{{ line.get('totalAmount')?.value | number:'1.2-2' }}</td>
+                    <td>
+                      <button mat-icon-button color="warn" type="button" (click)="removeLine(i)" [disabled]="items.length === 1" matTooltip="Remove">
+                        <mat-icon style="font-size:18px">delete</mat-icon>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            <button mat-stroked-button type="button" (click)="addLine()" class="pi-add-line-btn">
+              <mat-icon>add</mat-icon> Add Line
+            </button>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Charges + Totals -->
+        <mat-card class="pi-card">
+          <mat-card-content class="pi-charges-totals">
+            <!-- Charges -->
+            <div class="pi-charges">
+              <div class="pu-section-label">Additional Charges</div>
+              <div class="pu-form-row3">
+                <mat-form-field appearance="outline" class="pu-field">
+                  <mat-label>Freight (₹)</mat-label>
+                  <input matInput type="number" formControlName="freightCharges" min="0" (input)="updateTotals()" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="pu-field">
+                  <mat-label>Other Charges (₹)</mat-label>
+                  <input matInput type="number" formControlName="otherCharges" min="0" (input)="updateTotals()" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" class="pu-field">
+                  <mat-label>Discount (₹)</mat-label>
+                  <input matInput type="number" formControlName="discountAmount" min="0" (input)="updateTotals()" />
+                </mat-form-field>
+              </div>
+              <mat-form-field appearance="outline" class="pu-field-full">
+                <mat-label>Remarks</mat-label>
+                <textarea matInput formControlName="remark" rows="2"></textarea>
+              </mat-form-field>
+            </div>
+
+            <!-- Totals -->
+            <div class="pu-totals">
+              <div class="pu-totals-row"><span class="pu-totals-label">Subtotal (Taxable)</span><span class="pu-totals-val">₹{{ subtotal | number:'1.2-2' }}</span></div>
+              @if (!isInterState) {
+                <div class="pu-totals-row"><span class="pu-totals-label">CGST</span><span class="pu-totals-val">₹{{ totalCgst | number:'1.2-2' }}</span></div>
+                <div class="pu-totals-row"><span class="pu-totals-label">SGST</span><span class="pu-totals-val">₹{{ totalSgst | number:'1.2-2' }}</span></div>
+              }
+              @if (isInterState) {
+                <div class="pu-totals-row"><span class="pu-totals-label">IGST</span><span class="pu-totals-val">₹{{ totalIgst | number:'1.2-2' }}</span></div>
+              }
+              @if (freightCharges > 0) {
+                <div class="pu-totals-row"><span class="pu-totals-label">Freight</span><span class="pu-totals-val">₹{{ freightCharges | number:'1.2-2' }}</span></div>
+              }
+              @if (otherCharges > 0) {
+                <div class="pu-totals-row"><span class="pu-totals-label">Other Charges</span><span class="pu-totals-val">₹{{ otherCharges | number:'1.2-2' }}</span></div>
+              }
+              @if (discountAmount > 0) {
+                <div class="pu-totals-row"><span class="pu-totals-label">Discount</span><span class="pu-totals-val" style="color:#c62828">- ₹{{ discountAmount | number:'1.2-2' }}</span></div>
+              }
+              @if (roundOff !== 0) {
+                <div class="pu-totals-row"><span class="pu-totals-label">Round Off</span><span class="pu-totals-val">₹{{ roundOff | number:'1.2-2' }}</span></div>
+              }
+              <div class="pu-totals-row total">
+                <span class="pu-totals-label">Grand Total</span>
+                <span class="pu-totals-val">₹{{ grandTotal | number:'1.2-2' }}</span>
+              </div>
+              <div class="pu-aiw">{{ amountInWords }}</div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Action buttons -->
+        <div class="pi-form-footer">
+          <button mat-stroked-button type="button" (click)="backToList()"><mat-icon>close</mat-icon> Cancel</button>
+          <button mat-flat-button color="primary" type="button" (click)="save()"><mat-icon>save</mat-icon> Save Invoice</button>
+        </div>
+
+      </form>
+    </div>
+  }<!-- end form view -->
+
+  <!-- ════════════════════════════════════════════════════════════
+       VIEW: DETAIL
+       ════════════════════════════════════════════════════════════ -->
+  @if (view === 'detail' && selectedInvoice) {
+    <div>
+      <div class="pu-page-header">
+        <div>
+          <h1 class="pu-page-title"><mat-icon class="pu-title-icon">receipt_long</mat-icon> {{ selectedInvoice.piNumber }}</h1>
+          <span class="pu-status-badge {{ selectedInvoice.status }}">{{ selectedInvoice.status | titlecase }}</span>
+        </div>
+        <button mat-stroked-button (click)="backToList()"><mat-icon>arrow_back</mat-icon> Back</button>
+      </div>
+      <mat-card class="pi-card">
+        <mat-card-content>
+          <div class="pi-detail-grid">
+            <div><span class="pi-detail-label">Vendor</span><span>{{ selectedInvoice.vendorName || selectedInvoice.vendorId }}</span></div>
+            <div><span class="pi-detail-label">Invoice Date</span><span>{{ selectedInvoice.invoiceDate | date:'dd MMM yyyy' }}</span></div>
+            <div><span class="pi-detail-label">Due Date</span><span>{{ selectedInvoice.dueDate | date:'dd MMM yyyy' }}</span></div>
+            <div><span class="pi-detail-label">Vendor Invoice No</span><span>{{ selectedInvoice.vendorInvoiceNo || '—' }}</span></div>
+            @if (selectedInvoice.poNumber) {
+              <div><span class="pi-detail-label">PO Reference</span><span>{{ selectedInvoice.poNumber }}</span></div>
+            }
+          </div>
+          <!-- Items -->
+          <div class="pu-section-label" style="margin-top:16px">Line Items</div>
+          <table class="pu-items-table">
+            <thead>
+              <tr>
+                <th>Product</th><th>HSN</th><th>Qty</th><th class="num">Rate</th>
+                <th class="num">Taxable</th><th class="num">GST</th><th class="num">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of selectedInvoice.items; track item.productId) {
+                <tr>
+                  <td>{{ item.productName || item.productId }}</td>
+                  <td>{{ item.hsnSac || '—' }}</td>
+                  <td>{{ item.quantity }} {{ item.measurement }}</td>
+                  <td class="num">₹{{ item.rate | number:'1.4-4' }}</td>
+                  <td class="num">₹{{ item.taxableAmount | number:'1.2-2' }}</td>
+                  <td class="num">₹{{ (item.cgstAmount + item.sgstAmount + item.igstAmount) | number:'1.2-2' }}</td>
+                  <td class="num pi-line-total">₹{{ item.totalAmount | number:'1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+          <!-- Totals -->
+          <div class="pu-totals">
+            <div class="pu-totals-row"><span class="pu-totals-label">Subtotal</span><span class="pu-totals-val">₹{{ selectedInvoice.subtotal | number:'1.2-2' }}</span></div>
+            <div class="pu-totals-row"><span class="pu-totals-label">GST</span><span class="pu-totals-val">₹{{ selectedInvoice.totalGstAmount | number:'1.2-2' }}</span></div>
+            <div class="pu-totals-row total"><span class="pu-totals-label">Grand Total</span><span class="pu-totals-val">₹{{ selectedInvoice.grandTotal | number:'1.2-2' }}</span></div>
+            <div class="pu-aiw">{{ selectedInvoice.amountInWords }}</div>
+          </div>
+          <!-- Payment summary -->
+          <div class="pi-payment-summary">
+            <div class="pi-ps-item"><div class="pi-ps-label">Total</div><div class="pi-ps-val">₹{{ selectedInvoice.grandTotal | number:'1.2-2' }}</div></div>
+            <div class="pi-ps-item"><div class="pi-ps-label">Paid</div><div class="pi-ps-val success">₹{{ selectedInvoice.paidAmount | number:'1.2-2' }}</div></div>
+            <div class="pi-ps-item"><div class="pi-ps-label">Outstanding</div><div class="pi-ps-val" [class.pu-overdue]="selectedInvoice.outstandingAmount > 0">₹{{ selectedInvoice.outstandingAmount | number:'1.2-2' }}</div></div>
+          </div>
+          <!-- Payments list -->
+          @if (selectedInvoice.payments && selectedInvoice.payments.length > 0) {
+            <div class="pu-section-label">Payments Recorded</div>
+            @for (p of selectedInvoice.payments; track p.paymentNo) {
+              <div class="pi-payment-row">
+                <mat-icon>payments</mat-icon>
+                <span>{{ p.paymentNo }}</span>
+                <span>{{ p.paymentDate | date:'dd MMM yyyy' }}</span>
+                <span class="pu-code">{{ p.paymentMode | titlecase }}</span>
+                <span class="pi-pay-amt">₹{{ p.amount | number:'1.2-2' }}</span>
+              </div>
+            }
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }<!-- end detail view -->
+
+</div>

@@ -1,9 +1,10 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MaterialModule } from '../../material.module';
 import { Company } from '../../_model/company.model';
 import { CompanyService } from '../../_service/company.service';
 import { AuthService } from '../../_service/authentication.service';
+import { SelectedCompanyService } from '../../_service/selected-company.service';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
 import { MatSort, MatSortModule } from '@angular/material/sort';
@@ -12,18 +13,21 @@ import { ToastrService } from 'ngx-toastr';
 import { DeclarationFormDialogComponent } from './declaration-form-dialog.component';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 import { LoggerService } from '../../_service/logger.service';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
-  selector: 'app-compandeclaration',
+  selector: 'app-clear',
   standalone: true,
   imports: [CommonModule, MaterialModule, MatTableModule, MatPaginatorModule, MatSortModule, MatDialogModule],
   templateUrl: './compandeclaration.component.html',
   styleUrls: ['./compandeclaration.component.css']
 })
-export class CompanDeclarationComponent implements OnInit {
+export class CompanDeclarationComponent implements OnInit, OnDestroy {
   companies: Company[] = [];
   selectedCompanyId = '';
   datasource = new MatTableDataSource<any>([]);
+  declarations: any[] = [];  // for mobile card list
   displayedColumns: string[] = ['recId', 'declaration', 'active', 'createdDate', 'action'];
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -31,13 +35,15 @@ export class CompanDeclarationComponent implements OnInit {
 
   isSuperAdmin = false;
   isAdmin = false;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private companyService: CompanyService,
     private auth: AuthService,
     private dialog: MatDialog,
     private toastr: ToastrService,
-    private logger: LoggerService
+    private logger: LoggerService,
+    private selectedCompanyService: SelectedCompanyService
   ) {}
 
   ngOnInit(): void {
@@ -46,7 +52,7 @@ export class CompanDeclarationComponent implements OnInit {
     this.isAdmin = role === 'admin';
 
     if (this.isSuperAdmin) {
-      this.companyService.getAllCompanies(false).subscribe({
+      this.companyService.getAllCompanies(true).subscribe({
         next: (list) => { this.companies = list || []; },
         error: (err) => { console.error(err); this.toastr.error('Failed to load companies'); }
       });
@@ -57,6 +63,18 @@ export class CompanDeclarationComponent implements OnInit {
         this.loadDeclarations(cid);
       }
     }
+
+    // Subscribe to selected company changes (useful for super_admin selection elsewhere)
+    this.selectedCompanyService.selectedCompanyId$.pipe(takeUntil(this.destroy$)).subscribe((cid: string | null) => {
+      if (!cid) return;
+      this.selectedCompanyId = cid;
+      this.loadDeclarations(cid);
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   onCompanyChange(): void {
@@ -66,6 +84,7 @@ export class CompanDeclarationComponent implements OnInit {
   loadDeclarations(companyId: string): void {
     this.companyService.getDeclarations(companyId).subscribe({
       next: (list: any[]) => {
+        this.declarations = list || [];
         this.datasource = new MatTableDataSource<any>(list || []);
         this.datasource.paginator = this.paginator;
         this.datasource.sort = this.sort;
@@ -102,5 +121,11 @@ export class CompanDeclarationComponent implements OnInit {
         error: (e) => { console.error(e); this.toastr.error('Failed to delete'); }
       });
     });
+  }
+
+  applyFilter(event: Event): void {
+    const val = (event.target as HTMLInputElement).value;
+    this.datasource.filter = val.trim().toLowerCase();
+    if (this.datasource.paginator) this.datasource.paginator.firstPage();
   }
 }

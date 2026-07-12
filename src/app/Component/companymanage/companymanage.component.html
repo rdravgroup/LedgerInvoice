@@ -1,63 +1,125 @@
-<div class="page-header">
-  <h2>Companies</h2>
-  <div class="actions">
-    <button mat-flat-button color="primary" (click)="openCreate()" *ngIf="isAdmin || isSuperAdmin">Create Company</button>
+<div class="cm-page">
+
+  <div class="cm-header">
+    <div class="cm-header-left">
+      <mat-icon class="cm-header-icon">business</mat-icon>
+      <div>
+        <h1 class="cm-title">Companies</h1>
+        <p class="cm-sub">Manage companies and activation status</p>
+      </div>
+    </div>
+    <div class="cm-header-actions">
+      <button mat-flat-button color="primary" (click)="openCreate()" *ngIf="isAdmin || isSuperAdmin || isGuest" class="cm-create-btn">
+        <mat-icon>add</mat-icon> Create Company
+      </button>
+    </div>
   </div>
-</div>
 
-<div class="table-container">
-  <table mat-table [dataSource]="datasource" class="mat-elevation-z8">
+  <div class="cm-search-row">
+    <mat-form-field appearance="outline" class="cm-search-field" subscriptSizing="dynamic">
+      <mat-label>Search companies</mat-label>
+      <input matInput (input)="applyFilter($event)" placeholder="Search by name, code, email, mobile or GST" />
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
+  </div>
 
-    <ng-container matColumnDef="companyId">
-      <th mat-header-cell *matHeaderCellDef>Code</th>
-      <td mat-cell *matCellDef="let e">{{ e.companyId }}</td>
-    </ng-container>
+  <mat-card class="cm-table-card hide-mobile">
+    <div class="cm-table-wrap">
+      <table mat-table [dataSource]="datasource" matSort class="cm-table mat-elevation-z8">
 
-    <ng-container matColumnDef="name">
-      <th mat-header-cell *matHeaderCellDef>Name</th>
-      <td mat-cell *matCellDef="let e">{{ e.name }}</td>
-    </ng-container>
+        <ng-container matColumnDef="companyId">
+          <th mat-header-cell *matHeaderCellDef>Code</th>
+          <td mat-cell *matCellDef="let e"><span class="cm-code-chip">{{ e.companyId }}</span></td>
+        </ng-container>
 
-    <ng-container matColumnDef="status">
-      <th mat-header-cell *matHeaderCellDef>Status</th>
-      <td mat-cell *matCellDef="let e">{{ e.status }}</td>
-    </ng-container>
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <td mat-cell *matCellDef="let e">{{ e.name }}</td>
+        </ng-container>
 
-    <ng-container matColumnDef="emailId">
-      <th mat-header-cell *matHeaderCellDef>Email</th>
-      <td mat-cell *matCellDef="let e">{{ e.emailId }}</td>
-    </ng-container>
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let e">
+            <span class="cm-status-chip" [ngClass]="((e.status||'').toLowerCase()) === 'active' ? 'cm-status-active' : 'cm-status-inactive'">
+              {{ ((e.status||'').toLowerCase()) === 'active' ? 'Active' : 'Inactive' }}
+            </span>
+          </td>
+        </ng-container>
 
-    <ng-container matColumnDef="mobileNo">
-      <th mat-header-cell *matHeaderCellDef>Mobile</th>
-      <td mat-cell *matCellDef="let e">{{ e.mobileNo }}</td>
-    </ng-container>
+        <ng-container matColumnDef="emailId">
+          <th mat-header-cell *matHeaderCellDef>Email</th>
+          <td mat-cell *matCellDef="let e">{{ e.emailId }}</td>
+        </ng-container>
 
-    <ng-container matColumnDef="gstNumber">
-      <th mat-header-cell *matHeaderCellDef>GST</th>
-      <td mat-cell *matCellDef="let e">{{ e.gstNumber }}</td>
-    </ng-container>
+        <ng-container matColumnDef="mobileNo">
+          <th mat-header-cell *matHeaderCellDef>Mobile</th>
+          <td mat-cell *matCellDef="let e">{{ e.mobileNo }}</td>
+        </ng-container>
 
-    <ng-container matColumnDef="createdDate">
-      <th mat-header-cell *matHeaderCellDef>Created</th>
-      <td mat-cell *matCellDef="let e">{{ e.createdDate | date:'short' }}</td>
-    </ng-container>
+        <ng-container matColumnDef="gstNumber">
+          <th mat-header-cell *matHeaderCellDef>GST</th>
+          <td mat-cell *matCellDef="let e">{{ e.gstNumber }}</td>
+        </ng-container>
 
-    <ng-container matColumnDef="action">
-      <th mat-header-cell *matHeaderCellDef>Action</th>
-      <td mat-cell *matCellDef="let e">
-        <button mat-icon-button color="primary" (click)="openEdit(e)" *ngIf="isAdmin || isSuperAdmin" matTooltip="Edit">
-          <mat-icon>edit</mat-icon>
-        </button>
-        <button mat-icon-button color="warn" (click)="changeStatus(e)" *ngIf="isAdmin || isSuperAdmin" matTooltip="Toggle Status">
-          <mat-icon>toggle_on</mat-icon>
-        </button>
-      </td>
-    </ng-container>
+        <ng-container matColumnDef="createdDate">
+          <th mat-header-cell *matHeaderCellDef>Created</th>
+          <td mat-cell *matCellDef="let e">{{ e.createdDate | date:'dd MMM yyyy' }}</td>
+        </ng-container>
 
-    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-    <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-  </table>
+        <ng-container matColumnDef="action">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let e" class="cm-actions-cell">
+            <button mat-icon-button color="primary" (click)="openEdit(e)" *ngIf="isAdmin || isSuperAdmin" [disabled]="isAdmin && e.updatedDate" matTooltip="{{ isAdmin && e.updatedDate ? 'Admin can update company details only once. Request super_admin for further changes.' : 'Edit' }}">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="accent" (click)="openPaymentDialog(e)" *ngIf="isAdmin" matTooltip="Renew subscription">
+              <mat-icon>autorenew</mat-icon>
+            </button>
+            <button mat-icon-button (click)="changeStatus(e)" *ngIf="isAdmin || isSuperAdmin" matTooltip="{{ ((e.status||'').toLowerCase()) === 'active' ? 'Deactivate company' : 'Activate company' }}" [ngClass]="((e.status||'').toLowerCase()) === 'active' ? 'cm-action-active' : 'cm-action-inactive'">
+              <mat-icon>{{ ((e.status||'').toLowerCase()) === 'active' ? 'toggle_on' : 'toggle_off' }}</mat-icon>
+            </button>
+          </td>
+        </ng-container>
 
-  <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons></mat-paginator>
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="cm-table-row" [class.cm-updated-row]="row._justUpdated"></tr>
+      </table>
+      <mat-paginator [pageSizeOptions]="[10, 25, 50]" showFirstLastButtons></mat-paginator>
+    </div>
+  </mat-card>
+
+  <div class="cm-card-list show-mobile">
+    <mat-card *ngFor="let e of companies" class="cm-item-card" [class.cm-updated-card]="e._justUpdated">
+      <mat-card-content>
+        <div class="cm-item-header">
+          <div class="cm-avatar">{{ (e.name || e.companyId || '').charAt(0) }}</div>
+          <div class="cm-item-info">
+            <div class="cm-item-name">{{ e.name }}</div>
+            <div class="cm-item-email">{{ e.emailId }}</div>
+          </div>
+          <div style="margin-left:auto">
+            <span class="cm-code-chip">{{ e.companyId }}</span>
+            <div style="font-size:11px;color:#94a3b8">{{ e.createdDate | date:'dd MMM yy' }}</div>
+          </div>
+        </div>
+
+        <div class="cm-item-details">
+          <div class="cm-item-detail"><mat-icon>phone</mat-icon>{{ e.mobileNo }}</div>
+          <div class="cm-item-detail"><mat-icon>receipt</mat-icon>{{ e.gstNumber }}</div>
+        </div>
+
+        <div class="cm-item-actions" *ngIf="isAdmin || isSuperAdmin">
+          <button mat-stroked-button color="primary" (click)="openEdit(e)" class="cm-item-btn"><mat-icon>edit</mat-icon> Edit</button>
+          <button mat-stroked-button color="accent" (click)="openPaymentDialog(e)" class="cm-item-btn" *ngIf="isAdmin"><mat-icon>autorenew</mat-icon> Renew</button>
+          <button mat-stroked-button (click)="changeStatus(e)" class="cm-item-btn" [ngClass]="((e.status||'').toLowerCase()) === 'active' ? 'cm-item-btn-active' : 'cm-item-btn-inactive'">{{ ((e.status||'').toLowerCase()) === 'active' ? 'Open' : 'Close' }}</button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="cm-empty" *ngIf="companies.length === 0">
+      <mat-icon>business</mat-icon>
+      <p>No companies found</p>
+    </div>
+  </div>
+
 </div>

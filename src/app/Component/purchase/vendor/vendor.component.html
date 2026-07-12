@@ -1,0 +1,226 @@
+<div class="page-content">
+
+  <!-- ── Page Header ──────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">
+        <mat-icon class="title-icon">storefront</mat-icon>
+        Vendors
+      </h1>
+      <p class="page-subtitle">Manage your supplier directory</p>
+    </div>
+    @if (canEdit) {
+      <button mat-flat-button color="primary" (click)="openCreateForm()" class="btn-add">
+        <mat-icon>add</mat-icon> Add Vendor
+      </button>
+    }
+  </div>
+
+  <!-- ── Summary Chips ─────────────────────────────────────────────────── -->
+  <div class="stat-strip">
+    <span class="stat-chip">
+      <mat-icon>groups</mat-icon>
+      {{ summaryStats.total }} Total
+    </span>
+    <span class="stat-chip active">
+      <mat-icon>check_circle</mat-icon>
+      {{ summaryStats.active }} Active
+    </span>
+    @if (summaryStats.inactive > 0) {
+      <span class="stat-chip inactive">
+        <mat-icon>cancel</mat-icon>
+        {{ summaryStats.inactive }} Inactive
+      </span>
+    }
+    <span class="stat-chip amount">
+      <mat-icon>account_balance_wallet</mat-icon>
+      &#8377;{{ summaryStats.totalOut | number:'1.0-0' }} Outstanding
+    </span>
+    @if (summaryStats.overLimit > 0) {
+      <span class="stat-chip warn">
+        <mat-icon>warning</mat-icon>
+        {{ summaryStats.overLimit }} Over Credit Limit
+      </span>
+    }
+  </div>
+
+  <!-- ── Vendor Table ──────────────────────────────────────────────────── -->
+  <div class="table-panel">
+
+      <!-- Toolbar -->
+      <div class="toolbar-row">
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Search vendors</mat-label>
+          <mat-icon matPrefix>search</mat-icon>
+          <input matInput
+                 [(ngModel)]="searchText"
+                 (input)="applyFilter($event)"
+                 placeholder="Name, GSTIN, phone…">
+          @if (searchText) {
+            <button matSuffix mat-icon-button (click)="searchText=''; loadVendors()">
+              <mat-icon>close</mat-icon>
+            </button>
+          }
+        </mat-form-field>
+
+        <button mat-stroked-button (click)="toggleActiveFilter()"
+                [color]="activeOnly ? 'primary' : ''">
+          <mat-icon>{{ activeOnly ? 'visibility' : 'visibility_off' }}</mat-icon>
+          {{ activeOnly ? 'Active Only' : 'All Vendors' }}
+        </button>
+
+        <button mat-icon-button (click)="loadVendors()" matTooltip="Refresh">
+          <mat-icon [class.spin]="loading">refresh</mat-icon>
+        </button>
+      </div>
+
+      <!-- Loading skeleton -->
+      @if (loading) {
+        <div class="skeleton-list">
+          @for (_ of [1,2,3,4,5]; track $index) {
+            <div class="skeleton-row"></div>
+          }
+        </div>
+      }
+
+      <!-- Table -->
+      @if (!loading) {
+        <div class="table-container mat-elevation-z1">
+          <table mat-table [dataSource]="dataSource" matSort class="vendor-table">
+
+            <!-- Vendor Name -->
+            <ng-container matColumnDef="vendorName">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Vendor</th>
+              <td mat-cell *matCellDef="let v">
+                <div class="vendor-name-cell">
+                  <div class="vendor-avatar">{{ v.vendorName.charAt(0).toUpperCase() }}</div>
+                  <div>
+                    <div class="fw-600">{{ v.vendorName }}</div>
+                    @if (v.email) {
+                      <div class="text-muted text-sm">{{ v.email }}</div>
+                    }
+                  </div>
+                </div>
+              </td>
+            </ng-container>
+
+            <!-- Contact -->
+            <ng-container matColumnDef="contactPerson">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Contact</th>
+              <td mat-cell *matCellDef="let v">
+                <div class="fw-500">{{ v.contactPerson || '—' }}</div>
+                <div class="text-muted text-sm">{{ v.phone || v.mobile || '' }}</div>
+              </td>
+            </ng-container>
+
+            <!-- GSTIN -->
+            <ng-container matColumnDef="gstin">
+              <th mat-header-cell *matHeaderCellDef>GSTIN</th>
+              <td mat-cell *matCellDef="let v">
+                <code class="gstin-code">{{ v.gstin || '—' }}</code>
+              </td>
+            </ng-container>
+
+            <!-- City -->
+            <ng-container matColumnDef="city">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>City</th>
+              <td mat-cell *matCellDef="let v">{{ v.city || '—' }}</td>
+            </ng-container>
+
+            <!-- Rating -->
+            <ng-container matColumnDef="rating">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Rating</th>
+              <td mat-cell *matCellDef="let v">
+                <span class="star-display" [attr.aria-label]="v.rating + ' out of 5 stars'">
+                  @for (i of [1,2,3,4,5]; track i) {
+                    <mat-icon class="star-icon" [class.filled]="starFilledList(v.rating, i)">
+                      {{ starFilledList(v.rating, i) ? 'star' : 'star_border' }}
+                    </mat-icon>
+                  }
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Outstanding -->
+            <ng-container matColumnDef="outstandingBalance">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Outstanding</th>
+              <td mat-cell *matCellDef="let v">
+                <span [class.amount-warn]="v.creditLimit > 0 && v.outstandingBalance > v.creditLimit"
+                      [class.amount-ok]="v.outstandingBalance === 0">
+                  &#8377;{{ (v.outstandingBalance ?? 0) | number:'1.2-2' }}
+                </span>
+                @if (v.creditLimit > 0) {
+                  <div class="text-muted text-sm">
+                    Limit: &#8377;{{ v.creditLimit | number:'1.0-0' }}
+                  </div>
+                }
+              </td>
+            </ng-container>
+
+            <!-- Status -->
+            <ng-container matColumnDef="isActive">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let v">
+                <span class="status-badge"
+                      [class.active]="v.isActive"
+                      [class.inactive]="!v.isActive">
+                  {{ v.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+            </ng-container>
+
+            <!-- Actions -->
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>Actions</th>
+              <td mat-cell *matCellDef="let v">
+                <div class="action-btns">
+                  <button mat-icon-button color="primary"
+                          (click)="openEditForm(v)"
+                          matTooltip="Edit vendor"
+                          [disabled]="!canEdit">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button
+                          (click)="viewLedger(v)"
+                          matTooltip="View ledger">
+                    <mat-icon>receipt_long</mat-icon>
+                  </button>
+                  @if (canEdit) {
+                    <button mat-icon-button
+                            [color]="v.isActive ? 'warn' : 'primary'"
+                            (click)="toggleActive(v)"
+                            [matTooltip]="v.isActive ? 'Deactivate' : 'Activate'">
+                      <mat-icon>{{ v.isActive ? 'block' : 'check_circle' }}</mat-icon>
+                    </button>
+                  }
+                </div>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+            <tr mat-row *matRowDef="let row; columns: displayedColumns;"
+                class="table-row"></tr>
+
+            <!-- Empty state -->
+            <tr class="mat-row" *matNoDataRow>
+              <td [attr.colspan]="displayedColumns.length">
+                <div class="empty-state">
+                  <mat-icon>storefront</mat-icon>
+                  <h3>No vendors found</h3>
+                  <p>{{ searchText ? 'Try a different search term.' : 'Add your first vendor to get started.' }}</p>
+                  @if (!searchText && canEdit) {
+                    <button mat-flat-button color="primary" (click)="openCreateForm()">
+                      <mat-icon>add</mat-icon> Add Vendor
+                    </button>
+                  }
+                </div>
+              </td>
+            </tr>
+
+          </table>
+          <mat-paginator [pageSizeOptions]="[10,25,50]" showFirstLastButtons></mat-paginator>
+        </div>
+      }
+    </div><!-- /table-panel -->
+
+</div><!-- /page-content -->

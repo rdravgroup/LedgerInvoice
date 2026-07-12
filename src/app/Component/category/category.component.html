@@ -1,55 +1,40 @@
+<!-- category.component.html — MD3 redesign, no purple gradient -->
 <div class="category-page">
-  <!-- Hero Section -->
-  <div class="hero-section">
-    <div class="hero-content">
-      <h1 class="hero-title">
-        <mat-icon class="hero-icon">category</mat-icon>
-        Product Category Management
-      </h1>
-      <p class="hero-subtitle">Organize and manage your product categories efficiently</p>
+
+  <!-- Clean page header -->
+  <div class="cat-header">
+    <div class="cat-header-icon">
+      <mat-icon>category</mat-icon>
+    </div>
+    <div>
+      <h1 class="cat-header-title">Product Categories</h1>
+      <p class="cat-header-sub">Organise and manage your product catalogue</p>
     </div>
   </div>
 
-  <!-- Stats Cards -->
+  <!-- Stats -->
   <div class="stats-container">
     <mat-card class="stat-card stat-total">
       <mat-card-content>
-        <div class="stat-icon">
-          <mat-icon>inventory_2</mat-icon>
-        </div>
-        <div class="stat-info">
-          <h3>{{ totalCategories }}</h3>
-          <p>Total Categories</p>
-        </div>
+        <div class="stat-icon"><mat-icon>inventory_2</mat-icon></div>
+        <div class="stat-info"><h3>{{ totalCategories }}</h3><p>Total Categories</p></div>
       </mat-card-content>
     </mat-card>
-
     <mat-card class="stat-card stat-active">
       <mat-card-content>
-        <div class="stat-icon">
-          <mat-icon>check_circle</mat-icon>
-        </div>
-        <div class="stat-info">
-          <h3>{{ activeCategories }}</h3>
-          <p>Active Categories</p>
-        </div>
+        <div class="stat-icon"><mat-icon>check_circle</mat-icon></div>
+        <div class="stat-info"><h3>{{ activeCategories }}</h3><p>Active</p></div>
       </mat-card-content>
     </mat-card>
-
     <mat-card class="stat-card stat-inactive">
       <mat-card-content>
-        <div class="stat-icon">
-          <mat-icon>cancel</mat-icon>
-        </div>
-        <div class="stat-info">
-          <h3>{{ totalCategories - activeCategories }}</h3>
-          <p>Inactive Categories</p>
-        </div>
+        <div class="stat-icon"><mat-icon>cancel</mat-icon></div>
+        <div class="stat-info"><h3>{{ totalCategories - activeCategories }}</h3><p>Inactive</p></div>
       </mat-card-content>
     </mat-card>
   </div>
 
-  <!-- Main Content -->
+  <!-- Form card -->
   <div class="content-container">
     <mat-card class="form-card">
       <mat-card-header>
@@ -59,11 +44,12 @@
         </mat-card-title>
       </mat-card-header>
       <mat-card-content>
-        <form [formGroup]="categoryForm" (ngSubmit)="onSubmit()" class="category-form">
+        <form [formGroup]="categoryForm" (ngSubmit)="onSubmit()" class="category-form" novalidate>
+
           <div class="form-fields">
-            <mat-form-field appearance="outline" class="full-width">
+            <mat-form-field appearance="outline" class="full-width" subscriptSizing="dynamic">
               <mat-label>Category Name</mat-label>
-              <input matInput formControlName="name" placeholder="Enter category name" required>
+              <input matInput formControlName="name" placeholder="Enter category name" required />
               <mat-icon matPrefix>label</mat-icon>
               <mat-error *ngIf="categoryForm.get('name')?.hasError('required')">
                 Category name is required
@@ -81,21 +67,22 @@
           </div>
 
           <div class="form-actions">
-            <button mat-raised-button color="primary" type="submit" class="btn-save">
-              <mat-icon>{{ isEditMode ? 'update' : 'save' }}</mat-icon>
+            <button mat-flat-button type="submit" class="btn-save">
+              <mat-icon>{{ isEditMode ? 'save' : 'add' }}</mat-icon>
               {{ isEditMode ? 'Update Category' : 'Save Category' }}
             </button>
-            <button mat-raised-button color="warn" type="button" (click)="resetForm()" class="btn-cancel" *ngIf="isEditMode">
-              <mat-icon>close</mat-icon>
-              Cancel
+            <button mat-stroked-button color="warn" type="button" (click)="resetForm()" *ngIf="isEditMode">
+              <mat-icon>close</mat-icon> Cancel
             </button>
-            <button mat-raised-button color="accent" type="button" (click)="openCategoryList()" class="btn-view">
+            <button mat-flat-button type="button" (click)="openCategoryList()" class="btn-view">
               <mat-icon>list</mat-icon>
-              View All Categories ({{ totalCategories }})
+              View All ({{ totalCategories }})
             </button>
           </div>
+
         </form>
       </mat-card-content>
     </mat-card>
   </div>
+
 </div>

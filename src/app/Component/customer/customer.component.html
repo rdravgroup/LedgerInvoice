@@ -18,6 +18,10 @@
     }
   </div>
 
+  <!-- CHANGE: Company context banner — shows which company is active.
+       Amber style for super_admin, neutral for regular users. -->
+  <app-company-context-banner></app-company-context-banner>
+
   <!-- Search Bar -->
   <div class="toolbar-row">
     <mat-form-field appearance="outline" class="search-field">
@@ -81,6 +85,7 @@
                 </button>
               }
               @if (_permission.havedelete) {
+                <!-- CHANGE: opens ConfirmDestructiveActionDialogComponent instead of browser confirm() -->
                 <button mat-stroked-button color="warn" (click)="customerremove(row.uniqueKeyID)">
                   <mat-icon aria-hidden="true">delete</mat-icon> Delete
                 </button>
@@ -146,6 +151,7 @@
               </button>
             }
             @if (_permission.havedelete) {
+              <!-- CHANGE: opens ConfirmDestructiveActionDialogComponent instead of browser confirm() -->
               <button mat-icon-button color="warn"
                       (click)="customerremove(row.uniqueKeyID)"
                       matTooltip="Delete customer"

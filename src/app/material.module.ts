@@ -19,6 +19,7 @@ import { MatSlideToggleModule } from "@angular/material/slide-toggle"
 import { MatDatepickerModule } from "@angular/material/datepicker"
 import { MatNativeDateModule } from "@angular/material/core"
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner"
+import { MatProgressBarModule } from "@angular/material/progress-bar"
 import { MatAutocompleteModule } from "@angular/material/autocomplete"
 import { MatOptionModule } from "@angular/material/core"
 import { MatBottomSheetModule } from "@angular/material/bottom-sheet"
@@ -27,6 +28,7 @@ import { MatBadgeModule } from "@angular/material/badge"
 import { MatChipsModule } from "@angular/material/chips"
 import { MatDividerModule } from "@angular/material/divider"
 import { MatTabsModule } from "@angular/material/tabs"
+import { MatRadioModule } from "@angular/material/radio"
 
 @NgModule({
     exports: [
@@ -50,6 +52,7 @@ import { MatTabsModule } from "@angular/material/tabs"
         MatDatepickerModule,
         MatNativeDateModule,
         MatProgressSpinnerModule,
+        MatProgressBarModule,
         MatAutocompleteModule,
         MatOptionModule,
         MatBottomSheetModule,
@@ -57,6 +60,7 @@ import { MatTabsModule } from "@angular/material/tabs"
         MatBadgeModule,
         MatChipsModule,
         MatDividerModule,
+        MatRadioModule,
         MatTabsModule
     ]
 })

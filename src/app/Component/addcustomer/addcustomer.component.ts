@@ -3,6 +3,8 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { CustomerService } from '../../_service/customer.service';
+import { SelectedCompanyService } from '../../_service/selected-company.service';
+import { AuthService } from '../../_service/authentication.service';
 import { MasterService } from '../../_service/master.service';
 import { MaterialModule } from '../../material.module';
 import { CommonModule } from '@angular/common';
@@ -38,6 +40,8 @@ export class AddcustomerComponent implements OnInit {
     private service: CustomerService,
     private masterService: MasterService,
     private act: ActivatedRoute
+    , private selectedCompanyService: SelectedCompanyService
+    , private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -102,7 +106,8 @@ export class AddcustomerComponent implements OnInit {
     if (this.editcode) {
       this.isedit = true;
       this.title = 'Edit Customer';
-      this.service.Getbycode(this.editcode).subscribe((item: customer) => {
+      const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+      this.service.Getbycode(this.editcode, effectiveCompanyId ?? undefined).subscribe((item: customer) => {
         this.editdata = item;
         this.customerform.patchValue(this.editdata);
         if (item.countryCode) {
@@ -164,12 +169,16 @@ export class AddcustomerComponent implements OnInit {
       };
 
       if (this.isedit) {
-        this.service.Updatecustomer(payload).subscribe({
+        const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+        this.service.Updatecustomer(payload, effectiveCompanyId ?? undefined).subscribe({
           next: handleResponse,
           error: () => this.toastr.error('Something went wrong', 'Error'),
         });
       } else {
-        this.service.Createcustomer(payload).subscribe({
+        const role = (this.authService.getUserRole() || '').toLowerCase();
+        const selectedCid = this.selectedCompanyService.getSelectedCompanyId();
+        if (role === 'super_admin' && !selectedCid) { this.toastr.warning('Select a company before creating a customer'); return; }
+        this.service.Createcustomer(payload, selectedCid ?? undefined).subscribe({
           next: handleResponse,
           error: () => this.toastr.error('Something went wrong', 'Error'),
         });

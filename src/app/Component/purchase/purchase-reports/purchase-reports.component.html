@@ -1,0 +1,204 @@
+<!-- src/app/Component/purchase/purchase-reports/purchase-reports.component.html -->
+<div class="pu-page">
+  <div class="pu-page-header">
+    <h1 class="pu-page-title"><mat-icon class="pu-title-icon">bar_chart</mat-icon> Purchase Reports</h1>
+  </div>
+
+  <mat-tab-group class="pu-tab-group" [selectedIndex]="activeTab" (selectedIndexChange)="onTabChange($event)" animationDuration="200ms">
+
+    <!-- ── TAB 1: Purchase Register ──────────────────────────── -->
+    <mat-tab label="Purchase Register">
+      <div class="rpt-tab-content">
+        <form [formGroup]="registerForm" class="pu-filter-row" (ngSubmit)="loadRegister()">
+          <mat-form-field appearance="outline"><mat-label>From</mat-label><input matInput type="date" formControlName="from" /></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>To</mat-label><input matInput type="date" formControlName="to" /></mat-form-field>
+          <button mat-flat-button color="primary" type="submit"><mat-icon>refresh</mat-icon> Run</button>
+        </form>
+
+        @if (registerRows.length > 0) {
+          <div class="pu-summary-row">
+            <div class="pu-summary-card"><div class="label">Total Purchases</div><div class="value primary">₹{{ regTotalGrand | number:'1.2-2' }}</div></div>
+            <div class="pu-summary-card"><div class="label">Total GST</div><div class="value">₹{{ regTotalGst | number:'1.2-2' }}</div></div>
+            <div class="pu-summary-card"><div class="label">Total Paid</div><div class="value success">₹{{ regTotalPaid | number:'1.2-2' }}</div></div>
+            <div class="pu-summary-card"><div class="label">Outstanding</div><div class="value warn">₹{{ regTotalDue | number:'1.2-2' }}</div></div>
+          </div>
+        }
+
+        @if (regLoading) { <div class="pu-skeleton-list">@for (i of [1,2,3,4]; track i) { <div class="pu-skeleton-row"></div> }</div> }
+        @if (!regLoading && registerRows.length === 0) { <div class="pu-empty"><mat-icon>receipt_long</mat-icon><h3>No data for selected period</h3><p>Select a date range and click Run</p></div> }
+        @if (!regLoading && registerRows.length > 0) {
+          <div class="rpt-table-scroll">
+            <table class="pu-items-table rpt-table">
+              <thead><tr>
+                <th>Invoice #</th><th>Date</th><th>Vendor</th>
+                <th class="num">Taxable</th><th class="num">GST</th><th class="num">Total</th>
+                <th class="num">Paid</th><th class="num">Outstanding</th><th>Status</th>
+              </tr></thead>
+              <tbody>
+                @for (r of registerRows; track r.piNumber) {
+                  <tr>
+                    <td><code class="pu-code">{{ r.piNumber }}</code></td>
+                    <td>{{ r.invoiceDate | date:'dd MMM yyyy' }}</td>
+                    <td>{{ r.vendorName }}</td>
+                    <td class="num">₹{{ r.subtotal | number:'1.2-2' }}</td>
+                    <td class="num">₹{{ r.totalGstAmount | number:'1.2-2' }}</td>
+                    <td class="num" style="font-weight:600">₹{{ r.grandTotal | number:'1.2-2' }}</td>
+                    <td class="num" style="color:#2e7d32">₹{{ r.paidAmount | number:'1.2-2' }}</td>
+                    <td class="num" [class.pu-overdue]="r.outstandingAmount > 0">₹{{ r.outstandingAmount | number:'1.2-2' }}</td>
+                    <td><span class="pu-status-badge {{ r.status }}">{{ r.status | titlecase }}</span></td>
+                  </tr>
+                }
+              </tbody>
+              <tfoot><tr class="rpt-foot">
+                <td colspan="3"><strong>Total</strong></td>
+                <td class="num"></td>
+                <td class="num"><strong>₹{{ regTotalGst | number:'1.2-2' }}</strong></td>
+                <td class="num"><strong>₹{{ regTotalGrand | number:'1.2-2' }}</strong></td>
+                <td class="num" style="color:#2e7d32"><strong>₹{{ regTotalPaid | number:'1.2-2' }}</strong></td>
+                <td class="num" style="color:#c62828"><strong>₹{{ regTotalDue | number:'1.2-2' }}</strong></td>
+                <td></td>
+              </tr></tfoot>
+            </table>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- ── TAB 2: Vendor Outstanding ────────────────────────── -->
+    <mat-tab label="Vendor Outstanding">
+      <div class="rpt-tab-content">
+        @if (outstanding.length > 0) {
+          <div class="pu-summary-row">
+            <div class="pu-summary-card"><div class="label">Vendors with Dues</div><div class="value primary">{{ outstanding.length }}</div></div>
+            <div class="pu-summary-card"><div class="label">Total Outstanding</div><div class="value warn">₹{{ outTotalDue | number:'1.2-2' }}</div></div>
+            <div class="pu-summary-card"><div class="label">Overdue Amount</div><div class="value warn">₹{{ outTotalOverdue | number:'1.2-2' }}</div></div>
+          </div>
+        }
+        @if (outLoading) { <div class="pu-skeleton-list">@for (i of [1,2,3]; track i) { <div class="pu-skeleton-row"></div> }</div> }
+        @if (!outLoading && outstanding.length === 0) { <div class="pu-empty"><mat-icon>account_balance_wallet</mat-icon><h3>No outstanding payables</h3></div> }
+        @if (!outLoading && outstanding.length > 0) {
+          <div class="rpt-table-scroll">
+            <table class="pu-items-table rpt-table">
+              <thead><tr>
+                <th>Vendor</th><th class="num">Purchased</th><th class="num">Paid</th>
+                <th class="num">Outstanding</th><th class="num">Overdue</th>
+                <th class="num">Overdue Bills</th><th>Oldest Due</th>
+              </tr></thead>
+              <tbody>
+                @for (o of outstanding; track o.vendorId) {
+                  <tr [class.rpt-overdue-row]="o.overdueAmount > 0">
+                    <td><div style="font-weight:500">{{ o.vendorName }}</div><div style="font-size:11px;color:gray">{{ o.gstin }}</div></td>
+                    <td class="num">₹{{ o.totalPurchased | number:'1.2-2' }}</td>
+                    <td class="num" style="color:#2e7d32">₹{{ o.totalPaid | number:'1.2-2' }}</td>
+                    <td class="num" style="font-weight:600;color:var(--md-sys-color-primary)">₹{{ o.outstandingAmount | number:'1.2-2' }}</td>
+                    <td class="num" [class.pu-overdue]="o.overdueAmount > 0">₹{{ o.overdueAmount | number:'1.2-2' }}</td>
+                    <td class="num" [class.pu-overdue]="o.overdueInvoices > 0">{{ o.overdueInvoices }}</td>
+                    <td>{{ o.oldestDueDate ? (o.oldestDueDate | date:'dd MMM yyyy') : '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- ── TAB 3: Vendor Ledger ──────────────────────────────── -->
+    <mat-tab label="Vendor Ledger">
+      <div class="rpt-tab-content">
+        <form [formGroup]="ledgerForm" class="pu-filter-row" (ngSubmit)="loadLedger()">
+          <mat-form-field appearance="outline" style="min-width:260px">
+            <mat-label>Select Vendor</mat-label>
+            <mat-select formControlName="vendorId">
+              @for (v of vendors; track v.vendorId) { <mat-option [value]="v.vendorId">{{ v.vendorName }}</mat-option> }
+            </mat-select>
+          </mat-form-field>
+          <button mat-flat-button color="primary" type="submit"><mat-icon>refresh</mat-icon> Load Ledger</button>
+        </form>
+
+        @if (ledLoading) { <div class="pu-skeleton-list">@for (i of [1,2,3]; track i) { <div class="pu-skeleton-row"></div> }</div> }
+        @if (!ledLoading && ledgerRows.length === 0 && ledgerForm.get('vendorId')?.value) {
+          <div class="pu-empty"><mat-icon>account_balance</mat-icon><h3>No ledger entries</h3></div>
+        }
+        @if (!ledLoading && ledgerRows.length > 0) {
+          <div class="rpt-ledger-header">
+            <span class="rpt-vendor-name">{{ ledgerVendorName }}</span>
+            <span class="rpt-balance" [class.pu-overdue]="runningBalance > 0">Balance Payable: ₹{{ runningBalance | number:'1.2-2' }}</span>
+          </div>
+          <div class="rpt-table-scroll">
+            <table class="pu-items-table rpt-table">
+              <thead><tr>
+                <th>Date</th><th>Type</th><th>Reference</th>
+                <th class="num">Debit (Payment)</th><th class="num">Credit (Invoice)</th>
+                <th class="num">Outstanding</th><th>Due Date</th>
+              </tr></thead>
+              <tbody>
+                @for (l of ledgerRows; track l.ledgerId) {
+                  <tr [class.rpt-overdue-row]="l.isOverdue">
+                    <td>{{ l.referenceDate | date:'dd MMM yyyy' }}</td>
+                    <td><span class="pu-code">{{ l.referenceType }}</span></td>
+                    <td>{{ l.referenceNumber }}</td>
+                    <td class="num" style="color:#2e7d32">{{ l.debitAmount > 0 ? ('₹' + (l.debitAmount | number:'1.2-2')) : '—' }}</td>
+                    <td class="num" style="color:#c62828">{{ l.creditAmount > 0 ? ('₹' + (l.creditAmount | number:'1.2-2')) : '—' }}</td>
+                    <td class="num" style="font-weight:600">₹{{ l.outstandingAmount | number:'1.2-2' }}</td>
+                    <td>
+                      @if (l.dueDate) {
+                        <span [class.pu-overdue]="l.isOverdue">{{ l.dueDate | date:'dd MMM yyyy' }}
+                          @if (l.isOverdue) { <span class="rpt-overdue-tag">{{ l.daysOverdue }}d overdue</span> }
+                        </span>
+                      } @else { — }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+    <!-- ── TAB 4: Stock Summary ──────────────────────────────── -->
+    <mat-tab label="Stock Summary">
+      <div class="rpt-tab-content">
+        @if (stockRows.length > 0) {
+          <div class="pu-summary-row">
+            <div class="pu-summary-card"><div class="label">Total Products</div><div class="value primary">{{ stockTotalItems }}</div></div>
+            <div class="pu-summary-card"><div class="label">Below Reorder</div><div class="value warn">{{ stockBelowReorder }}</div></div>
+            <div class="pu-summary-card"><div class="label">Out of Stock</div><div class="value warn">{{ stockOutOfStock }}</div></div>
+          </div>
+        }
+        @if (stkLoading) { <div class="pu-skeleton-list">@for (i of [1,2,3]; track i) { <div class="pu-skeleton-row"></div> }</div> }
+        @if (!stkLoading && stockRows.length === 0) { <div class="pu-empty"><mat-icon>inventory</mat-icon><h3>No stock data</h3></div> }
+        @if (!stkLoading && stockRows.length > 0) {
+          <div class="rpt-table-scroll">
+            <table class="pu-items-table rpt-table">
+              <thead><tr>
+                <th>Product</th><th class="num">Stock Qty</th><th class="num">Min Qty</th>
+                <th class="num">Reorder Level</th><th class="num">Last Purchase Rate</th>
+                <th>Last Purchase</th><th>Status</th>
+              </tr></thead>
+              <tbody>
+                @for (s of stockRows; track s.productId) {
+                  <tr [class.rpt-low-stock]="s.isBelowReorder && !s.isOutOfStock" [class.rpt-out-stock]="s.isOutOfStock">
+                    <td><div style="font-weight:500">{{ s.productName || s.productId }}</div></td>
+                    <td class="num" [class.pu-overdue]="s.isOutOfStock" style="font-weight:600">{{ s.stockQty | number:'1.3-3' }}</td>
+                    <td class="num">{{ s.minStockQty | number:'1.3-3' }}</td>
+                    <td class="num">{{ s.reorderLevel | number:'1.3-3' }}</td>
+                    <td class="num">{{ s.lastPurchaseRate ? ('₹' + (s.lastPurchaseRate | number:'1.2-2')) : '—' }}</td>
+                    <td>{{ s.lastPurchaseDate ? (s.lastPurchaseDate | date:'dd MMM yyyy') : '—' }}</td>
+                    <td>
+                      @if (s.isOutOfStock)    { <span class="pu-status-badge inactive">Out of Stock</span> }
+                      @else if (s.isBelowReorder) { <span class="pu-status-badge pending">Low Stock</span> }
+                      @else                   { <span class="pu-status-badge active">OK</span> }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </mat-tab>
+
+  </mat-tab-group>
+</div>

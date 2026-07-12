@@ -1,0 +1,48 @@
+/* src/app/Component/purchase/purchase-invoice/purchase-invoice.component.css */
+@import '../purchase-shared.css';
+
+.pi-form-shell { max-width: 1200px; }
+.pi-card { border-radius: 14px !important; margin-bottom: 16px; }
+.pi-gst-toggle { margin-top: 8px; }
+.pi-items-scroll { overflow-x: auto; }
+.pi-add-line-btn { margin-top: 10px; border-radius: 20px !important; }
+.pi-line-total { font-weight: 600; color: var(--md-sys-color-primary); }
+
+.pi-charges-totals {
+  display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start;
+}
+.pi-charges { flex: 1 1 320px; }
+
+.pi-form-footer {
+  display: flex; justify-content: flex-end; gap: 10px; padding: 12px 0;
+}
+
+/* Detail view */
+.pi-detail-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+  gap: 14px; margin-bottom: 16px;
+}
+.pi-detail-label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--md-sys-color-on-surface-variant); margin-bottom: 2px; }
+
+.pi-amounts-row { display: flex; gap: 16px; margin: 10px 0; flex-wrap: wrap; }
+.pi-amt-item { flex: 1 1 70px; }
+.pi-amt-label { font-size: 11px; color: var(--md-sys-color-on-surface-variant); }
+.pi-amt-val { font-size: 15px; font-weight: 600; font-family: monospace; }
+.pi-amt-val.success { color: #2e7d32; }
+
+.pi-payment-summary {
+  display: flex; gap: 20px; background: var(--md-sys-color-surface-variant);
+  border-radius: 12px; padding: 14px 20px; margin: 16px 0; flex-wrap: wrap;
+}
+.pi-ps-item { flex: 1 1 100px; }
+.pi-ps-label { font-size: 12px; color: var(--md-sys-color-on-surface-variant); }
+.pi-ps-val { font-size: 18px; font-weight: 600; font-family: monospace; }
+.pi-ps-val.success { color: #2e7d32; }
+
+.pi-payment-row {
+  display: flex; align-items: center; gap: 12px; padding: 8px 12px;
+  border: 1px solid var(--md-sys-color-outline-variant); border-radius: 8px; margin-bottom: 8px;
+  font-size: 13px;
+}
+.pi-pay-amt { margin-left: auto; font-weight: 600; font-family: monospace; }
+.success { color: #2e7d32; }

@@ -1,0 +1,4 @@
+
+// PATCH for company-form-dialog.component.ts
+// Add styleUrls: ['./company-form-dialog.component.css'] to @Component decorator
+// No logic changes needed.

@@ -1,0 +1,133 @@
+<!-- src/app/Component/purchase/purchase-return/purchase-return.component.html -->
+<div class="pu-page">
+  <div class="pu-page-header">
+    <div><h1 class="pu-page-title"><mat-icon class="pu-title-icon">assignment_return</mat-icon> Purchase Returns</h1>
+      <p class="pu-page-sub">{{ dataSource.data.length }} returns</p></div>
+    <button mat-flat-button color="primary" class="pu-add-btn" (click)="openNew()"><mat-icon>add</mat-icon> New Return</button>
+  </div>
+
+  <div class="pu-layout" [class.pu-layout-split]="showForm">
+    <div class="pu-list-panel">
+      <mat-form-field appearance="outline" class="pu-search"><mat-label>Search</mat-label><input matInput (input)="applyFilter($event)" /><mat-icon matPrefix>search</mat-icon></mat-form-field>
+
+      @if (loading) { <div class="pu-skeleton-list">@for (i of [1,2,3]; track i) { <div class="pu-skeleton-row"></div> }</div> }
+      @if (!loading && dataSource.data.length === 0) { <div class="pu-empty"><mat-icon>assignment_return</mat-icon><h3>No purchase returns</h3></div> }
+
+      @if (!loading && dataSource.data.length > 0) {
+        <!-- Mobile cards -->
+        <div class="pu-card-list" [class.hidden]="!isMobile">
+          @for (r of dataSource.filteredData; track r.returnNo) {
+            <mat-card class="pu-vendor-card"><mat-card-content>
+              <div class="pu-vc-row1">
+                <div class="pu-vc-avatar">RET</div>
+                <div class="pu-vc-info">
+                  <div class="pu-vc-name">{{ r.returnNo }}</div>
+                  <div class="pu-vc-meta">{{ getVendorName(r.vendorId) }} · {{ r.returnDate | date:'dd MMM yyyy' }}</div>
+                  @if (r.piNumber) { <div class="pu-vc-meta">Invoice: {{ r.piNumber }}</div> }
+                </div>
+                <span class="pu-status-badge {{ r.status }}">{{ r.status | titlecase }}</span>
+              </div>
+              <div class="pr-total">₹{{ r.grandTotal | number:'1.2-2' }}</div>
+              <div class="pu-vc-actions">
+                @if (r.status === 'pending') {
+                  <button mat-flat-button color="primary" (click)="approve(r.returnNo!)"><mat-icon>check_circle</mat-icon> Approve</button>
+                }
+              </div>
+            </mat-card-content></mat-card>
+          }
+        </div>
+
+        <!-- Desktop table -->
+        <mat-card class="pu-table-card" [class.hidden]="isMobile">
+          <table mat-table [dataSource]="dataSource" matSort class="pu-table">
+            <ng-container matColumnDef="returnNo"><th mat-header-cell *matHeaderCellDef>Return #</th><td mat-cell *matCellDef="let r"><code class="pu-code">{{ r.returnNo }}</code></td></ng-container>
+            <ng-container matColumnDef="returnDate"><th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th><td mat-cell *matCellDef="let r">{{ r.returnDate | date:'dd MMM yyyy' }}</td></ng-container>
+            <ng-container matColumnDef="vendorId"><th mat-header-cell *matHeaderCellDef>Vendor</th><td mat-cell *matCellDef="let r">{{ getVendorName(r.vendorId) }}</td></ng-container>
+            <ng-container matColumnDef="piNumber"><th mat-header-cell *matHeaderCellDef>Invoice</th><td mat-cell *matCellDef="let r">{{ r.piNumber || '—' }}</td></ng-container>
+            <ng-container matColumnDef="grandTotal"><th mat-header-cell *matHeaderCellDef mat-sort-header>Total</th><td mat-cell *matCellDef="let r" class="pu-amount">₹{{ r.grandTotal | number:'1.2-2' }}</td></ng-container>
+            <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let r"><span class="pu-status-badge {{ r.status }}">{{ r.status | titlecase }}</span></td></ng-container>
+            <ng-container matColumnDef="action"><th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let r" class="pu-td-actions">
+                @if (r.status === 'pending') {
+                  <button mat-icon-button color="primary" (click)="approve(r.returnNo)" matTooltip="Approve Return"><mat-icon>check_circle</mat-icon></button>
+                }
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="listColumns; sticky:true"></tr>
+            <tr mat-row *matRowDef="let row; columns:listColumns" class="pu-tr"></tr>
+          </table>
+          <mat-paginator [pageSizeOptions]="[10,20,50]" [pageSize]="20" showFirstLastButtons></mat-paginator>
+        </mat-card>
+      }
+    </div>
+
+    <!-- Form panel -->
+    @if (showForm) {
+      <div class="pu-form-panel">
+        <div class="pu-form-header"><h2>New Purchase Return</h2><button mat-icon-button (click)="close()"><mat-icon>close</mat-icon></button></div>
+        <form [formGroup]="returnForm" (ngSubmit)="save()" class="pu-form-body">
+
+          <mat-form-field appearance="outline" class="pu-field-full">
+            <mat-label>Invoice (optional)</mat-label>
+            <mat-select formControlName="piNumber" (selectionChange)="onInvoiceSelect($event.value)">
+              <mat-option value="">— No Invoice —</mat-option>
+              @for (inv of invoices; track inv.piNumber) {
+                <mat-option [value]="inv.piNumber">{{ inv.piNumber }} · {{ inv.vendorName || inv.vendorId }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <div class="pu-form-row2">
+            <mat-form-field appearance="outline" class="pu-field"><mat-label>Vendor *</mat-label>
+              <mat-select formControlName="vendorId">@for (v of vendors; track v.vendorId) { <mat-option [value]="v.vendorId">{{ v.vendorName }}</mat-option> }</mat-select>
+              <mat-error>Required</mat-error>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="pu-field"><mat-label>Return Date *</mat-label><input matInput type="date" formControlName="returnDate" /></mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline" class="pu-field-full"><mat-label>Reason for Return *</mat-label>
+            <textarea matInput formControlName="reason" rows="2"></textarea><mat-error>Required</mat-error>
+          </mat-form-field>
+
+          <div class="pu-section-label">Return Items</div>
+          <div formArrayName="items">
+            @for (line of items.controls; track $index; let i = $index) {
+              <div class="pr-line" [formGroupName]="i">
+                <mat-form-field appearance="outline" class="pu-field-full" style="margin-bottom:4px">
+                  <mat-label>Product *</mat-label>
+                  <mat-select formControlName="productId" (selectionChange)="onProductSelect(i, $event.value)">
+                    @for (p of products; track p.uniqueKeyID) { <mat-option [value]="p.uniqueKeyID">{{ p.productName || p.name }}</mat-option> }
+                  </mat-select>
+                </mat-form-field>
+                <div class="pu-form-row3">
+                  <mat-form-field appearance="outline" class="pu-field"><mat-label>Qty *</mat-label><input matInput type="number" formControlName="quantity" min="0.001" (input)="onLineChange(i)" /></mat-form-field>
+                  <mat-form-field appearance="outline" class="pu-field"><mat-label>Rate ₹ *</mat-label><input matInput type="number" formControlName="rate" min="0" (input)="onLineChange(i)" /></mat-form-field>
+                  <mat-form-field appearance="outline" class="pu-field"><mat-label>GST %</mat-label>
+                    <mat-select formControlName="gstRate" (selectionChange)="onLineChange(i)">@for (g of gstRates; track g) { <mat-option [value]="g">{{ g }}%</mat-option> }</mat-select>
+                  </mat-form-field>
+                </div>
+                <div class="pr-line-total">Total: ₹{{ line.get('totalAmount')?.value | number:'1.2-2' }}</div>
+                <button mat-icon-button color="warn" type="button" (click)="removeLine(i)" [disabled]="items.length===1"><mat-icon>delete</mat-icon></button>
+              </div>
+            }
+          </div>
+
+          <button mat-stroked-button type="button" (click)="addLine()" style="border-radius:20px;margin-bottom:12px"><mat-icon>add</mat-icon> Add Item</button>
+
+          <div class="pu-totals">
+            <div class="pu-totals-row"><span class="pu-totals-label">Subtotal</span><span class="pu-totals-val">₹{{ subtotal | number:'1.2-2' }}</span></div>
+            <div class="pu-totals-row"><span class="pu-totals-label">GST</span><span class="pu-totals-val">₹{{ totalGst | number:'1.2-2' }}</span></div>
+            <div class="pu-totals-row total"><span class="pu-totals-label">Grand Total</span><span class="pu-totals-val">₹{{ grandTotal | number:'1.2-2' }}</span></div>
+          </div>
+
+          <mat-form-field appearance="outline" class="pu-field-full"><mat-label>Remarks</mat-label><textarea matInput formControlName="remark" rows="2"></textarea></mat-form-field>
+
+          <div class="pu-form-actions">
+            <button mat-stroked-button type="button" (click)="close()">Cancel</button>
+            <button mat-flat-button color="primary" type="submit"><mat-icon>save</mat-icon> Save Return</button>
+          </div>
+        </form>
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,323 @@
+<!-- src/app/Component/purchase/purchase-payment/purchase-payment.component.html -->
+<div class="pu-page">
+  <div class="pu-page-header">
+    <div>
+      <h1 class="pu-page-title">
+        <mat-icon class="pu-title-icon">payments</mat-icon> Purchase Payments
+      </h1>
+      <p class="pu-page-sub">
+        {{ dataSource.data.length }} records
+        @if (dataSource.data.length > 0) {
+          · Total Paid: ₹{{ totalPaid | number:'1.2-2' }}
+        }
+      </p>
+    </div>
+    <button mat-flat-button color="primary" class="pu-add-btn" (click)="openNew()">
+      <mat-icon>add</mat-icon> Record Payment
+    </button>
+  </div>
+
+  <div class="pu-layout" [class.pu-layout-split]="showForm">
+
+    <!-- ── List panel ──────────────────────────────────────── -->
+    <div class="pu-list-panel">
+      <mat-form-field appearance="outline" class="pu-search" subscriptSizing="dynamic">
+        <mat-label>Search payments</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput (input)="applyFilter($event)" placeholder="Payment no, vendor…" />
+      </mat-form-field>
+
+      @if (loading) {
+        <div class="pu-skeleton-list">
+          @for (i of [1, 2, 3, 4]; track i) { <div class="pu-skeleton-row"></div> }
+        </div>
+      }
+
+      @if (!loading && dataSource.data.length === 0) {
+        <div class="pu-empty">
+          <mat-icon>payments</mat-icon>
+          <h3>No payments recorded</h3>
+          <p>Record your first payment to start tracking accounts payable</p>
+        </div>
+      }
+
+      @if (!loading && dataSource.data.length > 0) {
+
+        <!-- Mobile: cards -->
+        <div class="pu-card-list" [class.hidden]="!isMobile">
+          @for (p of dataSource.filteredData; track p.paymentNo) {
+            <mat-card class="pu-vendor-card">
+              <mat-card-content>
+                <div class="pu-vc-row1">
+                  <div class="pu-vc-avatar pp-mode-avatar">
+                    {{ (p.paymentMode || 'C').charAt(0).toUpperCase() }}
+                  </div>
+                  <div class="pu-vc-info">
+                    <div class="pu-vc-name">{{ p.paymentNo }}</div>
+                    <div class="pu-vc-meta">
+                      {{ getVendorName(p.vendorId) }} · {{ p.paymentDate | date:'dd MMM yyyy' }}
+                    </div>
+                    <div class="pu-vc-meta">
+                      <span class="pp-mode-chip">{{ p.paymentMode | titlecase }}</span>
+                      @if (p.piNumber) { <span>· {{ p.piNumber }}</span> }
+                    </div>
+                  </div>
+                  <div class="pp-card-amount">₹{{ p.amount | number:'1.2-2' }}</div>
+                </div>
+                @if ((p.tdsDeducted || 0) > 0) {
+                  <div class="pp-tds">
+                    TDS: ₹{{ p.tdsDeducted | number:'1.2-2' }}
+                    · Net: ₹{{ p.netPaid | number:'1.2-2' }}
+                  </div>
+                }
+                @if (p.chequeNo) {
+                  <div class="pp-tds">Cheque: {{ p.chequeNo }}</div>
+                }
+                @if (p.bankRef) {
+                  <div class="pp-tds">Ref: {{ p.bankRef }}</div>
+                }
+                <div class="pu-vc-actions">
+                  <button mat-stroked-button color="warn" (click)="deletePayment(p.paymentId!)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          }
+        </div>
+
+        <!-- Desktop: table -->
+        <mat-card class="pu-table-card" [class.hidden]="isMobile">
+          <table mat-table [dataSource]="dataSource" matSort class="pu-table">
+
+            <ng-container matColumnDef="paymentNo">
+              <th mat-header-cell *matHeaderCellDef>Payment #</th>
+              <td mat-cell *matCellDef="let r"><code class="pu-code">{{ r.paymentNo }}</code></td>
+            </ng-container>
+
+            <ng-container matColumnDef="paymentDate">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+              <td mat-cell *matCellDef="let r">{{ r.paymentDate | date:'dd MMM yyyy' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="vendorId">
+              <th mat-header-cell *matHeaderCellDef>Vendor</th>
+              <td mat-cell *matCellDef="let r">{{ getVendorName(r.vendorId) }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="piNumber">
+              <th mat-header-cell *matHeaderCellDef>Invoice</th>
+              <td mat-cell *matCellDef="let r">{{ r.piNumber || '—' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="paymentMode">
+              <th mat-header-cell *matHeaderCellDef>Mode</th>
+              <td mat-cell *matCellDef="let r">
+                <span class="pp-mode-chip">{{ r.paymentMode | titlecase }}</span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="amount">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Amount</th>
+              <td mat-cell *matCellDef="let r" class="pu-amount">₹{{ r.amount | number:'1.2-2' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="netPaid">
+              <th mat-header-cell *matHeaderCellDef>Net Paid</th>
+              <td mat-cell *matCellDef="let r" class="pp-net-paid">₹{{ r.netPaid | number:'1.2-2' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="action">
+              <th mat-header-cell *matHeaderCellDef></th>
+              <td mat-cell *matCellDef="let r">
+                <button mat-icon-button color="warn" (click)="deletePayment(r.paymentId)" matTooltip="Delete payment">
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="listColumns; sticky: true"></tr>
+            <tr mat-row *matRowDef="let row; columns: listColumns" class="pu-tr"></tr>
+          </table>
+          <mat-paginator [pageSizeOptions]="[10, 20, 50]" [pageSize]="20" showFirstLastButtons></mat-paginator>
+        </mat-card>
+
+      }
+    </div><!-- end list panel -->
+
+    <!-- ── Form panel ──────────────────────────────────────── -->
+    @if (showForm) {
+      <div class="pu-form-panel">
+        <div class="pu-form-header">
+          <h2>Record Payment</h2>
+          <button mat-icon-button (click)="close()" matTooltip="Close">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <form [formGroup]="payForm" (ngSubmit)="save()" class="pu-form-body">
+
+          <!-- Invoice selection (optional) -->
+          <mat-form-field appearance="outline" class="pu-field-full" subscriptSizing="dynamic">
+            <mat-label>Invoice (leave blank for advance payment)</mat-label>
+            <mat-icon matPrefix>receipt_long</mat-icon>
+            <mat-select formControlName="piNumber" (selectionChange)="onInvoiceSelect($event.value)">
+              <mat-option value="">— Advance / No Invoice —</mat-option>
+              <!--
+                FIX-BUG-3: use filteredInvoices getter (filters by selected vendor non-destructively)
+                instead of this.invoices which was being permanently mutated
+              -->
+              @for (inv of filteredInvoices; track inv.piNumber) {
+                <mat-option [value]="inv.piNumber">
+                  {{ inv.piNumber }} · {{ inv.vendorName || inv.vendorId }}
+                  · Due: ₹{{ inv.outstandingAmount | number:'1.2-2' }}
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Vendor -->
+          <mat-form-field appearance="outline" class="pu-field-full" subscriptSizing="dynamic">
+            <mat-label>Vendor *</mat-label>
+            <mat-icon matPrefix>storefront</mat-icon>
+            <!--
+              FIX-BUG-3: added (selectionChange) so invoice dropdown re-filters when vendor changes
+            -->
+            <mat-select formControlName="vendorId" (selectionChange)="onVendorChange($event.value)">
+              @for (v of vendors; track v.vendorId) {
+                <mat-option [value]="v.vendorId">{{ v.vendorName }}</mat-option>
+              }
+            </mat-select>
+            <mat-error>Vendor is required</mat-error>
+          </mat-form-field>
+
+          <!-- Date + Mode -->
+          <div class="pu-form-row2">
+            <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
+              <mat-label>Payment Date *</mat-label>
+              <mat-icon matPrefix>calendar_today</mat-icon>
+              <input matInput type="date" formControlName="paymentDate" />
+              <mat-error>Date is required</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
+              <mat-label>Payment Mode *</mat-label>
+              <mat-select formControlName="paymentMode">
+                @for (m of payModes; track m) {
+                  <mat-option [value]="m">{{ m | titlecase }}</mat-option>
+                }
+              </mat-select>
+              <mat-error>Mode is required</mat-error>
+            </mat-form-field>
+          </div>
+
+          <!-- Type + Amount -->
+          <div class="pu-form-row2">
+            <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
+              <mat-label>Payment Type</mat-label>
+              <mat-select formControlName="paymentType">
+                @for (t of payTypes; track t) {
+                  <mat-option [value]="t">{{ t | titlecase }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
+              <mat-label>Amount (₹) *</mat-label>
+              <span matPrefix>₹&nbsp;</span>
+              <!--
+                FIX-BUG-4: placeholder shows hint so user knows to enter amount;
+                default is null not 0 so validation doesn't fire immediately
+              -->
+              <input matInput type="number" formControlName="amount" min="0.01" step="0.01" placeholder="0.00" />
+              <mat-error>
+                @if (payForm.get('amount')?.hasError('required')) { Amount is required }
+                @else if (payForm.get('amount')?.hasError('min')) { Amount must be greater than 0 }
+              </mat-error>
+            </mat-form-field>
+          </div>
+
+          <!--
+            FIX-BUG-2: Cheque fields — only shown for 'cheque' mode.
+            chequeDate is null by default (not '') so JSON serialises to null (valid DateTime?)
+            not "" which causes a 400 Bad Request deserialisation error.
+          -->
+          @if (isCheque) {
+            <div class="pu-form-row2">
+              <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
+                <mat-label>Cheque Number</mat-label>
+                <mat-icon matPrefix>pin</mat-icon>
+                <input matInput formControlName="chequeNo" placeholder="e.g. 001234" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
+                <mat-label>Cheque Date</mat-label>
+                <mat-icon matPrefix>event</mat-icon>
+                <input matInput type="date" formControlName="chequeDate" />
+              </mat-form-field>
+            </div>
+            <mat-form-field appearance="outline" class="pu-field-full" subscriptSizing="dynamic">
+              <mat-label>Bank Name</mat-label>
+              <mat-icon matPrefix>account_balance</mat-icon>
+              <input matInput formControlName="bankName" placeholder="e.g. State Bank of India" />
+            </mat-form-field>
+          }
+
+          <!--
+            FIX-BUG-5: Bank transfer / NEFT / RTGS AND UPI all get a reference field.
+            UPI shows "UPI Transaction ID", others show "UTR / Ref Number".
+          -->
+          @if (needsBankRef) {
+            <div class="pu-form-row2">
+              @if (!isCheque) {
+                <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
+                  <mat-label>Bank Name</mat-label>
+                  <mat-icon matPrefix>account_balance</mat-icon>
+                  <input matInput formControlName="bankName" placeholder="e.g. HDFC Bank" />
+                </mat-form-field>
+              }
+              <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
+                <mat-label>{{ bankRefLabel }}</mat-label>
+                <mat-icon matPrefix>tag</mat-icon>
+                <input matInput formControlName="bankRef" [placeholder]="bankRefLabel" />
+              </mat-form-field>
+            </div>
+          }
+
+          <!-- TDS + Net Paid -->
+          <div class="pu-form-row2">
+            <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
+              <mat-label>TDS Deducted (₹)</mat-label>
+              <span matPrefix>₹&nbsp;</span>
+              <input matInput type="number" formControlName="tdsDeducted" min="0" step="0.01" placeholder="0.00" />
+              <mat-hint>Leave 0 if no TDS deducted</mat-hint>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
+              <mat-label>Net Paid (₹)</mat-label>
+              <span matPrefix>₹&nbsp;</span>
+              <input matInput formControlName="netPaid" readonly />
+              <mat-hint>Auto = Amount − TDS</mat-hint>
+            </mat-form-field>
+          </div>
+
+          <!-- Notes -->
+          <mat-form-field appearance="outline" class="pu-field-full" subscriptSizing="dynamic">
+            <mat-label>Notes</mat-label>
+            <textarea matInput formControlName="notes" rows="2" placeholder="Optional payment notes…"></textarea>
+          </mat-form-field>
+
+          <!-- Actions -->
+          <div class="pu-form-actions">
+            <button mat-stroked-button type="button" (click)="close()">
+              <mat-icon>close</mat-icon> Cancel
+            </button>
+            <button mat-flat-button color="primary" type="submit">
+              <mat-icon>save</mat-icon> Record Payment
+            </button>
+          </div>
+
+        </form>
+      </div>
+    }<!-- end form panel -->
+
+  </div><!-- end layout -->
+</div>

@@ -5,7 +5,9 @@ import { catchError, tap, map } from 'rxjs/operators';
 import {
   LoginResponse,
   Menu,
+  MenuNode,
   MenuPermission,
+  MenuPermissionBatch,
   Menus,
   Roles,
   UpdateRole,
@@ -187,10 +189,14 @@ export class UserService {
     if (!role) {
       return new Observable<Menu[]>(observer => { observer.next([]); observer.complete(); });
     }
-    return this.http.get<Menu[]>(this.baseUrl + 'UserRole/GetAllMenusByRole?userrole=' + role);
+    return this.http.get<Menu[]>(this.baseUrl + 'UserRole/GetAllMenusByRole?userrole=' + encodeURIComponent(role));
   }
   getMenuPermission(role: string, menuname: string): Observable<MenuPermission> {
-    return this.http.get<MenuPermission>(this.baseUrl + 'UserRole/GetMenusPermissionByRole?userrole=' + role + '&menucode=' + menuname);
+    const url = this.baseUrl + 'UserRole/GetMenusPermissionByRole?userrole=' + encodeURIComponent(role) + '&menucode=' + encodeURIComponent(menuname);
+    try { console.log('UserService.getMenuPermission URL ->', url); } catch { }
+    return this.http.get<MenuPermission>(url).pipe(
+      tap(resp => { try { console.log('UserService.getMenuPermission response ->', resp); } catch { } })
+    );
   }
   getAllUsers(): Observable<Users[]> {
     const url = `${this.baseUrl}User/GetAll`;
@@ -353,5 +359,24 @@ export class UserService {
 
   handleError(error: any): Observable<never> {
     return throwError(() => error);
+  }
+
+  // NEW: batch permissions (one call, replaces N+1)
+  getAllPermissionsByRole(role: string): Observable<MenuPermissionBatch> {
+    return this.http.get<MenuPermissionBatch>(
+      this.baseUrl + 'UserRole/GetAllPermissionsByRole?userrole=' + encodeURIComponent(role)
+    );
+  }
+
+  // NEW: menu tree with permissions for sidebar
+  getMenuTree(role: string): Observable<any> {
+    return this.http.get<any>(
+      this.baseUrl + 'UserRole/GetMenuTree?userrole=' + encodeURIComponent(role)
+    );
+  }
+
+  // NEW: full menu tree (admin UI only)
+  getFullMenuTree(): Observable<MenuNode[]> {
+    return this.http.get<MenuNode[]>(this.baseUrl + 'UserRole/GetFullMenuTree');
   }
 }

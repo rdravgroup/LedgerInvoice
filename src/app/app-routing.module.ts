@@ -4,6 +4,7 @@ import { OauthLoginComponent } from './Component/oauth-login/oauth-login.compone
 
 const routes: Routes = [
   { path: 'oauth-login', component: OauthLoginComponent },
+  { path: 'admin/gateways', loadComponent: () => import('./Component/payment-admin/payment-gateway-admin.component').then(m => m.PaymentGatewayAdminComponent) },
   // ... other routes can be added here
 ];
 

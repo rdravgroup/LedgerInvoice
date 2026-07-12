@@ -1,0 +1,18 @@
+/* declaration-form-dialog.component.css */
+.dfd-wrap { display:flex;flex-direction:column; }
+.dfd-header { display:flex;align-items:flex-start;gap:12px;padding:18px 24px 14px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:white;flex-shrink:0; }
+.dfd-header-icon { width:42px;height:42px;border-radius:10px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+.dfd-header-icon mat-icon { font-size:22px!important;color:white!important; }
+.dfd-title { font-size:17px;font-weight:700;margin:0 0 2px;letter-spacing:-.2px; }
+.dfd-sub   { font-size:12px;opacity:.8;margin:0; }
+.dfd-close { margin-left:auto;color:rgba(255,255,255,.9)!important; }
+.dfd-content { padding:16px 24px!important;overflow-y:auto; }
+.dfd-field-full { width:100%; }
+.dfd-actions { padding:12px 24px 14px!important;border-top:1px solid #e2e8f0;display:flex!important;justify-content:flex-end!important;gap:10px; }
+.dfd-btn { height:44px!important;border-radius:10px!important;font-weight:700!important;gap:6px;display:flex!important;align-items:center!important; }
+.dfd-btn--save { min-width:140px; }
+@media (max-width:599px) {
+  .dfd-content { padding:12px 16px!important; }
+  .dfd-actions { flex-direction:column;padding:12px 16px!important; }
+  .dfd-btn { width:100%!important;justify-content:center!important; }
+}

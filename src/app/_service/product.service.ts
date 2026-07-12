@@ -18,8 +18,10 @@ export class ProductService {
     return throwError(() => new Error(error.message || 'An unexpected error occurred'));
   }
 
-  getAllProducts(): Observable<ProductDTO[]> {
-    return this.http.get<ProductDTO[]>(`${this.baseUrl}Product/GetAll`)
+  getAllProducts(companyId?: string): Observable<ProductDTO[]> {
+    let url = `${this.baseUrl}Product/GetAll`;
+    if (companyId) url += '?companyId=' + encodeURIComponent(companyId);
+    return this.http.get<ProductDTO[]>(url)
       .pipe(catchError(err => this.handleError(err)));
   }
 

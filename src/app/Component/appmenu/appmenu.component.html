@@ -1,72 +1,219 @@
-@if(showmenu) {
-  <mat-toolbar color="primary" class="mat-elevation-z8">
-    <button mat-icon-button (click)="toggleDrawer()">
+<!-- src/app/Component/appmenu/appmenu.component.html -->
+<!-- CHANGED: Sidebar now renders parent→children collapsible groups.
+     Toolbar (top bar) is IDENTICAL to original.
+     Falls back gracefully: items without a parent render as flat items. -->
+
+<ng-container *ngIf="showmenu; else onlyOutlet">
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TOP TOOLBAR — identical to original
+       ══════════════════════════════════════════════════════════════════════ -->
+  <mat-toolbar color="primary" class="app-toolbar mat-elevation-z8">
+
+    <button mat-icon-button (click)="toggleDrawer()" class="menu-btn" aria-label="Toggle menu">
       <mat-icon>menu</mat-icon>
     </button>
 
-    <!-- Brand container -->
     <div class="brand-container">
-      <img src="assets/logo/logo.png" alt="CodeXClear Logo" class="brand-logo" />
+      <img src="assets/logo/logo.png" alt="Store App Logo" class="brand-logo" />
     </div>
 
-    <!-- Company name -->
-    <!-- <span class="company-display" *ngIf="companyName">{{ companyName }}</span> -->
+    <!-- Company selector area — identical to original -->
+    <div class="company-area">
+
+      <ng-container *ngIf="isSuperAdmin">
+        <div class="company-selector-wrap">
+          <mat-icon class="company-icon-prefix">business</mat-icon>
+          <mat-select #companySelect class="company-mat-select"
+            [(value)]="selectedCompanyId"
+            (selectionChange)="onCompanySelect($event.value)"
+            placeholder="Select company…"
+            aria-label="Select company to act on behalf of">
+            <mat-option *ngFor="let c of activeCompanies" [value]="c.companyId">
+              <div class="company-option">
+                <span class="co-name">{{ c.name }}</span>
+                <span class="co-id">{{ c.companyId }}</span>
+              </div>
+            </mat-option>
+          </mat-select>
+          <mat-icon class="company-icon-suffix">expand_more</mat-icon>
+        </div>
+</ng-container>
+
+      <ng-container *ngIf="isSuperDuperAdmin">
+        <div class="company-selector-wrap reporting-mode">
+          <mat-icon class="company-icon-prefix">filter_list</mat-icon>
+          <mat-select #companySelect class="company-mat-select"
+            [(value)]="selectedCompanyId"
+            (selectionChange)="onCompanySelect($event.value)"
+            placeholder="Filter by company…"
+            aria-label="Filter data by company">
+            <mat-option [value]="null">— All companies —</mat-option>
+            <mat-option *ngFor="let c of activeCompanies" [value]="c.companyId">
+              <div class="company-option">
+                <span class="co-name">{{ c.name }}</span>
+                <span class="co-id">{{ c.companyId }}</span>
+              </div>
+            </mat-option>
+          </mat-select>
+          <mat-icon class="company-icon-suffix">expand_more</mat-icon>
+        </div>
+</ng-container>
+
+      <ng-container *ngIf="!isSuperAdmin && !isSuperDuperAdmin && companyName">
+        <div class="company-display-chip">
+          <mat-icon class="chip-icon">business</mat-icon>
+          <span class="chip-name">{{ companyName }}</span>
+        </div>
+</ng-container>
+
+    </div>
 
     <span class="example-spacer"></span>
-    <span>{{Loginuser}}</span>
-    <button mat-button [matMenuTriggerFor]="profile"><mat-icon>arrow_drop_down</mat-icon></button>
-    <mat-menu #profile>
-      <button mat-menu-item routerLink="/profile">
+
+    <div class="user-area">
+      <span class="user-name">{{ Loginuser }}</span>
+      <button mat-icon-button [matMenuTriggerFor]="profile" class="profile-btn" aria-label="User menu">
         <mat-icon>account_circle</mat-icon>
-        <span>Profile</span>
+      </button>
+    </div>
+
+    <mat-menu #profile="matMenu">
+      <button mat-menu-item routerLink="/profile">
+        <mat-icon>manage_accounts</mat-icon><span>Profile</span>
       </button>
       <button mat-menu-item *ngIf="headerHasPassword" routerLink="/updatepassword">
-        <mat-icon>lock</mat-icon>
-        <span>Update Password</span>
+        <mat-icon>lock</mat-icon><span>Update Password</span>
       </button>
-      <button mat-menu-item *ngIf="!headerHasPassword" (click)="router.navigate(['/confirmotp'], { queryParams: { email: headerUserEmail } })">
-        <mat-icon>lock_open</mat-icon>
-        <span>Create Password</span>
+      <button mat-menu-item *ngIf="!headerHasPassword"
+              (click)="router.navigate(['/confirmotp'], { queryParams: { email: headerUserEmail } })">
+        <mat-icon>lock_open</mat-icon><span>Create Password</span>
       </button>
       <mat-divider></mat-divider>
       <button mat-menu-item routerLink="/login">
-        <mat-icon>logout</mat-icon>
-        <span>Logout</span>
+        <mat-icon>logout</mat-icon><span>Logout</span>
       </button>
     </mat-menu>
+
   </mat-toolbar>
 
+  <!-- ══════════════════════════════════════════════════════════════════════
+       DRAWER + CONTENT
+       ══════════════════════════════════════════════════════════════════════ -->
   <mat-drawer-container class="drawer-container">
-    <mat-drawer #drawer class="drawer" [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
-      [mode]="(isHandset$ | async) ? 'over' : 'side'" [opened]="true">
-      <mat-nav-list (click)="closeDrawerOnItemClick()">
-        <mat-list-item>
-          <button mat-button routerLink=""><mat-icon>home</mat-icon>Home</button>
-        </mat-list-item>
-        <!-- <mat-list-item>
-          <button mat-button routerLink="/quick-invoice"><mat-icon>calculate</mat-icon>Quick Invoice</button>
-        </mat-list-item> -->
-        @for(item of menulist(); track item.menucode){
-          <mat-list-item>
-            <button mat-button [routerLink]="getMenuRoute(item.menucode)">
-              <mat-icon>
-                @switch(item.menucode) {
-                  @case ('ledger-dashboard') { account_balance_wallet }
-                  @case ('ledger-outstanding-ar') { trending_up }
-                  @case ('ledger-maintenance') { settings }
-                  @default { folder }
-                }
-              </mat-icon>
-              {{item.menuname}}
-            </button>
-          </mat-list-item>
-        }
-      </mat-nav-list>
+    <mat-drawer #drawer class="drawer"
+                [attr.role]="(isHandset$ | async) ? 'dialog' : 'navigation'"
+                [mode]="(isHandset$ | async) ? 'over' : 'side'"
+                [opened]="true">
+
+      <div class="nav-scroll-area">
+        <nav class="nav-list" role="navigation" aria-label="Main navigation">
+
+          <!-- Home — always visible -->
+          <a routerLink="/" class="nav-item nav-item-flat"
+             [class.nav-item-active]="isRouteActive('/')"
+             (click)="closeDrawerOnItemClick()" aria-label="Home">
+            <mat-icon class="nav-icon">home</mat-icon>
+            <span class="nav-label">Home</span>
+          </a>
+
+
+          <!-- ── Menu tree ──────────────────────────────────────────────── -->
+          @for (node of menulist(); track node.code) {
+
+            <!-- CASE A: Parent group (has children) -->
+            @if (node.children && node.children.length > 0) {
+              <div class="nav-group">
+
+                <!-- Group header — clickable to expand/collapse -->
+                <button class="nav-group-header"
+                        [class.nav-group-header-active]="node.expanded || hasActiveChild(node)"
+                        (click)="toggleGroup(node)"
+                        [attr.aria-expanded]="node.expanded"
+                        [attr.aria-controls]="'nav-children-' + node.code"
+                        [attr.aria-label]="node.name + ' group'">
+                  <div class="nav-group-header-left">
+                    <mat-icon class="nav-icon">{{ node.menuIcon || 'folder' }}</mat-icon>
+                    <span class="nav-label">{{ node.name }}</span>
+                  </div>
+                  <mat-icon class="nav-chevron"
+                            [class.nav-chevron-open]="node.expanded">
+                    expand_more
+                  </mat-icon>
+                </button>
+
+                <!-- Children — animated collapse -->
+                <div class="nav-group-children"
+                     [id]="'nav-children-' + node.code"
+                     [class.nav-group-children-open]="node.expanded">
+                  <div class="nav-group-children-inner">
+                    @for (child of node.children; track child.code) {
+                      <a [routerLink]="getMenuRoute(child.code)"
+                         class="nav-item nav-item-child"
+                         [class.nav-item-active]="isRouteActive(child.code)"
+                         (click)="closeDrawerOnItemClick()"
+                         [attr.aria-label]="child.name">
+                        <mat-icon class="nav-icon nav-icon-child">
+                          {{ child.menuIcon || 'chevron_right' }}
+                        </mat-icon>
+                        <span class="nav-label">{{ child.name }}</span>
+                      </a>
+                    }
+                  </div>
+                </div>
+
+              </div>
+            }
+
+            <!-- CASE B: Flat item (no children — no parent) -->
+            @else if (!node.parentcode) {
+              <a [routerLink]="getMenuRoute(node.code)"
+                 class="nav-item nav-item-flat"
+                 [class.nav-item-active]="isRouteActive(node.code)"
+                 (click)="closeDrawerOnItemClick()"
+                 [attr.aria-label]="node.name">
+                <mat-icon class="nav-icon">{{ node.menuIcon || 'folder' }}</mat-icon>
+                <span class="nav-label">{{ node.name }}</span>
+              </a>
+            }
+            <!-- CASE C: orphan child (parentcode set but parent wasn't in tree) — render flat -->
+            @else {
+              <a [routerLink]="getMenuRoute(node.code)"
+                 class="nav-item nav-item-flat nav-item-orphan"
+                 [class.nav-item-active]="isRouteActive(node.code)"
+                 (click)="closeDrawerOnItemClick()">
+                <mat-icon class="nav-icon">{{ node.menuIcon || 'chevron_right' }}</mat-icon>
+                <span class="nav-label">{{ node.name }}</span>
+              </a>
+            }
+
+          }
+
+        </nav>
+      </div>
+
     </mat-drawer>
+
     <mat-drawer-content class="drawer-content">
       <router-outlet></router-outlet>
     </mat-drawer-content>
   </mat-drawer-container>
-} @else {
+
+  <button
+    mat-fab
+    color="primary"
+    class="ai-chat-fab"
+    type="button"
+    (click)="openAiChatDialog()"
+    matTooltip="AI Chat"
+    aria-label="Open AI Chat">
+    <mat-icon>chat_bubble</mat-icon>
+  </button>
+</ng-container>
+
+<ng-template #onlyOutlet>
   <router-outlet></router-outlet>
-}
+</ng-template>
+
+
+

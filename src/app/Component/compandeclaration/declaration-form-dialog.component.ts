@@ -11,7 +11,8 @@ import { ToastrService } from 'ngx-toastr';
   selector: 'app-declaration-form-dialog',
   standalone: true,
   imports: [CommonModule, MaterialModule, ReactiveFormsModule],
-  templateUrl: './declaration-form-dialog.component.html'
+  templateUrl: './declaration-form-dialog.component.html',
+  styleUrls: ['./declaration-form-dialog.component.css']
 })
 export class DeclarationFormDialogComponent {
   form: any;

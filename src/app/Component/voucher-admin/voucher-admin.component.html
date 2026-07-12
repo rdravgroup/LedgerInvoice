@@ -1,0 +1,377 @@
+<div class="va-page">
+
+  <!-- Page header -->
+  <div class="va-header">
+    <mat-icon class="va-header-icon">confirmation_number</mat-icon>
+    <div>
+      <h1 class="va-title">Voucher & Payment Manager</h1>
+      <p class="va-sub">Create vouchers, manage plans, toggle payment gateway</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <mat-tab-group class="va-tabs" animationDuration="200ms" (selectedIndexChange)="activeTab = $event===0?'vouchers':'config'">
+
+    <!-- ══ TAB 1: VOUCHERS ══════════════════════════════════════ -->
+    <mat-tab label="Vouchers">
+      <div class="va-tab-content">
+
+        <!-- Top bar -->
+        <div class="va-toolbar">
+          <mat-form-field appearance="outline" class="va-search" subscriptSizing="dynamic">
+            <mat-label>Search vouchers</mat-label>
+            <input matInput (input)="applyFilter($event)" placeholder="Code, type, description…" />
+            <mat-icon matPrefix>search</mat-icon>
+          </mat-form-field>
+          <mat-checkbox [(ngModel)]="showDisabled" (change)="loadVouchers()" color="primary">
+            Show disabled
+          </mat-checkbox>
+          <button mat-flat-button color="primary" (click)="openCreate()" class="va-create-btn">
+            <mat-icon>add</mat-icon> Create Voucher
+          </button>
+        </div>
+
+        <!-- Create / Edit Form -->
+        <mat-card class="va-form-card" *ngIf="showForm" [@.disabled]="true">
+          <mat-card-header class="va-form-header">
+            <mat-card-title>
+              <mat-icon>{{ isEdit ? 'edit' : 'add_circle' }}</mat-icon>
+              {{ isEdit ? 'Edit Voucher' : 'Create New Voucher' }}
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <form [formGroup]="voucherForm" class="va-form-grid" novalidate>
+
+              <!-- Row 1 -->
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Voucher Code *</mat-label>
+                <input matInput formControlName="voucherCode" placeholder="e.g. SAVE20" />
+                <mat-icon matPrefix>confirmation_number</mat-icon>
+                <mat-error *ngIf="voucherForm.get('voucherCode')?.hasError('required')">Required</mat-error>
+                <mat-error *ngIf="voucherForm.get('voucherCode')?.hasError('pattern')">Only uppercase letters, numbers, - and _</mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Voucher Type *</mat-label>
+                <mat-select formControlName="voucherType">
+                  <mat-option value="activation">Activation (unlock company)</mat-option>
+                  <mat-option value="discount">Discount (reduce price)</mat-option>
+                  <mat-option value="free_trial">Free Trial (bonus days)</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Discount Type *</mat-label>
+                <mat-select formControlName="discountType">
+                  <mat-option value="percent">Percentage (e.g. 20%)</mat-option>
+                  <mat-option value="flat">Flat Amount (e.g. ₹500)</mat-option>
+                  <mat-option value="free_days">Free Days (bonus period)</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <!-- Row 2 -->
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" *ngIf="formDiscountType !== 'free_days'">
+                <mat-label>{{ formDiscountType==='percent' ? 'Discount %' : 'Flat Amount (₹)' }}</mat-label>
+                <input matInput type="number" formControlName="discountValue" min="0" />
+                <mat-icon matPrefix>{{ formDiscountType==='percent' ? 'percent' : 'currency_rupee' }}</mat-icon>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" *ngIf="formDiscountType === 'free_days' || formVoucherType === 'free_trial'">
+                <mat-label>Bonus Days</mat-label>
+                <input matInput type="number" formControlName="freeDays" min="0" />
+                <mat-icon matPrefix>calendar_today</mat-icon>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Plan Restriction (optional)</mat-label>
+                <mat-select formControlName="planRestriction">
+                  <mat-option value="">All Plans</mat-option>
+                  <mat-option value="annual">Annual Only</mat-option>
+                  <mat-option value="monthly">Monthly Only</mat-option>
+                  <mat-option value="trial">Trial Only</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Max Uses (0 = unlimited)</mat-label>
+                <input matInput type="number" formControlName="maxUses" min="0" />
+                <mat-icon matPrefix>repeat</mat-icon>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Expiry Date (optional)</mat-label>
+                <input matInput [matDatepicker]="expiryPicker" formControlName="expiryDate" />
+                <mat-datepicker-toggle matIconSuffix [for]="expiryPicker"></mat-datepicker-toggle>
+                <mat-datepicker #expiryPicker></mat-datepicker>
+              </mat-form-field>
+
+              <!-- Full-width fields -->
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="va-full">
+                <mat-label>Description</mat-label>
+                <input matInput formControlName="description" placeholder="Brief description shown to users" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="va-full">
+                <mat-label>Internal Notes</mat-label>
+                <textarea matInput formControlName="notes" rows="2" placeholder="Admin notes (not shown to users)"></textarea>
+              </mat-form-field>
+
+              <!-- Toggles row -->
+              <div class="va-toggle-row va-full">
+                <mat-slide-toggle formControlName="isActive" color="primary">Active</mat-slide-toggle>
+                <mat-slide-toggle formControlName="isEnabled" color="primary">Enabled</mat-slide-toggle>
+              </div>
+
+            </form>
+          </mat-card-content>
+          <mat-card-actions class="va-form-actions">
+            <button mat-stroked-button (click)="cancelForm()"><mat-icon>close</mat-icon> Cancel</button>
+            <button mat-flat-button color="primary" (click)="saveVoucher()" [disabled]="saving || voucherForm.invalid">
+              <mat-spinner *ngIf="saving" diameter="18" style="display:inline-block;margin-right:6px"></mat-spinner>
+              <mat-icon *ngIf="!saving">{{ isEdit ? 'save' : 'add' }}</mat-icon>
+              {{ saving ? 'Saving…' : (isEdit ? 'Update Voucher' : 'Create Voucher') }}
+            </button>
+          </mat-card-actions>
+        </mat-card>
+
+        <!-- Loading -->
+        <div class="va-loading" *ngIf="loading">
+          <mat-spinner diameter="36"></mat-spinner><p>Loading vouchers…</p>
+        </div>
+
+        <!-- Desktop Table -->
+        <mat-card class="va-table-card" *ngIf="!loading">
+          <div class="va-table-wrap">
+            <table mat-table [dataSource]="datasource" matSort class="va-table">
+
+              <ng-container matColumnDef="code">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Code</th>
+                <td mat-cell *matCellDef="let v">
+                  <span class="va-code">{{ v.voucherCode }}</span>
+                  <span class="va-used-chip" *ngIf="!v.isUsable">
+                    {{ !v.isActive ? 'Deleted' : !v.isEnabled ? 'Disabled' : v.isExpired ? 'Expired' : 'Used Up' }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="type">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Type</th>
+                <td mat-cell *matCellDef="let v">
+                  <span class="va-type-badge va-type-{{v.voucherType}}">{{ v.voucherType }}</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="discount">
+                <th mat-header-cell *matHeaderCellDef>Discount / Benefit</th>
+                <td mat-cell *matCellDef="let v">
+                  <span class="va-discount-val">{{ getDiscountLabel(v) }}</span>
+                  <span class="va-plan-restrict" *ngIf="v.planRestriction"> · {{ v.planRestriction }} only</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="uses">
+                <th mat-header-cell *matHeaderCellDef>Uses</th>
+                <td mat-cell *matCellDef="let v">
+                  <div class="va-uses">
+                    <span class="va-used">{{ v.usedCount }}</span>
+                    <span class="va-sep">/</span>
+                    <span class="va-max">{{ v.maxUses === 0 ? '∞' : v.maxUses }}</span>
+                  </div>
+                  <mat-progress-bar *ngIf="v.maxUses > 0"
+                    mode="determinate"
+                    [value]="(v.usedCount / v.maxUses) * 100"
+                    class="va-uses-bar"
+                    [color]="v.usedCount >= v.maxUses ? 'warn' : 'primary'">
+                  </mat-progress-bar>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let v">
+                  <span class="va-status" [class.va-status-ok]="v.isUsable" [class.va-status-off]="!v.isUsable">
+                    {{ v.isUsable ? 'Active' : 'Inactive' }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="expiry">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Expiry</th>
+                <td mat-cell *matCellDef="let v">
+                  <span *ngIf="v.expiryDate" [class.va-expired]="v.isExpired">
+                    {{ v.expiryDate | date:'dd MMM yyyy' }}
+                  </span>
+                  <span *ngIf="!v.expiryDate" class="va-never">Never</span>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let v" class="va-actions-cell">
+                  <button mat-icon-button color="primary" (click)="openEdit(v)" matTooltip="Edit">
+                    <mat-icon>edit</mat-icon>
+                  </button>
+                  <button mat-icon-button color="warn" (click)="deleteVoucher(v)" matTooltip="Disable">
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="va-row"></tr>
+            </table>
+            <mat-paginator [pageSizeOptions]="[10,25,50]" showFirstLastButtons></mat-paginator>
+          </div>
+
+          <!-- Mobile card list -->
+          <div class="va-mobile-list">
+            <div *ngFor="let v of vouchers" class="va-mob-card">
+              <div class="va-mob-row1">
+                <span class="va-code">{{ v.voucherCode }}</span>
+                <span class="va-type-badge va-type-{{v.voucherType}}">{{ v.voucherType }}</span>
+                <span class="va-status" [class.va-status-ok]="v.isUsable" [class.va-status-off]="!v.isUsable">
+                  {{ v.isUsable ? 'Active' : 'Off' }}
+                </span>
+              </div>
+              <div class="va-mob-row2">
+                <span>{{ getDiscountLabel(v) }}</span>
+                <span>{{ v.usedCount }}/{{ v.maxUses===0?'∞':v.maxUses }} uses</span>
+                <span *ngIf="v.expiryDate">Exp: {{ v.expiryDate | date:'dd MMM yy' }}</span>
+              </div>
+              <p class="va-mob-desc" *ngIf="v.description">{{ v.description }}</p>
+              <div class="va-mob-actions">
+                <button mat-stroked-button color="primary" (click)="openEdit(v)"><mat-icon>edit</mat-icon> Edit</button>
+                <button mat-stroked-button color="warn" (click)="deleteVoucher(v)"><mat-icon>delete_outline</mat-icon> Disable</button>
+              </div>
+            </div>
+            <div class="va-empty" *ngIf="!loading && vouchers.length===0">
+              <mat-icon>confirmation_number</mat-icon><p>No vouchers found</p>
+            </div>
+          </div>
+        </mat-card>
+
+      </div>
+    </mat-tab>
+
+    <!-- ══ TAB 2: PAYMENT CONFIG ════════════════════════════════ -->
+    <mat-tab label="Payment Config">
+      <div class="va-tab-content">
+
+        <div class="va-loading" *ngIf="configLoading">
+          <mat-spinner diameter="36"></mat-spinner><p>Loading config…</p>
+        </div>
+
+        <div *ngIf="config && !configLoading">
+
+          <!-- Master switches -->
+          <mat-card class="va-config-card">
+            <mat-card-header class="va-config-header">
+              <mat-card-title><mat-icon>settings</mat-icon> Master Switches</mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="va-config-body">
+
+              <div class="va-switch-row">
+                <div class="va-switch-info">
+                  <strong>Online Payment (Razorpay)</strong>
+                  <p>When ON: users must pay via Razorpay to activate.<br>
+                     When OFF: voucher-only or free activation.</p>
+                </div>
+                <div class="va-switch-ctrl">
+                  <mat-slide-toggle [checked]="config.onlinePaymentEnabled"
+                                    (change)="toggleOnlinePayment()" color="primary">
+                    {{ config.onlinePaymentEnabled ? 'ENABLED' : 'DISABLED' }}
+                  </mat-slide-toggle>
+                  <mat-spinner *ngIf="configSaving['online_payment_enabled']" diameter="20"></mat-spinner>
+                </div>
+              </div>
+
+              <mat-divider class="va-divider"></mat-divider>
+
+              <div class="va-switch-row">
+                <div class="va-switch-info">
+                  <strong>Voucher Required</strong>
+                  <p>When ON: a valid voucher code is required for activation.<br>
+                     When OFF: activation is free (or payment-only if Razorpay is on).</p>
+                </div>
+                <div class="va-switch-ctrl">
+                  <mat-slide-toggle [checked]="config.voucherRequired"
+                                    (change)="toggleVoucherRequired()" color="primary">
+                    {{ config.voucherRequired ? 'REQUIRED' : 'OPTIONAL' }}
+                  </mat-slide-toggle>
+                  <mat-spinner *ngIf="configSaving['voucher_required']" diameter="20"></mat-spinner>
+                </div>
+              </div>
+
+              <!-- Mode summary -->
+              <div class="va-mode-badge"
+                   [class.va-mode-free]="!config.onlinePaymentEnabled && !config.voucherRequired"
+                   [class.va-mode-voucher]="!config.onlinePaymentEnabled && config.voucherRequired"
+                   [class.va-mode-payment]="config.onlinePaymentEnabled && !config.voucherRequired"
+                   [class.va-mode-both]="config.onlinePaymentEnabled && config.voucherRequired">
+                <mat-icon>{{ !config.onlinePaymentEnabled && !config.voucherRequired ? 'free_cancellation' :
+                              !config.onlinePaymentEnabled ? 'confirmation_number' :
+                              !config.voucherRequired ? 'payment' : 'verified' }}</mat-icon>
+                <span>
+                  Current mode:
+                  <strong>{{
+                    !config.onlinePaymentEnabled && !config.voucherRequired ? 'Free Activation' :
+                    !config.onlinePaymentEnabled && config.voucherRequired  ? 'Voucher Only' :
+                    config.onlinePaymentEnabled  && !config.voucherRequired ? 'Payment Only (Razorpay)' :
+                    'Voucher + Payment (Razorpay)'
+                  }}</strong>
+                </span>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Plan Pricing -->
+          <mat-card class="va-config-card">
+            <mat-card-header class="va-config-header">
+              <mat-card-title><mat-icon>price_change</mat-icon> Subscription Plan Pricing</mat-card-title>
+            </mat-card-header>
+            <mat-card-content class="va-config-body va-pricing-grid">
+
+              <div *ngFor="let plan of [
+                {label:'Annual Plan',  priceKey:'plan_annual_price',  daysKey:'plan_annual_days',  price:config.planAnnualPrice,  days:config.planAnnualDays},
+                {label:'Monthly Plan', priceKey:'plan_monthly_price', daysKey:'plan_monthly_days', price:config.planMonthlyPrice, days:config.planMonthlyDays},
+                {label:'Trial Plan',   priceKey:'plan_trial_price',   daysKey:'plan_trial_days',   price:config.planTrialPrice,   days:config.planTrialDays}
+              ]" class="va-plan-editor">
+                <h4>{{ plan.label }}</h4>
+                <div class="va-price-row">
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Price (₹)</mat-label>
+                    <input matInput type="number" #priceInput
+                           [value]="plan.price" min="0" />
+                    <mat-icon matPrefix>currency_rupee</mat-icon>
+                  </mat-form-field>
+                  <button mat-icon-button color="primary"
+                          (click)="updatePrice(plan.priceKey, priceInput.value)"
+                          matTooltip="Save price"
+                          [disabled]="configSaving[plan.priceKey]">
+                    <mat-spinner *ngIf="configSaving[plan.priceKey]" diameter="18"></mat-spinner>
+                    <mat-icon *ngIf="!configSaving[plan.priceKey]">save</mat-icon>
+                  </button>
+                </div>
+                <div class="va-price-row">
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Duration (days)</mat-label>
+                    <input matInput type="number" #daysInput
+                           [value]="plan.days" min="1" />
+                    <mat-icon matPrefix>calendar_month</mat-icon>
+                  </mat-form-field>
+                  <button mat-icon-button color="primary"
+                          (click)="updatePrice(plan.daysKey, daysInput.value)"
+                          matTooltip="Save days">
+                    <mat-icon>save</mat-icon>
+                  </button>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+        </div>
+      </div>
+    </mat-tab>
+
+  </mat-tab-group>
+</div>

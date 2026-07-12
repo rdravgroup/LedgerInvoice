@@ -1,0 +1,174 @@
+<div class="ad-wrap">
+
+  <!-- Header -->
+  <div class="ad-header">
+    <mat-icon class="ad-header-icon">lock_open</mat-icon>
+    <div>
+      <h2 class="ad-title">Activate Company</h2>
+      <p class="ad-sub">{{ data.companyName }}</p>
+    </div>
+
+    <!-- (gateway selection moved below header) -->
+  </div>
+
+    <!-- GATEWAY SELECTION (moved out of header; shown when choosing plan/payment) -->
+    <div *ngIf="step==='plan_select'" class="ad-gateway-section" style="margin:12px 24px;">
+      <p class="ad-section-label">Choose Payment Gateway</p>
+      <mat-radio-group [(ngModel)]="selectedGateway" class="ad-gateway-group">
+        <mat-radio-button *ngFor="let g of availableGateways" [value]="(g.gatewayName || '').toLowerCase()">
+          {{ g.displayName || g.gatewayName }}
+        </mat-radio-button>
+      </mat-radio-group>
+    </div>
+
+    <mat-dialog-content class="ad-body">
+
+    <!-- LOADING -->
+    <div *ngIf="step==='loading'" class="ad-center">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Checking activation requirements…</p>
+    </div>
+
+    <!-- ERROR -->
+    <div *ngIf="step==='error'" class="ad-error-state">
+      <mat-icon>error_outline</mat-icon>
+      <p>{{ errorMessage }}</p>
+
+      <!-- Special actions when companyId is missing -->
+      <div *ngIf="!data?.companyId" class="ad-error-actions">
+        <button mat-flat-button color="primary" (click)="goToLogin()">Sign in</button>
+        <button mat-stroked-button (click)="contactSupport()">Contact support</button>
+      </div>
+
+      <!-- Generic retry when companyId exists -->
+      <div *ngIf="data?.companyId">
+        <button mat-stroked-button (click)="loadActivationMode()">Retry</button>
+      </div>
+    </div>
+
+    <!-- SUCCESS -->
+    <div *ngIf="step==='success'" class="ad-success">
+      <mat-icon>check_circle</mat-icon>
+      <h3>Activation Successful!</h3>
+      <p>{{ successMessage }}</p>
+      <p *ngIf="accessExpiry" class="ad-expiry">
+        Access valid until <strong>{{ accessExpiry | date:'dd MMM yyyy' }}</strong>
+      </p>
+    </div>
+
+    <!-- INFO BANNER (always show when loaded) -->
+    <div class="ad-info-banner" *ngIf="activationInfo && step!=='loading' && step!=='success' && step!=='error'">
+      <mat-icon>info_outline</mat-icon>
+      <p>{{ activationInfo.instructions }}</p>
+    </div>
+
+    <!-- PLAN SELECTOR (shown for all paid modes) -->
+    <div class="ad-plan-section"
+         *ngIf="activationInfo && step!=='loading' && step!=='success' && step!=='error' && activationInfo.mode!=='free'">
+      <p class="ad-section-label">Select a Plan</p>
+      <div class="ad-plan-grid">
+        <div *ngFor="let plan of activationInfo.plans"
+             class="ad-plan-card"
+             [class.ad-plan-card--selected]="selectedPlan?.planId === plan.planId"
+             [class.ad-plan-card--recommended]="plan.isRecommended"
+             (click)="selectedPlan = plan; voucherValidation = undefined">
+          <span class="ad-plan-badge" *ngIf="plan.isRecommended">Best Value</span>
+          <div class="ad-plan-name">{{ plan.name }}</div>
+          <div class="ad-plan-price">₹{{ plan.amount | number }}</div>
+          <div class="ad-plan-days">{{ plan.durationDays }} days</div>
+          <div class="ad-plan-desc">{{ plan.description }}</div>
+        </div>
+      </div>
+    </div>
+
+        <!-- VOUCHER INPUT (shown on plan selection so voucher can be applied optionally) -->
+        <div class="ad-voucher-section"
+          *ngIf="step==='plan_select'">
+      <p class="ad-section-label">
+        <mat-icon>confirmation_number</mat-icon>
+        Have a Voucher? (Optional)
+      </p>
+
+      <div class="ad-voucher-row">
+        <mat-form-field appearance="outline" class="ad-voucher-field" subscriptSizing="dynamic">
+          <mat-label>Enter Voucher Code</mat-label>
+          <input matInput [formControl]="voucherCtrl"
+                 placeholder="e.g. WELCOME2024"
+                 (keyup.enter)="validateVoucher()"
+                 autocomplete="off"
+                 style="text-transform:uppercase; letter-spacing:2px; font-weight:700" />
+          <mat-icon matPrefix>confirmation_number</mat-icon>
+          <mat-error *ngIf="voucherCtrl.hasError('minlength')">Minimum 3 characters</mat-error>
+        </mat-form-field>
+        <button mat-flat-button color="primary"
+          class="ad-validate-btn"
+          (click)="validateVoucher()"
+          [disabled]="!selectedPlan || voucherCtrl.invalid || validating">
+          <mat-spinner *ngIf="validating" diameter="18" style="display:inline-block;margin-right:6px"></mat-spinner>
+          {{ validating ? 'Checking…' : 'Apply' }}
+        </button>
+      </div>
+
+      <!-- Voucher result -->
+      <div class="ad-voucher-result" *ngIf="voucherValidation">
+        <div class="ad-vr-valid" *ngIf="voucherValidation.isValid">
+          <mat-icon>check_circle</mat-icon>
+          <div class="ad-vr-details">
+            <span class="ad-vr-msg">{{ voucherValidation.message }}</span>
+            <div class="ad-vr-breakdown">
+              <span>Original: <strong>₹{{ voucherValidation.originalAmount | number:'1.2-2' }}</strong></span>
+              <span *ngIf="voucherValidation.discountAmount > 0">
+                Discount: <strong class="ad-discount">-₹{{ voucherValidation.discountAmount | number:'1.2-2' }}</strong>
+              </span>
+              <span *ngIf="voucherValidation.bonusDays > 0">
+                Bonus: <strong class="ad-bonus">+{{ voucherValidation.bonusDays }} days</strong>
+              </span>
+              <span class="ad-vr-final">
+                You Pay: <strong>₹{{ voucherValidation.finalAmount | number:'1.2-2' }}</strong>
+              </span>
+              <span>Total Access: <strong>{{ voucherValidation.totalDays }} days</strong></span>
+            </div>
+          </div>
+        </div>
+        <div class="ad-vr-invalid" *ngIf="!voucherValidation.isValid">
+          <mat-icon>cancel</mat-icon>
+          <span>{{ voucherValidation.message }}</span>
+        </div>
+      </div>
+      <!-- Voucher is optional; user may Apply or proceed to Pay after selecting a gateway -->
+    </div>
+
+    <!-- PAYMENT INITIATING -->
+    <div *ngIf="step==='payment' && paymentInitiating" class="ad-center">
+      <mat-spinner diameter="40"></mat-spinner>
+      <p>Opening payment gateway…</p>
+    </div>
+
+  </mat-dialog-content>
+
+  <!-- ACTIONS -->
+  <mat-dialog-actions class="ad-actions">
+
+    <!-- SUCCESS -->
+    <ng-container *ngIf="step==='success'">
+      <button mat-flat-button color="primary" (click)="close(true)">
+        <mat-icon>check</mat-icon> Done
+      </button>
+    </ng-container>
+
+    <!-- LOADING / PAYMENT IN PROGRESS (no cancel button - modal is not closable) -->
+
+    <!-- Voucher step removed — voucher handled inline on the plan_select view -->
+
+    <!-- PLAN SELECT STEP -->
+    <ng-container *ngIf="step==='plan_select'">
+      <button mat-flat-button color="primary"
+              [disabled]="!selectedPlan || paymentInitiating || !selectedGateway"
+              (click)="proceedToPayment()">
+        <mat-icon>payment</mat-icon>
+        Pay ₹{{ (voucherValidation?.finalAmount ?? selectedPlan?.amount) | number:'1.2-2' }}
+      </button>
+    </ng-container>
+
+  </mat-dialog-actions>
+</div>

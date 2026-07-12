@@ -5,6 +5,8 @@ import { MaterialModule } from '../../material.module';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { CompanyService } from '../../_service/company.service';
+import { UserService } from '../../_service/user.service';
+import { AuthService } from '../../_service/authentication.service';
 import { ToastrService } from 'ngx-toastr';
 import { Company } from '../../_model/company.model';
 
@@ -24,6 +26,8 @@ export class CompanyFormDialogComponent {
     private dialogRef: MatDialogRef<CompanyFormDialogComponent>,
     @Inject(MAT_DIALOG_DATA) public data: { company?: Company } | null,
     private service: CompanyService,
+    private userService: UserService,
+    private auth: AuthService,
     private toastr: ToastrService
   ) {
     this.form = this.fb.group({
@@ -56,38 +60,83 @@ export class CompanyFormDialogComponent {
 
   save(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
-    const payload = this.form.value;
     this.submitting = true;
+
     if (this.isEdit) {
-      this.service.updateCompany(payload).pipe(finalize(() => (this.submitting = false))).subscribe({
-        next: (r) => {
-          if (this.isSuccess(r)) {
-            this.toastr.success('Company updated', 'Success');
-            this.dialogRef.close(true);
-          } else {
-            this.toastr.error(r?.errorMessage || 'Failed to update');
-          }
-        },
-        error: (e) => {
-          console.error(e);
-          this.toastr.error('Failed to update');
-        }
+      // FIX: send null (not "") for unchanged/blank optional fields.
+      // Backend uses null-check: null = skip, any other value = update.
+      const raw = this.form.getRawValue();
+      const payload: any = {
+        companyId: raw.companyId ?? raw.CompanyId ?? this.data?.company?.companyId
+      };
+      const fields = [
+        'name','emailId','mobileNo','alternateMobile','addressDetails',
+        'countryCode','countryName','stateCode','stateName','gstNumber',
+        'bankName','accountNumber','ifsc','accountAddress'
+      ];
+      fields.forEach(field => {
+        const v = raw[field];
+        payload[field] = (v === '' || v === null || v === undefined) ? null : v;
       });
+
+      this.service.updateCompany(payload)
+        .pipe(finalize(() => (this.submitting = false)))
+        .subscribe({
+          next: (r: any) => {
+            if (this.isSuccess(r)) {
+              this.toastr.success('Company updated successfully', 'Success');
+              // Return updated data so parent refreshes list without a second GET
+              this.dialogRef.close(r?.data ?? r?.Data ?? true);
+            } else {
+              // Show server-provided message when available
+              const msg = r?.errorMessage ?? r?.ErrorMessage ?? 'Failed to update company';
+              this.toastr.error(msg, 'Error');
+            }
+          },
+          error: (e: any) => {
+            console.error('[DIALOG] updateCompany error', e);
+            const serverMsg = e?.error?.errorMessage ?? e?.error?.ErrorMessage ?? e?.message;
+            this.toastr.error(serverMsg ?? 'Failed to update company', 'Error');
+          }
+        });
+
     } else {
-      this.service.createCompany(payload).pipe(finalize(() => (this.submitting = false))).subscribe({
-        next: (r) => {
-          if (this.isSuccess(r)) {
-            this.toastr.success('Company created', 'Success');
-            this.dialogRef.close(true);
-          } else {
-            this.toastr.error(r?.errorMessage || 'Failed to create');
+      // CREATE: send null for blank optional bank fields
+      const payload = this.form.getRawValue();
+      ['bankName','accountNumber','ifsc','accountAddress','alternateMobile']
+        .forEach(f => { if (!payload[f]) payload[f] = null; });
+
+      this.service.createCompany(payload)
+        .pipe(finalize(() => (this.submitting = false)))
+        .subscribe({
+          next: (r: any) => {
+            if (this.isSuccess(r)) {
+              this.toastr.success('Company created successfully', 'Success');
+              // Refresh local user info so guest -> admin promotion reflects immediately
+              try {
+                const username = (this.auth?.getUsername && this.auth.getUsername()) || localStorage.getItem('username') || '';
+                if (username) {
+                  this.auth.refreshUserDetails(username).subscribe({
+                    next: () => {
+                      this.dialogRef.close(true);
+                    },
+                    error: () => { this.dialogRef.close(true); }
+                  });
+                } else {
+                  this.dialogRef.close(true);
+                }
+              } catch {
+                this.dialogRef.close(true);
+              }
+            } else {
+              this.toastr.error(r?.errorMessage ?? r?.ErrorMessage ?? 'Failed to create company', 'Error');
+            }
+          },
+          error: (e: any) => {
+            console.error('[DIALOG] createCompany error', e);
+            this.toastr.error('Failed to create company', 'Error');
           }
-        },
-        error: (e) => {
-          console.error(e);
-          this.toastr.error('Failed to create');
-        }
-      });
+        });
     }
   }
 

@@ -201,10 +201,7 @@ mat-hint.strength-strong { color: var(--md-sys-color-success) !important; }
 .mobile-invoice-num      { font-size: 12px; color: var(--md-sys-color-on-surface-variant); margin-top: 2px; }
 .mobile-invoice-amount   { font-size: 15px; font-weight: 700; color: var(--md-sys-color-primary); }
 
-/* ══════════════════════════════════════════════════════════
-   Invoice bottom-sheet panel — global shape override
-   (Added for createinvoice mobile item-entry bottom sheet)
-   ══════════════════════════════════════════════════════════ */
+/* Invoice mobile bottom-sheet shape */
 .inv-mobile-sheet-panel .mat-bottom-sheet-container {
   border-radius: 20px 20px 0 0 !important;
   padding: 0 !important;
@@ -212,3 +209,101 @@ mat-hint.strength-strong { color: var(--md-sys-color-success) !important; }
   max-height: 90vh;
   padding-bottom: env(safe-area-inset-bottom, 0) !important;
 }
+
+
+
+
+
+
+
+/* ================================================================
+   GLOBAL STYLES — mat-select panel overrides for company selector
+   APPEND these rules to the bottom of src/styles.css
+   mat-select panels render in a CDK overlay outside the component DOM,
+   so encapsulated component styles cannot reach them. These global rules
+   make the company dropdown panel look polished.
+   ================================================================ */
+
+/* ── Panel container ─────────────────────────────────────────── */
+.mat-mdc-select-panel {
+  background: var(--md-sys-color-surface) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18) !important;
+  padding: 4px 0 !important;
+  min-width: 220px !important;
+}
+
+/* ── Each option row ─────────────────────────────────────────── */
+.mat-mdc-select-panel .mat-mdc-option {
+  min-height: 48px !important;
+  padding: 4px 16px !important;
+  font-size: 14px;
+  color: var(--md-sys-color-on-surface) !important;
+  border-radius: 0;
+  transition: background 0.12s;
+}
+.mat-mdc-select-panel .mat-mdc-option:hover {
+  background: var(--md-sys-color-surface-variant) !important;
+}
+/* Active / selected option */
+.mat-mdc-select-panel .mat-mdc-option.mdc-list-item--selected,
+.mat-mdc-select-panel .mat-mdc-option.mat-mdc-option-active {
+  background: var(--md-sys-color-primary-container) !important;
+  color: var(--md-sys-color-on-primary-container) !important;
+  font-weight: 600;
+}
+/* Selected option text (ensure NOT white after selection — should be on-surface) */
+.mat-mdc-select-panel .mat-mdc-option.mdc-list-item--selected .mdc-list-item__primary-text {
+  color: var(--md-sys-color-on-primary-container) !important;
+}
+
+/* ── Company option layout (co-name + co-id) ─────────────────── */
+.company-option {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+  padding: 2px 0;
+}
+.company-option .co-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--md-sys-color-on-surface);
+}
+.company-option .co-id {
+  font-size: 11px;
+  font-family: 'Roboto Mono', monospace;
+  color: var(--md-sys-color-on-surface-variant);
+  opacity: 0.72;
+}
+/* Keep option text readable when the option is selected (no white override) */
+.mat-mdc-select-panel .mat-mdc-option.mdc-list-item--selected .co-name {
+  color: var(--md-sys-color-on-primary-container) !important;
+}
+.mat-mdc-select-panel .mat-mdc-option.mdc-list-item--selected .co-id {
+  color: var(--md-sys-color-on-primary-container) !important;
+  opacity: 0.75;
+}
+
+/* ── "All companies" option in reporting mode ────────────────── */
+.mat-mdc-select-panel .mat-mdc-option:first-child {
+  font-style: italic;
+  color: var(--md-sys-color-primary) !important;
+  border-bottom: 1px solid var(--md-sys-color-outline) !important;
+  margin-bottom: 4px;
+}
+.ai-chat-dialog-panel .mat-mdc-dialog-container,
+.ai-chat-dialog-panel .mdc-dialog__container,
+.ai-chat-dialog-panel .mdc-dialog__surface {
+  width: 100%;
+  height: 100%;
+}
+
+.ai-chat-dialog-panel .mdc-dialog__surface {
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+.ai-chat-dialog-panel .mat-mdc-dialog-surface {
+  padding: 0 !important;
+}
+

@@ -1,0 +1,63 @@
+/* src/app/Component/listinvoice/listinvoice.component.css additions */
+/* APPEND these rules to the existing listinvoice.component.css */
+/* All existing rules are preserved — this file contains only new rules. */
+
+/* ── Status badges in table and cards ──────────────────────────── */
+.status-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.inv-badges {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.inv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 7px;
+  border-radius: var(--md-sys-shape-corner-full);
+  font-size: 11px;
+  font-weight: var(--md-sys-typescale-weight-bold);
+  white-space: nowrap;
+  line-height: 1.6;
+}
+.inv-badge mat-icon {
+  font-size: 12px;
+  width: 12px;
+  height: 12px;
+}
+.inv-badge-approved {
+  background: var(--md-sys-color-success-container);
+  color:       var(--md-sys-color-on-success-container);
+}
+.inv-badge-locked {
+  background: var(--md-sys-color-error-container);
+  color:       var(--md-sys-color-on-error-container);
+}
+.inv-badge-returned {
+  background: var(--md-sys-color-tertiary-container);
+  color:       var(--md-sys-color-on-tertiary-container);
+}
+.inv-badge-draft {
+  background: var(--md-sys-color-surface-variant);
+  color:       var(--md-sys-color-on-surface-variant);
+}
+
+/* ── Return amount sub-line ─────────────────────────────────────── */
+.return-amount-sub {
+  font-size: 11px;
+  color: var(--md-sys-color-error);
+  font-family: var(--md-sys-typescale-mono-family);
+  margin-top: 2px;
+}
+
+/* ── Reports button in header ───────────────────────────────────── */
+.page-header-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+}

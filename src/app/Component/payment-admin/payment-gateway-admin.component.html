@@ -1,0 +1,19 @@
+<div class="payment-gateway-admin">
+  <h2>Payment Gateways</h2>
+
+  <div *ngIf="loading">Loading gateways…</div>
+
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <mat-list *ngIf="!loading">
+    <mat-list-item *ngFor="let g of gateways">
+      <div style="flex:1">
+        <div><strong>{{ g.gatewayName }}</strong></div>
+        <div style="font-size: 12px; color: #666">{{ g.displayName || g.gatewayName }}</div>
+      </div>
+      <mat-slide-toggle [checked]="g.isEnabled" (change)="toggle(g)">
+        {{ g.isEnabled ? 'Enabled' : 'Disabled' }}
+      </mat-slide-toggle>
+    </mat-list-item>
+  </mat-list>
+</div>

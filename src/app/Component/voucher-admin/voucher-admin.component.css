@@ -1,0 +1,84 @@
+.va-page{padding:20px 24px;max-width:1200px;margin:0 auto}
+.va-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.va-header-icon{font-size:32px!important;color:#4f46e5}
+.va-title{font-size:22px;font-weight:800;color:#0f172a;margin:0}
+.va-sub{font-size:13px;color:#64748b;margin:2px 0 0}
+.va-tabs{border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+.va-tab-content{padding:16px}
+.va-toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.va-search{flex:1;min-width:200px}
+.va-create-btn{height:42px!important;border-radius:10px!important;font-weight:700!important;gap:6px}
+.va-loading{display:flex;align-items:center;gap:12px;padding:24px;color:#64748b;font-size:14px}
+.va-form-card{border-radius:14px!important;margin-bottom:16px;overflow:hidden}
+.va-form-header{background:linear-gradient(135deg,#4f46e5,#7c3aed)!important;padding:14px 20px!important;margin:0!important}
+.va-form-header mat-card-title{color:white!important;font-size:16px!important;font-weight:700!important;display:flex!important;align-items:center!important;gap:8px!important;margin:0!important}
+.va-form-header mat-card-title mat-icon{color:white!important}
+.va-form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:0 14px;padding:16px 20px 8px}
+.va-full{grid-column:1/-1}
+.va-toggle-row{display:flex;gap:20px;align-items:center;padding:8px 0}
+.va-form-actions{padding:10px 20px 16px!important;border-top:1px solid #f1f5f9;display:flex!important;justify-content:flex-end!important;gap:10px}
+.va-form-actions button{height:44px!important;border-radius:10px!important;font-weight:700!important;min-width:120px}
+.va-table-card{border-radius:14px!important;overflow:hidden}
+.va-table-wrap{overflow-x:auto}
+.va-table{width:100%}
+.va-row:hover{background:#f8fafc}
+.mat-mdc-header-cell{font-size:11px!important;font-weight:700!important;text-transform:uppercase!important;letter-spacing:.5px!important;color:#64748b!important}
+.va-code{font-family:monospace;font-size:13px;font-weight:800;color:#4f46e5;background:#eef2ff;padding:2px 8px;border-radius:6px;letter-spacing:1px}
+.va-used-chip{margin-left:6px;font-size:10px;font-weight:700;padding:2px 6px;border-radius:10px;background:#fef2f2;color:#dc2626}
+.va-type-badge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase}
+.va-type-activation{background:#eef2ff;color:#4f46e5}
+.va-type-discount{background:#ecfdf5;color:#059669}
+.va-type-free_trial{background:#fffbeb;color:#d97706}
+.va-discount-val{font-size:13px;font-weight:700;color:#0f172a}
+.va-plan-restrict{font-size:11px;color:#94a3b8}
+.va-uses{display:flex;align-items:center;gap:4px;font-size:13px}
+.va-used{font-weight:700;color:#4f46e5}
+.va-sep{color:#94a3b8}
+.va-max{color:#64748b}
+.va-uses-bar{margin-top:4px;border-radius:4px;height:4px}
+.va-status{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.va-status-ok{background:#ecfdf5;color:#059669}
+.va-status-off{background:#fef2f2;color:#dc2626}
+.va-expired{color:#dc2626;font-weight:700}
+.va-never{color:#94a3b8;font-style:italic}
+.va-actions-cell{display:flex;gap:0}
+.va-empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:48px 16px;color:#94a3b8;text-align:center}
+.va-empty mat-icon{font-size:48px!important}
+.va-mobile-list{display:none}
+.va-mob-card{border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:10px}
+.va-mob-row1{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.va-mob-row2{display:flex;gap:14px;font-size:12px;color:#64748b;margin-bottom:6px;flex-wrap:wrap}
+.va-mob-desc{font-size:12px;color:#64748b;margin:0 0 8px}
+.va-mob-actions{display:flex;gap:8px}
+.va-mob-actions button{flex:1;height:36px!important;border-radius:8px!important;font-size:12px!important;font-weight:600!important}
+.va-config-card{border-radius:14px!important;margin-bottom:14px;overflow:hidden}
+.va-config-header{background:linear-gradient(135deg,#4f46e5,#7c3aed)!important;padding:14px 20px!important;margin:0!important}
+.va-config-header mat-card-title{color:white!important;font-size:16px!important;font-weight:700!important;display:flex!important;align-items:center!important;gap:8px!important;margin:0!important}
+.va-config-header mat-card-title mat-icon{color:white!important}
+.va-config-body{padding:16px 20px!important}
+.va-switch-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:12px 0}
+.va-switch-info strong{font-size:14px;font-weight:700;color:#0f172a}
+.va-switch-info p{font-size:12px;color:#64748b;margin:4px 0 0;line-height:1.5}
+.va-switch-ctrl{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.va-divider{margin:4px 0!important}
+.va-mode-badge{display:flex;align-items:center;gap:8px;margin-top:14px;padding:10px 14px;border-radius:10px;font-size:13px;font-weight:600}
+.va-mode-free{background:#ecfdf5;color:#059669}
+.va-mode-voucher{background:#eef2ff;color:#4f46e5}
+.va-mode-payment{background:#fffbeb;color:#d97706}
+.va-mode-both{background:#f5f3ff;color:#7c3aed}
+.va-mode-badge mat-icon{font-size:20px!important}
+.va-pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.va-plan-editor{background:#f8fafc;border-radius:12px;padding:14px;border:1px solid #e2e8f0}
+.va-plan-editor h4{font-size:14px;font-weight:700;color:#0f172a;margin:0 0 12px}
+.va-price-row{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.va-price-row mat-form-field{flex:1}
+@media(max-width:768px){
+  .va-page{padding:16px 12px}
+  .va-toolbar{flex-direction:column;align-items:stretch}
+  .va-create-btn{width:100%!important}
+  .va-table-wrap{display:none}
+  .va-mobile-list{display:block}
+  .va-form-grid{grid-template-columns:1fr}
+  .va-switch-row{flex-direction:column}
+  .va-pricing-grid{grid-template-columns:1fr}
+}

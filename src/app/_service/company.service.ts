@@ -15,6 +15,10 @@ export class CompanyService {
 
   private handleError(error: any, operation = 'operation') {
     console.error(`${operation} failed`, error);
+    // If the server returned 402 Payment Required, preserve the original HttpErrorResponse
+    if (error && error.status === 402) {
+      return throwError(() => error);
+    }
     return throwError(() => new Error(`${operation} failed. Please try again.`));
   }
 
@@ -65,7 +69,15 @@ export class CompanyService {
   updateCompany(payload: any) {
     const url = `${this.baseUrl}update`;
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.put<any>(url, payload, { headers }).pipe(catchError((err) => this.handleError(err, 'Update company')));
+    return this.http.put<any>(url, payload, { headers }).pipe(
+      catchError((err) => {
+        // If server returned a structured error with an errorMessage, rethrow original so component can read it
+        if (err && err.error && (err.error.errorMessage || err.error.ErrorMessage)) {
+          return throwError(() => err);
+        }
+        return this.handleError(err, 'Update company');
+      })
+    );
   }
 
   changeCompanyStatus(payload: any) {

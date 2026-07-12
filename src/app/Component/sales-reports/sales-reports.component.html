@@ -1,0 +1,259 @@
+<!-- src/app/Component/sales-reports/sales-reports.component.html -->
+<div class="page-content">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">
+        <mat-icon aria-hidden="true">bar_chart</mat-icon>
+        Sales Reports
+      </h1>
+      <p class="page-subtitle">Filter and export invoice and return data</p>
+    </div>
+    <button mat-flat-button color="accent" (click)="exportCsv()" [disabled]="exporting || loading">
+      @if (exporting) {
+        <mat-progress-spinner mode="indeterminate" diameter="18"></mat-progress-spinner>
+      } @else {
+        <mat-icon>download</mat-icon>
+      }
+      Export CSV
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <mat-card class="filter-card">
+    <form [formGroup]="filterForm" class="filter-form">
+      <!-- Report type -->
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Report Type</mat-label>
+        <mat-select formControlName="reportType">
+          <mat-option value="summary">Sales Summary</mat-option>
+          <mat-option value="returns">Sales Returns</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <!-- From date -->
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>From Date</mat-label>
+        <input matInput [matDatepicker]="fromPicker" formControlName="fromDate" readonly
+               (click)="fromPicker.open()" />
+        <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+        <mat-datepicker #fromPicker></mat-datepicker>
+      </mat-form-field>
+
+      <!-- To date -->
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>To Date</mat-label>
+        <input matInput [matDatepicker]="toPicker" formControlName="toDate" readonly
+               (click)="toPicker.open()" [min]="filterForm.value.fromDate" />
+        <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+        <mat-datepicker #toPicker></mat-datepicker>
+      </mat-form-field>
+
+      <!-- Customer filter -->
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Customer (optional)</mat-label>
+        <mat-select formControlName="customerId">
+          <mat-option value="">All Customers</mat-option>
+          @for (c of customers; track c.uniqueKeyID) {
+            <mat-option [value]="c.uniqueKeyID">{{ c.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <button mat-flat-button color="primary" type="button" (click)="runReport()" [disabled]="loading">
+        <mat-icon>refresh</mat-icon> Run Report
+      </button>
+    </form>
+  </mat-card>
+
+  <!-- Summary totals (for sales summary) -->
+  @if (reportType !== 'returns' && dataSource.data.length > 0) {
+    <div class="summary-totals">
+      <div class="total-card">
+        <span class="total-label">Total Invoiced</span>
+        <span class="total-val">₹{{ totalInvoiced | number:'1.2-2' }}</span>
+      </div>
+      <div class="total-card total-returns">
+        <span class="total-label">Total Returns</span>
+        <span class="total-val">₹{{ totalReturns | number:'1.2-2' }}</span>
+      </div>
+      <div class="total-card total-net">
+        <span class="total-label">Net Revenue</span>
+        <span class="total-val">₹{{ totalNet | number:'1.2-2' }}</span>
+      </div>
+      <div class="total-card">
+        <span class="total-label">Invoices</span>
+        <span class="total-val">{{ dataSource.data.length }}</span>
+      </div>
+    </div>
+  }
+
+  @if (reportType === 'returns' && dataSource.data.length > 0) {
+    <div class="summary-totals">
+      <div class="total-card total-returns">
+        <span class="total-label">Total Returns Value</span>
+        <span class="total-val">₹{{ totalReturns | number:'1.2-2' }}</span>
+      </div>
+      <div class="total-card">
+        <span class="total-label">Return Records</span>
+        <span class="total-val">{{ dataSource.data.length }}</span>
+      </div>
+    </div>
+  }
+
+  <!-- Search -->
+  <mat-form-field appearance="outline" class="table-search" subscriptSizing="dynamic">
+    <mat-label>Search</mat-label>
+    <mat-icon matPrefix>search</mat-icon>
+    <input matInput (input)="applyFilter($event)" placeholder="Invoice #, customer, return no…" />
+  </mat-form-field>
+
+  <!-- Loading -->
+  @if (loading) {
+    <div class="loading-state">
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+      <p>Loading report…</p>
+    </div>
+  }
+
+  <!-- Empty -->
+  @if (!loading && dataSource.data.length === 0) {
+    <div class="empty-state">
+      <mat-icon>bar_chart</mat-icon>
+      <h3>No data for selected filters</h3>
+      <p>Try adjusting the date range or report type</p>
+    </div>
+  }
+
+  <!-- Table -->
+  @if (!loading && dataSource.data.length > 0) {
+    <mat-card class="table-card">
+      <div class="table-scroll">
+        <table mat-table [dataSource]="dataSource" matSort class="report-table">
+
+          <!-- ── Sales Summary columns ── -->
+          @if (reportType !== 'returns') {
+            <ng-container matColumnDef="invoiceNumber">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Invoice #</th>
+              <td mat-cell *matCellDef="let r"><code class="mono">{{ r.invoiceNumber }}</code></td>
+            </ng-container>
+
+            <ng-container matColumnDef="displayInvNumber">
+              <th mat-header-cell *matHeaderCellDef>Display #</th>
+              <td mat-cell *matCellDef="let r">{{ r.displayInvNumber || '—' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="invoiceDate">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+              <td mat-cell *matCellDef="let r">{{ r.invoiceDate | date:'dd MMM yyyy' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="customerName">
+              <th mat-header-cell *matHeaderCellDef>Customer</th>
+              <td mat-cell *matCellDef="let r">{{ r.customerName || r.customerId }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="totalAmount">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-right">Invoiced</th>
+              <td mat-cell *matCellDef="let r" class="col-right mono">₹{{ r.totalAmount | number:'1.2-2' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="totalReturns">
+              <th mat-header-cell *matHeaderCellDef class="col-right">Returns</th>
+              <td mat-cell *matCellDef="let r" class="col-right mono"
+                  [class.text-warn]="(r.totalReturns || 0) > 0">
+                {{ (r.totalReturns || 0) > 0 ? ('₹' + (r.totalReturns | number:'1.2-2')) : '—' }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="netAmount">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-right">Net</th>
+              <td mat-cell *matCellDef="let r" class="col-right mono col-primary">₹{{ r.netAmount | number:'1.2-2' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="isApproved">
+              <th mat-header-cell *matHeaderCellDef>Approved</th>
+              <td mat-cell *matCellDef="let r">
+                @if (r.isApproved) {
+                  <span class="badge badge-approved"><mat-icon>verified</mat-icon> Yes</span>
+                } @else {
+                  <span class="badge badge-draft">No</span>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="isLocked">
+              <th mat-header-cell *matHeaderCellDef>Locked</th>
+              <td mat-cell *matCellDef="let r">
+                @if (r.isLocked) {
+                  <span class="badge badge-locked"><mat-icon>lock</mat-icon> Yes</span>
+                } @else {
+                  <span>—</span>
+                }
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="approvedBy">
+              <th mat-header-cell *matHeaderCellDef>Approved By</th>
+              <td mat-cell *matCellDef="let r">{{ r.approvedBy || '—' }}</td>
+            </ng-container>
+          }
+
+          <!-- ── Returns columns ── -->
+          @if (reportType === 'returns') {
+            <ng-container matColumnDef="returnNo">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Return #</th>
+              <td mat-cell *matCellDef="let r"><code class="mono">{{ r.returnNo }}</code></td>
+            </ng-container>
+
+            <ng-container matColumnDef="invoiceNumber">
+              <th mat-header-cell *matHeaderCellDef>Invoice #</th>
+              <td mat-cell *matCellDef="let r"><code class="mono">{{ r.invoiceNumber }}</code></td>
+            </ng-container>
+
+            <ng-container matColumnDef="returnDate">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Return Date</th>
+              <td mat-cell *matCellDef="let r">{{ r.returnDate | date:'dd MMM yyyy' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="customerName">
+              <th mat-header-cell *matHeaderCellDef>Customer</th>
+              <td mat-cell *matCellDef="let r">{{ r.customerName || '—' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="returnType">
+              <th mat-header-cell *matHeaderCellDef>Type</th>
+              <td mat-cell *matCellDef="let r">
+                <span class="badge" [class.badge-credit]="r.returnType === 'credit'"
+                                    [class.badge-refund]="r.returnType === 'refund'">
+                  {{ r.returnType | titlecase }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="grandTotal">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-right">Amount</th>
+              <td mat-cell *matCellDef="let r" class="col-right mono col-warn">₹{{ r.grandTotal | number:'1.2-2' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="creditNoteNo">
+              <th mat-header-cell *matHeaderCellDef>Credit Note</th>
+              <td mat-cell *matCellDef="let r"><code class="mono">{{ r.creditNoteNo || '—' }}</code></td>
+            </ng-container>
+
+            <ng-container matColumnDef="reason">
+              <th mat-header-cell *matHeaderCellDef>Reason</th>
+              <td mat-cell *matCellDef="let r" class="col-reason">{{ r.reason || '—' }}</td>
+            </ng-container>
+          }
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
+        </table>
+      </div>
+      <mat-paginator [pageSizeOptions]="[20, 50, 100]" [pageSize]="20" showFirstLastButtons></mat-paginator>
+    </mat-card>
+  }
+
+</div>

@@ -1,120 +1,195 @@
+<!-- src/app/Component/userrole/userrole.component.html -->
+<!-- CHANGED: Grouped by parent menu section, single API call, collapse/expand per group,
+     select-all checkboxes per group. Save button logic unchanged. -->
 <div class="page-content">
 
-  <!-- Page Header -->
+  <!-- Header -->
   <div class="page-header">
     <div>
       <h1 class="page-title">Role Permissions</h1>
-      <p class="page-subtitle">Assign menu access permissions per role</p>
+      <p class="page-subtitle">Assign menu access per role — changes take effect on next login</p>
     </div>
+    <button mat-flat-button color="primary"
+            [disabled]="saving || loadingPerms || getrows.length === 0"
+            (click)="Saveroles()">
+      @if (saving) { <mat-progress-spinner mode="indeterminate" diameter="18"></mat-progress-spinner> }
+      @else { <mat-icon>save</mat-icon> }
+      Save Permissions
+    </button>
   </div>
 
-  <mat-card class="perm-card">
+  <!-- Role selector -->
+  <mat-card class="role-select-card">
     <mat-card-content>
-
-      <!-- Role selector -->
-      <div class="role-selector-row">
-        <mat-form-field appearance="outline" class="role-select-field">
-          <mat-label>Select Role</mat-label>
-          <mat-select [formControl]="roleSelectControl" (selectionChange)="rolechange($event)">
-            @for (item of rolelist; track item.code) {
-              <mat-option [value]="item.code">{{ item.name }}</mat-option>
-            }
-          </mat-select>
-          <mat-icon matPrefix aria-hidden="true">manage_accounts</mat-icon>
-        </mat-form-field>
-      </div>
-
-      <!-- Loading skeleton -->
-      @if (loadingPerms) {
-        <div class="perm-skeleton">
-          @for (i of [1,2,3,4,5]; track i) {
-            <div class="perm-skeleton-row"></div>
+      <mat-form-field appearance="outline" class="role-field" subscriptSizing="dynamic">
+        <mat-label>Select Role</mat-label>
+        <mat-icon matPrefix>admin_panel_settings</mat-icon>
+        <mat-select [formControl]="roleSelectControl" (selectionChange)="rolechange($event)">
+          @for (role of rolelist; track role.code) {
+            <mat-option [value]="role.code">{{ role.name }}</mat-option>
           }
-        </div>
+        </mat-select>
+      </mat-form-field>
+      @if (loadingPerms) {
+        <mat-progress-bar mode="indeterminate" class="role-loading-bar"></mat-progress-bar>
       }
+    </mat-card-content>
+  </mat-card>
 
-      <!-- Permission matrix -->
-      @if (!loadingPerms && getrows.controls.length > 0) {
-        <form [formGroup]="roleform" (ngSubmit)="Saveroles()">
-          <div class="perm-table" role="table" aria-label="Permission matrix">
+  <!-- Empty state -->
+  @if (!loadingPerms && getrows.length === 0 && roleSelectControl.value) {
+    <div class="empty-state">
+      <mat-icon>lock_open</mat-icon>
+      <p>No menus found for this role. Add menus to tbl_menu first.</p>
+    </div>
+  }
 
-            <!-- Header row -->
-            <div class="perm-row perm-header" role="row">
-              <div class="perm-menu-col" role="columnheader">Menu</div>
-              <div class="perm-check-col" role="columnheader">
-                <mat-icon aria-hidden="true" matTooltip="View">visibility</mat-icon>
+  <!-- Permission matrix -->
+  @if (!loadingPerms && getrows.length > 0) {
+    <form [formGroup]="roleform">
+      <div formArrayName="access" class="permission-sections">
+
+        <!-- ── GROUPED sections ───────────────────────────────────────── -->
+        @for (group of permGroups; track group.parentCode) {
+          <mat-card class="perm-group-card">
+
+            <!-- Group header -->
+            <div class="perm-group-header" (click)="toggleGroup(group.parentCode)">
+              <div class="perm-group-title">
+                <mat-icon class="perm-group-icon">{{ group.parentIcon }}</mat-icon>
+                <span class="perm-group-name">{{ group.parentName }}</span>
+                <span class="perm-group-count">{{ group.indices.length }} item{{ group.indices.length !== 1 ? 's' : '' }}</span>
               </div>
-              <div class="perm-check-col" role="columnheader">
-                <mat-icon aria-hidden="true" matTooltip="Add">add_circle</mat-icon>
-              </div>
-              <div class="perm-check-col" role="columnheader">
-                <mat-icon aria-hidden="true" matTooltip="Edit">edit</mat-icon>
-              </div>
-              <div class="perm-check-col" role="columnheader">
-                <mat-icon aria-hidden="true" matTooltip="Delete">delete</mat-icon>
+              <div class="perm-group-header-right">
+                <!-- Select-all row for this group -->
+                <div class="perm-select-all-row" (click)="$event.stopPropagation()">
+                  <span class="perm-select-all-label">All:</span>
+                  <mat-checkbox color="primary"
+                    [checked]="groupAllChecked(group,'haveview')"
+                    [indeterminate]="groupSomeChecked(group,'haveview')"
+                    (change)="toggleGroupAll(group,'haveview')" matTooltip="All View">
+                    <span class="perm-select-all-text">V</span>
+                  </mat-checkbox>
+                  <mat-checkbox color="primary"
+                    [checked]="groupAllChecked(group,'haveadd')"
+                    [indeterminate]="groupSomeChecked(group,'haveadd')"
+                    (change)="toggleGroupAll(group,'haveadd')" matTooltip="All Add">
+                    <span class="perm-select-all-text">A</span>
+                  </mat-checkbox>
+                  <mat-checkbox color="primary"
+                    [checked]="groupAllChecked(group,'haveedit')"
+                    [indeterminate]="groupSomeChecked(group,'haveedit')"
+                    (change)="toggleGroupAll(group,'haveedit')" matTooltip="All Edit">
+                    <span class="perm-select-all-text">E</span>
+                  </mat-checkbox>
+                  <mat-checkbox color="primary"
+                    [checked]="groupAllChecked(group,'havedelete')"
+                    [indeterminate]="groupSomeChecked(group,'havedelete')"
+                    (change)="toggleGroupAll(group,'havedelete')" matTooltip="All Delete">
+                    <span class="perm-select-all-text">D</span>
+                  </mat-checkbox>
+                </div>
+                <mat-icon class="perm-group-chevron"
+                          [class.perm-group-chevron-open]="!isGroupCollapsed(group.parentCode)">
+                  expand_more
+                </mat-icon>
               </div>
             </div>
 
-            <!-- Data rows -->
-            <div formArrayName="access">
-              @for (ctrl of getrows.controls; track $index; let i = $index) {
-                <div class="perm-row" [formGroupName]="i" role="row"
-                     [class.perm-row-alt]="i % 2 === 1">
-                  <div class="perm-menu-col" role="cell">
-                    <mat-icon aria-hidden="true" class="menu-icon">{{ getMenuIcon(ctrl.value.menucode) }}</mat-icon>
-                    <span class="menu-name">{{ ctrl.value.menuname || ctrl.value.menucode }}</span>
+            <!-- Group rows (collapsible) -->
+            <div class="perm-group-body"
+                 [class.perm-group-body-open]="!isGroupCollapsed(group.parentCode)">
+
+              <!-- Column headers -->
+              <div class="perm-row perm-header-row">
+                <span class="perm-menu-name">Menu</span>
+                <span class="perm-col-head">View</span>
+                <span class="perm-col-head">Add</span>
+                <span class="perm-col-head">Edit</span>
+                <span class="perm-col-head">Delete</span>
+              </div>
+
+              @for (idx of group.indices; track idx) {
+                <div [formGroupName]="idx" class="perm-row">
+                  <div class="perm-menu-name">
+                    <mat-icon class="perm-menu-icon">
+                      {{ getrows.at(idx).get('menuIcon')?.value || 'chevron_right' }}
+                    </mat-icon>
+                    <span>{{ getrows.at(idx).get('menuname')?.value }}</span>
                   </div>
-                  <div class="perm-check-col" role="cell">
-                    <mat-checkbox formControlName="haveview" color="primary"
-                                  [attr.aria-label]="'View ' + ctrl.value.menucode"></mat-checkbox>
+                  <div class="perm-col">
+                    <mat-checkbox color="primary" formControlName="haveview"></mat-checkbox>
                   </div>
-                  <div class="perm-check-col" role="cell">
-                    <mat-checkbox formControlName="haveadd" color="primary"
-                                  [attr.aria-label]="'Add ' + ctrl.value.menucode"></mat-checkbox>
+                  <div class="perm-col">
+                    <mat-checkbox color="primary" formControlName="haveadd"></mat-checkbox>
                   </div>
-                  <div class="perm-check-col" role="cell">
-                    <mat-checkbox formControlName="haveedit" color="primary"
-                                  [attr.aria-label]="'Edit ' + ctrl.value.menucode"></mat-checkbox>
+                  <div class="perm-col">
+                    <mat-checkbox color="primary" formControlName="haveedit"></mat-checkbox>
                   </div>
-                  <div class="perm-check-col" role="cell">
-                    <mat-checkbox formControlName="havedelete" color="warn"
-                                  [attr.aria-label]="'Delete ' + ctrl.value.menucode"></mat-checkbox>
+                  <div class="perm-col">
+                    <mat-checkbox color="primary" formControlName="havedelete"></mat-checkbox>
                   </div>
                 </div>
               }
             </div>
-          </div>
 
-          <!-- Save button -->
-          <div class="save-row">
-            <button type="submit" mat-flat-button color="primary"
-                    [disabled]="saving || roleform.invalid">
-              @if (saving) {
-                <ng-container>
-                  <mat-spinner diameter="18" style="display:inline-block;margin-right:8px;"></mat-spinner>
-                  Saving...
-                </ng-container>
-              } @else {
-                <ng-container>
-                  <mat-icon aria-hidden="true">save</mat-icon>
-                  Save Permissions
-                </ng-container>
+          </mat-card>
+        }
+
+        <!-- ── UNGROUPED items (no parent) ────────────────────────────── -->
+        @if (ungroupedIndices.length > 0) {
+          <mat-card class="perm-group-card">
+            <div class="perm-group-header" (click)="toggleGroup('__ungrouped__')">
+              <div class="perm-group-title">
+                <mat-icon class="perm-group-icon">more_horiz</mat-icon>
+                <span class="perm-group-name">Other</span>
+                <span class="perm-group-count">{{ ungroupedIndices.length }} item{{ ungroupedIndices.length !== 1 ? 's' : '' }}</span>
+              </div>
+              <mat-icon class="perm-group-chevron"
+                        [class.perm-group-chevron-open]="!isGroupCollapsed('__ungrouped__')">
+                expand_more
+              </mat-icon>
+            </div>
+            <div class="perm-group-body"
+                 [class.perm-group-body-open]="!isGroupCollapsed('__ungrouped__')">
+              <div class="perm-row perm-header-row">
+                <span class="perm-menu-name">Menu</span>
+                <span class="perm-col-head">View</span>
+                <span class="perm-col-head">Add</span>
+                <span class="perm-col-head">Edit</span>
+                <span class="perm-col-head">Delete</span>
+              </div>
+              @for (idx of ungroupedIndices; track idx) {
+                <div [formGroupName]="idx" class="perm-row">
+                  <div class="perm-menu-name">
+                    <mat-icon class="perm-menu-icon">
+                      {{ getrows.at(idx).get('menuIcon')?.value || 'folder_open' }}
+                    </mat-icon>
+                    <span>{{ getrows.at(idx).get('menuname')?.value }}</span>
+                  </div>
+                  <div class="perm-col"><mat-checkbox color="primary" formControlName="haveview"></mat-checkbox></div>
+                  <div class="perm-col"><mat-checkbox color="primary" formControlName="haveadd"></mat-checkbox></div>
+                  <div class="perm-col"><mat-checkbox color="primary" formControlName="haveedit"></mat-checkbox></div>
+                  <div class="perm-col"><mat-checkbox color="primary" formControlName="havedelete"></mat-checkbox></div>
+                </div>
               }
-            </button>
-          </div>
-        </form>
-      }
+            </div>
+          </mat-card>
+        }
 
-      <!-- Empty state: no role selected -->
-      @if (!loadingPerms && getrows.controls.length === 0) {
-        <div class="empty-state">
-          <mat-icon aria-hidden="true">admin_panel_settings</mat-icon>
-          <h3>Select a role</h3>
-          <p>Choose a role above to manage its permissions</p>
-        </div>
-      }
+      </div><!-- /formArrayName -->
+    </form>
 
-    </mat-card-content>
-  </mat-card>
+    <!-- Bottom save -->
+    <div class="bottom-save-bar">
+      <button mat-flat-button color="primary"
+              [disabled]="saving || loadingPerms"
+              (click)="Saveroles()">
+        @if (saving) { <mat-progress-spinner mode="indeterminate" diameter="18"></mat-progress-spinner> }
+        @else { <mat-icon>save</mat-icon> }
+        Save Permissions
+      </button>
+    </div>
+  }
 
 </div>

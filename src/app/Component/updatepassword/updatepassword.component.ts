@@ -207,7 +207,7 @@ export class UpdatepasswordComponent implements OnInit {
     }
 
     console.log('Sending change password request with payload:', changePasswordData);
-    this.logger.info('UPDATEPASSWORD_COMPONENT', 'Changing password', { username, newPasswordLength: changePasswordData.newpassword.length });
+    this.logger.info('UPDATEPASSWORD_COMPONENT', 'Changing password', { username, newPasswordLength: (changePasswordData.newpassword || '').length });
 
     this.service.resetPasswordWithOldPassword(changePasswordData).subscribe({
       next: (response) => {

@@ -1,25 +1,42 @@
-<h2 mat-dialog-title>{{ isEdit ? 'Edit Declaration' : 'Create Declaration' }}</h2>
-<mat-dialog-content>
-  <form [formGroup]="form">
-    <mat-form-field appearance="outline" class="full">
-      <mat-label>Declaration</mat-label>
-      <textarea matInput formControlName="declaration" rows="4"></textarea>
-      <mat-error *ngIf="form.get('declaration')?.hasError('required')">Declaration is required</mat-error>
-    </mat-form-field>
+<!-- declaration-form-dialog.component.html — MD3 redesign -->
+<div class="dfd-wrap">
+  <div class="dfd-header">
+    <div class="dfd-header-icon"><mat-icon>{{ isEdit ? 'edit' : 'add' }}</mat-icon></div>
+    <div>
+      <h2 class="dfd-title">{{ isEdit ? 'Edit Declaration' : 'Create Declaration' }}</h2>
+      <p class="dfd-sub">Text printed at the bottom of invoices</p>
+    </div>
+    <button mat-icon-button mat-dialog-close class="dfd-close" aria-label="Close"><mat-icon>close</mat-icon></button>
+  </div>
 
-    <mat-form-field appearance="outline">
-      <mat-label>Active</mat-label>
-      <mat-select formControlName="active">
-        <mat-option value="Y">Y</mat-option>
-        <mat-option value="N">N</mat-option>
-      </mat-select>
-    </mat-form-field>
-  </form>
-</mat-dialog-content>
-<mat-dialog-actions align="end">
-  <button mat-button (click)="cancel()">Cancel</button>
-  <button mat-flat-button color="primary" (click)="save()" [disabled]="form.invalid || submitting">
-    <mat-progress-spinner *ngIf="submitting" diameter="18" mode="indeterminate"></mat-progress-spinner>
-    <span *ngIf="!submitting">Save</span>
-  </button>
-</mat-dialog-actions>
+  <mat-dialog-content class="dfd-content">
+    <form [formGroup]="form" novalidate>
+      <mat-form-field appearance="outline" class="dfd-field-full" subscriptSizing="dynamic">
+        <mat-label>Declaration Text <span style="color:#dc2626">*</span></mat-label>
+        <textarea matInput formControlName="declaration" rows="5" placeholder="Enter declaration text…"></textarea>
+        <mat-icon matPrefix>notes</mat-icon>
+        <mat-error *ngIf="form.get('declaration')?.hasError('required')">Declaration is required</mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="dfd-field-full" subscriptSizing="dynamic" style="margin-top:8px">
+        <mat-label>Status</mat-label>
+        <mat-select formControlName="active">
+          <mat-option value="Y"><mat-icon style="color:#059669;vertical-align:middle;font-size:16px">check_circle</mat-icon> Active</mat-option>
+          <mat-option value="N"><mat-icon style="color:#dc2626;vertical-align:middle;font-size:16px">cancel</mat-icon> Inactive</mat-option>
+        </mat-select>
+        <mat-icon matPrefix>toggle_on</mat-icon>
+      </mat-form-field>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dfd-actions">
+    <button mat-stroked-button (click)="cancel()" class="dfd-btn">
+      <mat-icon>close</mat-icon> Cancel
+    </button>
+    <button mat-flat-button color="primary" (click)="save()" [disabled]="form.invalid || submitting" class="dfd-btn dfd-btn--save">
+      <mat-spinner *ngIf="submitting" diameter="18" style="display:inline-block;margin-right:6px"></mat-spinner>
+      <mat-icon *ngIf="!submitting">{{ isEdit ? 'save' : 'add' }}</mat-icon>
+      {{ submitting ? 'Saving…' : (isEdit ? 'Save Changes' : 'Create') }}
+    </button>
+  </mat-dialog-actions>
+</div>

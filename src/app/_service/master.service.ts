@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { catchError, throwError } from 'rxjs';
 
 @Injectable({
@@ -13,7 +13,7 @@ export class MasterService {
 
   private handleError(error: any, operation: string) {
     console.error(`${operation} failed:`, error);
-    return throwError(() => new Error(`${operation} failed. Please try again.`));
+    return throwError(() => error);
   }
 
   Deletecustomer(code: string) {
@@ -21,29 +21,49 @@ export class MasterService {
       .pipe(catchError(err => this.handleError(err, 'Delete customer')));
   }
   
-  GetCustomer() {
-    return this.http.get(this.baseUrl + 'Customer/GetAll')
+  GetCustomer(companyId?: string) {
+    let url = this.baseUrl + 'Customer/GetAll';
+    if (companyId) url += '?companyId=' + encodeURIComponent(companyId);
+    return this.http.get(url)
       .pipe(catchError(err => this.handleError(err, 'Get customers')));
   }
-  
-  GetCustomerbycode(code: any) {
-    return this.http.get(this.baseUrl + 'Customer/GetByUniqueKeyID?Code=' + code)
+
+  GetCustomerbycode(code: any, companyId?: string) {
+    let url = this.baseUrl + 'Customer/GetByUniqueKeyID?Code=' + encodeURIComponent(code);
+    if (companyId) url += '&companyId=' + encodeURIComponent(companyId);
+    return this.http.get(url)
       .pipe(catchError(err => this.handleError(err, 'Get customer')));
   }
   
-  GetProducts() {
-    return this.http.get(this.baseUrl + 'Product/GetAll')
+  GetProducts(companyId?: string) {
+    let url = this.baseUrl + 'Product/GetAll';
+    if (companyId) url += '?companyId=' + encodeURIComponent(companyId);
+    return this.http.get(url)
       .pipe(catchError(err => this.handleError(err, 'Get products')));
   }
   
-  GetProductbycode(code: any) {
-    return this.http.get(this.baseUrl + 'Product/GetByCode?Code=' + code)
+  GetProductbycode(code: any, companyId?: string) {
+    let url = this.baseUrl + 'Product/GetByCode?Code=' + encodeURIComponent(code);
+    if (companyId) url += '&companyId=' + encodeURIComponent(companyId);
+    return this.http.get(url)
       .pipe(catchError(err => this.handleError(err, 'Get product')));
   }
 
-  GetAllInvoice() {
-    return this.http.get(this.baseUrl + 'Invoice/InvoiceCompanyCustomerController')
-      .pipe(catchError(err => this.handleError(err, 'Get invoices')));
+  GetAllInvoice(companyId?: string) {
+    // Dev-only: allow simulating a 403 subscription-expired response
+    try {
+      const simulate = !!environment.simulateSubscriptionExpired || (typeof window !== 'undefined' && localStorage?.getItem && localStorage.getItem('SIMULATE_SUBSCRIPTION_EXPIRED') === '1');
+      if (simulate) {
+        const fakeErr = new HttpErrorResponse({ status: 403, statusText: 'Forbidden', error: { status: 'error', message: 'Subscription expired' } });
+        return throwError(() => fakeErr);
+      }
+    } catch {
+      // ignore localStorage access errors in non-browser envs
+    }
+
+    let url = this.baseUrl + 'Invoice/InvoiceCompanyCustomerController';
+    if (companyId) url += '?companyId=' + encodeURIComponent(companyId);
+    return this.http.get(url).pipe(catchError(err => this.handleError(err, 'Get invoices')));
   }
 
   GetInvHeaderbycode(invoiceno: any) {
@@ -61,8 +81,10 @@ export class MasterService {
       .pipe(catchError(err => this.handleError(err, 'Remove invoice')));
   }
 
-  SaveInvoice(invoicedata: any) {
-    return this.http.post(this.baseUrl + 'Invoice/Save', invoicedata)
+  SaveInvoice(invoicedata: any, companyId?: string) {
+    let url = this.baseUrl + 'Invoice/Save';
+    if (companyId) url += '?companyId=' + encodeURIComponent(companyId);
+    return this.http.post(url, invoicedata)
       .pipe(catchError(err => this.handleError(err, 'Save invoice')));
   }
 
@@ -76,7 +98,7 @@ export class MasterService {
     }).pipe(
       catchError((error) => {
         console.error(`Error fetching invoice PDF for ${invoiceno}:`, error);
-        return throwError(() => new Error('Failed to download invoice PDF'));
+        return throwError(() => error);
       })
     );
   }
@@ -91,9 +113,16 @@ export class MasterService {
     }).pipe(
       catchError((error) => {
         console.error(`Error fetching statement account PDF for ${invoiceno}:`, error);
-        return throwError(() => new Error('Failed to download statement account PDF'));
+        return throwError(() => error);
       })
     );
+  }
+
+  // Get subscription status for the current company (server will use token's CompanyId if none provided)
+  GetSubscriptionStatus(companyId?: string) {
+    let url = this.baseUrl + 'Subscription/Status';
+    if (companyId) url += '?companyId=' + encodeURIComponent(companyId);
+    return this.http.get(url).pipe(catchError(err => this.handleError(err, 'Get subscription status')));
   }
 
   // Master endpoints
@@ -130,12 +159,16 @@ export class MasterService {
     return this.http.get(this.baseUrl + 'Product/Getbyname?name=' + name);
   }
 
-  SaveProduct(productData: any) {
-    return this.http.post(this.baseUrl + 'Product/SaveProduct', productData);
+  SaveProduct(productData: any, companyId?: string) {
+    let url = this.baseUrl + 'Product/SaveProduct';
+    if (companyId) url += '?companyId=' + encodeURIComponent(companyId);
+    return this.http.post(url, productData);
   }
 
-  RemoveProduct(code: string) {
-    return this.http.delete(this.baseUrl + 'Product/RemoveProduct?code=' + code);
+  RemoveProduct(code: string, companyId?: string) {
+    let url = this.baseUrl + 'Product/RemoveProduct?code=' + code;
+    if (companyId) url += '&companyId=' + encodeURIComponent(companyId);
+    return this.http.delete(url);
   }
 
   GetCountries() {

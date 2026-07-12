@@ -1,0 +1,63 @@
+<div class="pa-page">
+  <div class="pa-hd">
+    <mat-icon class="pa-hd-icon">schedule</mat-icon>
+    <div>
+      <h1 class="pa-title">Subscription Expiry Manager</h1>
+      <p class="pa-sub">Send renewal reminders · Deactivate expired companies</p>
+    </div>
+  </div>
+
+  <div class="pa-grid">
+    <mat-card class="pa-info-card">
+      <mat-card-content>
+        <div class="pa-info-icon pa-blue"><mat-icon>mail_outline</mat-icon></div>
+        <h3>Renewal Reminders</h3>
+        <p>Emails companies whose subscription expires within <strong>30 days</strong> and haven't been notified.</p>
+      </mat-card-content>
+    </mat-card>
+    <mat-card class="pa-info-card">
+      <mat-card-content>
+        <div class="pa-info-icon pa-amber"><mat-icon>block</mat-icon></div>
+        <h3>Auto Deactivation</h3>
+        <p>Deactivates companies expired <strong>more than 30 days</strong> ago with no renewal.</p>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <mat-card class="pa-run-card">
+    <mat-card-header class="pa-run-hd">
+      <mat-card-title><mat-icon>play_circle</mat-icon> Run Expiry Job</mat-card-title>
+      <mat-card-subtitle>Manually trigger scheduled maintenance</mat-card-subtitle>
+    </mat-card-header>
+    <mat-card-content class="pa-run-body">
+      <mat-checkbox [(ngModel)]="forceDeactivate" color="warn">
+        Force immediate deactivation (skip 30-day grace)
+      </mat-checkbox>
+      <p class="pa-warn-hint" *ngIf="forceDeactivate">⚠ This will deactivate ALL expired companies immediately</p>
+      <p class="pa-last" *ngIf="lastRun">Last run: <strong>{{ lastRun | date:'dd MMM yyyy HH:mm:ss' }}</strong></p>
+    </mat-card-content>
+    <mat-card-actions class="pa-run-actions">
+      <button mat-flat-button color="primary" (click)="runJob()" [disabled]="running" class="pa-run-btn">
+        <mat-spinner *ngIf="running" diameter="20" style="display:inline-block;margin-right:8px"></mat-spinner>
+        <mat-icon *ngIf="!running">play_arrow</mat-icon>
+        {{ running ? 'Running…' : 'Run Now' }}
+      </button>
+    </mat-card-actions>
+  </mat-card>
+
+  <mat-card class="pa-result-card" *ngIf="lastResult">
+    <mat-card-header class="pa-result-hd">
+      <mat-card-title><mat-icon>check_circle</mat-icon> Job Completed</mat-card-title>
+    </mat-card-header>
+    <mat-card-content class="pa-result-body">
+      <div class="pa-stats">
+        <div class="pa-stat pa-stat-blue"><span class="pa-stat-v">{{ lastResult.remindersSent }}</span><span>Reminders Sent</span></div>
+        <div class="pa-stat pa-stat-red"><span class="pa-stat-v">{{ lastResult.companiesDeactivated }}</span><span>Deactivated</span></div>
+      </div>
+      <p class="pa-msg">{{ lastResult.message }}</p>
+      <div *ngIf="lastResult.processedCompanies.length" class="pa-chips">
+        <span *ngFor="let c of lastResult.processedCompanies" class="pa-chip">{{ c }}</span>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>

@@ -1,0 +1,5 @@
+/* purchase-return.component.css */
+@import '../purchase-shared.css';
+.pr-total     { font-size:18px; font-weight:700; font-family:monospace; color:var(--md-sys-color-primary); margin:6px 0; }
+.pr-line      { background:var(--md-sys-color-surface-variant); border-radius:10px; padding:10px; margin-bottom:10px; }
+.pr-line-total{ font-size:13px; font-weight:600; text-align:right; color:var(--md-sys-color-primary); margin:4px 0; }

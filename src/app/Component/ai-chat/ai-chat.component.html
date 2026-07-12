@@ -1,0 +1,96 @@
+<section class="ai-chat-page" [class.dialog-mode]="isDialogMode" [class.maximized]="isMaximized" (click)="stopDialogEvent($event)">
+  <header class="chat-header">
+    <div>
+      <p class="eyebrow">AI Assistant</p>
+      <h1>CodeXClear ERP Chat</h1>
+      <p class="subtitle">Ask practical questions about billing, ledger, customers, products, purchases, and reports.</p>
+    </div>
+    <div class="chat-header-actions">
+      <div class="status-chip">
+        <span class="status-dot"></span>
+        Ready
+      </div>
+      @if (isDialogMode) {
+        <button mat-icon-button type="button" (click)="toggleMaximize()" [matTooltip]="isMaximized ? 'Restore' : 'Maximize'" aria-label="Maximize AI Chat">
+          <mat-icon>{{ isMaximized ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+        </button>
+        <button mat-icon-button type="button" (click)="closeDialog()" matTooltip="Close" aria-label="Close AI Chat">
+          <mat-icon>close</mat-icon>
+        </button>
+      }
+    </div>
+  </header>
+
+  <mat-card class="chat-shell">
+    <div #messagesViewport class="messages" aria-live="polite">
+      @for (message of messages; track trackMessage($index, message)) {
+        <article class="message-row" [class.user-row]="message.sender === 'user'">
+          <div class="avatar" [class.user-avatar]="message.sender === 'user'">
+            <mat-icon>{{ message.sender === 'user' ? 'person' : 'auto_awesome' }}</mat-icon>
+          </div>
+
+          <div class="message-stack">
+            <div class="message-meta">
+              <span>{{ message.sender === 'user' ? 'You' : 'ERP Assistant' }}</span>
+              <time>{{ message.timestamp | date:'shortTime' }}</time>
+            </div>
+            <div class="bubble" [class.user-bubble]="message.sender === 'user'" [class.error-bubble]="message.failed">
+              {{ message.text }}
+            </div>
+          </div>
+        </article>
+      }
+
+      @if (sending) {
+        <article class="message-row">
+          <div class="avatar">
+            <mat-icon>auto_awesome</mat-icon>
+          </div>
+          <div class="message-stack">
+            <div class="message-meta">
+              <span>ERP Assistant</span>
+              <time>typing</time>
+            </div>
+            <div class="bubble typing-bubble">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+        </article>
+      }
+    </div>
+
+    <div class="prompt-strip" aria-label="Suggested prompts">
+      @for (prompt of suggestedPrompts; track prompt) {
+        <button mat-stroked-button type="button" class="prompt-chip" (click)="usePrompt(prompt)" [disabled]="sending">
+          {{ prompt }}
+        </button>
+      }
+    </div>
+
+    <div class="composer">
+      <mat-form-field appearance="outline" class="message-field">
+        <mat-label>Message</mat-label>
+        <textarea
+          matInput
+          rows="2"
+          maxlength="2000"
+          [formControl]="messageControl"
+          (keydown.enter)="handleEnter($event)"
+          (paste)="handlePaste($event)"
+          placeholder="Ask about an invoice, ledger balance, customer, product, or report"></textarea>
+        <mat-hint align="end">{{ messageControl.value.length }}/2000</mat-hint>
+      </mat-form-field>
+
+      <button
+        mat-fab
+        color="primary"
+        type="button"
+        class="send-button"
+        [disabled]="sending || messageControl.invalid"
+        matTooltip="Send message"
+        (click)="sendMessage($event)">
+        <mat-icon>send</mat-icon>
+      </button>
+    </div>
+  </mat-card>
+</section>

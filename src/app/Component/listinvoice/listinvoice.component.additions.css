@@ -1,0 +1,94 @@
+/* ================================================================
+   APPEND TO: listinvoice.component.css  (paste at the bottom)
+   Company chip on mobile invoice cards for super_admin view
+   ================================================================ */
+
+.inv-card-company-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #f57c00;
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 6px;
+  padding: 2px 10px 2px 6px;
+  margin-bottom: 8px;
+  width: fit-content;
+}
+
+.inv-card-company-chip mat-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+}
+
+/* src/app/Component/listinvoice/listinvoice.component.css additions */
+/* APPEND these rules to the existing listinvoice.component.css */
+/* All existing rules are preserved — this file contains only new rules. */
+
+/* ── Status badges in table and cards ──────────────────────────── */
+.status-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.inv-badges {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.inv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 7px;
+  border-radius: var(--md-sys-shape-corner-full);
+  font-size: 11px;
+  font-weight: var(--md-sys-typescale-weight-bold);
+  white-space: nowrap;
+  line-height: 1.6;
+}
+.inv-badge mat-icon {
+  font-size: 12px;
+  width: 12px;
+  height: 12px;
+}
+.inv-badge-approved {
+  background: var(--md-sys-color-success-container);
+  color:       var(--md-sys-color-on-success-container);
+}
+.inv-badge-locked {
+  background: var(--md-sys-color-error-container);
+  color:       var(--md-sys-color-on-error-container);
+}
+.inv-badge-returned {
+  background: var(--md-sys-color-tertiary-container);
+  color:       var(--md-sys-color-on-tertiary-container);
+}
+.inv-badge-draft {
+  background: var(--md-sys-color-surface-variant);
+  color:       var(--md-sys-color-on-surface-variant);
+}
+
+/* ── Return amount sub-line ─────────────────────────────────────── */
+.return-amount-sub {
+  font-size: 11px;
+  color: var(--md-sys-color-error);
+  font-family: var(--md-sys-typescale-mono-family);
+  margin-top: 2px;
+}
+
+/* ── Reports button in header ───────────────────────────────────── */
+.page-header-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.page-header-actions button {
+  border-radius: var(--md-sys-shape-corner-small) !important;
+  font-size: var(--md-sys-typescale-label-medium-size) !important;
+  min-height: 44px !important;
+}

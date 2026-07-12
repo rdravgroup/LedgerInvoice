@@ -1,0 +1,569 @@
+<!-- src/app/Component/purchase/purchase-order/purchase-order.component.html -->
+<div class="po-page">
+
+  @if (view === 'list') {
+    <div class="po-page-header">
+      <div class="po-page-title-group">
+        <div class="po-page-icon-wrap"><mat-icon>assignment</mat-icon></div>
+        <div>
+          <h1 class="po-page-title">Purchase Orders</h1>
+          <p class="po-page-sub">{{ dataSource.data.length }} orders total</p>
+        </div>
+      </div>
+      <button mat-flat-button color="primary" class="po-new-btn" (click)="openNew()">
+        <mat-icon>add</mat-icon><span class="po-btn-label">New PO</span>
+      </button>
+    </div>
+
+    <div class="po-filter-bar">
+      <mat-form-field appearance="outline" class="po-search-field" subscriptSizing="dynamic">
+        <mat-label>Search orders</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput (input)="applyFilter($event)" placeholder="PO number, vendor…" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="po-status-field" subscriptSizing="dynamic">
+        <mat-label>Status</mat-label>
+        <mat-select [(value)]="statusFilter" (selectionChange)="loadList()">
+          <mat-option value="">All statuses</mat-option>
+          @for (s of poStatuses; track s) {
+            <mat-option [value]="s">{{ s | titlecase }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    @if (loading) {
+      <div class="po-skeleton-list">
+        @for (i of [1,2,3,4,5]; track i) {
+          <div class="po-skeleton-card">
+            <div class="po-sk-left">
+              <div class="po-sk-line po-sk-w60"></div>
+              <div class="po-sk-line po-sk-w40"></div>
+            </div>
+            <div class="po-sk-right">
+              <div class="po-sk-line po-sk-w80"></div>
+              <div class="po-sk-badge"></div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    @if (!loading && dataSource.data.length === 0) {
+      <div class="po-empty-state">
+        <div class="po-empty-icon"><mat-icon>assignment</mat-icon></div>
+        <h3 class="po-empty-title">No purchase orders yet</h3>
+        <p class="po-empty-body">Create your first PO to start tracking purchases from vendors</p>
+        <button mat-flat-button color="primary" class="po-new-btn" (click)="openNew()">
+          <mat-icon>add</mat-icon> Create Purchase Order
+        </button>
+      </div>
+    }
+
+    @if (!loading && dataSource.data.length > 0) {
+      <div class="po-mobile-list">
+        @for (po of dataSource.filteredData; track po.poNumber) {
+          <mat-card class="po-list-card" (click)="openDetail(po)">
+            <mat-card-content class="po-card-body">
+              <div class="po-card-row1">
+                <div class="po-card-num">
+                  <mat-icon class="po-card-num-icon">assignment</mat-icon>
+                  <code>{{ po.poNumber }}</code>
+                </div>
+                <span class="po-status-chip po-status-{{ po.status }}">{{ po.status | titlecase }}</span>
+              </div>
+              <div class="po-card-vendor">{{ po.vendorName || po.vendorId }}</div>
+              <div class="po-card-meta">
+                <mat-icon class="po-meta-icon">calendar_today</mat-icon>
+                {{ po.poDate | date:'dd MMM yyyy' }}
+                @if (po.expectedDate) {
+                  <span class="po-meta-sep">·</span>
+                  <mat-icon class="po-meta-icon">schedule</mat-icon>
+                  Expected {{ po.expectedDate | date:'dd MMM yyyy' }}
+                }
+              </div>
+              <div class="po-card-progress">
+                <div class="po-progress-label">
+                  <span>Receipt Progress</span>
+                  <span class="po-progress-pct">{{ getReceiptProgress(po) }}%</span>
+                </div>
+                <mat-progress-bar mode="determinate" [value]="getReceiptProgress(po)" class="po-progress-bar"></mat-progress-bar>
+              </div>
+              <div class="po-card-footer">
+                <div class="po-card-amount">₹{{ po.grandTotal | number:'1.2-2' }}</div>
+                <div class="po-card-actions" (click)="$event.stopPropagation()">
+                  @if (po.status === 'draft' || po.status === 'submitted') {
+                    <button mat-icon-button class="po-action-btn" (click)="openEdit(po)" matTooltip="Edit"><mat-icon>edit</mat-icon></button>
+                    <button mat-icon-button class="po-action-btn po-action-approve" (click)="approve(po.poNumber!)" matTooltip="Approve"><mat-icon>check_circle</mat-icon></button>
+                  }
+                  @if (po.status !== 'received' && po.status !== 'cancelled') {
+                    <button mat-icon-button class="po-action-btn po-action-cancel" (click)="cancel(po.poNumber!)" matTooltip="Cancel"><mat-icon>cancel</mat-icon></button>
+                  }
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        }
+      </div>
+
+      <mat-card class="po-table-card">
+        <div class="po-table-wrap">
+          <table mat-table [dataSource]="dataSource" matSort class="po-table">
+            <ng-container matColumnDef="poNumber">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>PO Number</th>
+              <td mat-cell *matCellDef="let r">
+                <button class="po-table-link" (click)="openDetail(r)">
+                  <code class="po-num-code">{{ r.poNumber }}</code>
+                </button>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="poDate">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+              <td mat-cell *matCellDef="let r" class="po-td-date">{{ r.poDate | date:'dd MMM yyyy' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="vendorName">
+              <th mat-header-cell *matHeaderCellDef>Vendor</th>
+              <td mat-cell *matCellDef="let r">
+                <div class="po-td-vendor">
+                  <div class="po-vendor-avatar">{{ (r.vendorName || r.vendorId || 'V').charAt(0).toUpperCase() }}</div>
+                  <div>
+                    <div class="po-vendor-name">{{ r.vendorName || r.vendorId }}</div>
+                    @if (r.referenceNo) { <div class="po-vendor-ref">Ref: {{ r.referenceNo }}</div> }
+                  </div>
+                </div>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="expectedDate">
+              <th mat-header-cell *matHeaderCellDef>Expected</th>
+              <td mat-cell *matCellDef="let r" class="po-td-date">{{ r.expectedDate ? (r.expectedDate | date:'dd MMM yyyy') : '—' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="grandTotal">
+              <th mat-header-cell *matHeaderCellDef mat-sort-header class="po-th-right">Total</th>
+              <td mat-cell *matCellDef="let r" class="po-td-amount">₹{{ r.grandTotal | number:'1.2-2' }}</td>
+            </ng-container>
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let r">
+                <span class="po-status-chip po-status-{{ r.status }}">{{ r.status | titlecase }}</span>
+              </td>
+            </ng-container>
+            <ng-container matColumnDef="action">
+              <th mat-header-cell *matHeaderCellDef class="po-th-actions"></th>
+              <td mat-cell *matCellDef="let r" class="po-td-actions">
+                <button mat-icon-button class="po-action-btn" (click)="openDetail(r)" matTooltip="View"><mat-icon>open_in_new</mat-icon></button>
+                @if (r.status === 'draft' || r.status === 'submitted') {
+                  <button mat-icon-button class="po-action-btn" (click)="openEdit(r)" matTooltip="Edit"><mat-icon>edit</mat-icon></button>
+                  <button mat-icon-button class="po-action-btn po-action-approve" (click)="approve(r.poNumber)" matTooltip="Approve"><mat-icon>check_circle</mat-icon></button>
+                }
+                @if (r.status !== 'received' && r.status !== 'cancelled') {
+                  <button mat-icon-button class="po-action-btn po-action-cancel" (click)="cancel(r.poNumber)" matTooltip="Cancel"><mat-icon>cancel</mat-icon></button>
+                }
+              </td>
+            </ng-container>
+            <tr mat-header-row *matHeaderRowDef="listColumns; sticky: true"></tr>
+            <tr mat-row *matRowDef="let row; columns: listColumns" class="po-table-row"></tr>
+          </table>
+        </div>
+        <mat-paginator [pageSizeOptions]="[10, 20, 50]" [pageSize]="20" showFirstLastButtons class="po-paginator"></mat-paginator>
+      </mat-card>
+    }
+  }
+
+  @if (view === 'form') {
+    <div class="po-form-shell">
+      <div class="po-form-topbar">
+        <div class="po-form-topbar-left">
+          <button mat-icon-button class="po-back-btn" (click)="backToList()"><mat-icon>arrow_back</mat-icon></button>
+          <div>
+            <h1 class="po-form-title">{{ poForm.get('poNumber')?.value ? 'Edit Purchase Order' : 'New Purchase Order' }}</h1>
+            @if (poForm.get('poNumber')?.value) {
+              <p class="po-form-subtitle"><code>{{ poForm.get('poNumber')?.value }}</code></p>
+            }
+          </div>
+        </div>
+        <div class="po-form-topbar-actions">
+          <button mat-stroked-button class="po-draft-btn" (click)="save(false)">
+            <mat-icon>save_as</mat-icon><span class="po-btn-label">Save Draft</span>
+          </button>
+          <button mat-flat-button color="primary" class="po-submit-btn" (click)="save(true)">
+            <mat-icon>send</mat-icon><span class="po-btn-label">Submit</span>
+          </button>
+        </div>
+      </div>
+
+      <form [formGroup]="poForm" class="po-form-body">
+
+        <section class="po-section">
+          <div class="po-section-header">
+            <mat-icon class="po-section-icon">info</mat-icon>
+            <span class="po-section-title">Order Details</span>
+          </div>
+          <div class="po-section-body">
+            <div class="po-fields-grid po-grid-3">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Vendor *</mat-label>
+                <mat-icon matPrefix>storefront</mat-icon>
+                <mat-select formControlName="vendorId">
+                  @for (v of vendors; track v.vendorId) {
+                    <mat-option [value]="v.vendorId">{{ v.vendorName }}</mat-option>
+                  }
+                </mat-select>
+                <mat-error>Vendor is required</mat-error>
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>PO Date *</mat-label>
+                <input matInput [matDatepicker]="poDatePicker" formControlName="poDate" readonly
+                       (click)="poDatePicker.open()" />
+                <mat-datepicker-toggle matSuffix [for]="poDatePicker"></mat-datepicker-toggle>
+                <mat-datepicker #poDatePicker></mat-datepicker>
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Expected Delivery</mat-label>
+                <input matInput [matDatepicker]="expDatePicker" formControlName="expectedDate" readonly
+                       (click)="expDatePicker.open()" [min]="poForm.value.poDate" />
+                <mat-datepicker-toggle matSuffix [for]="expDatePicker"></mat-datepicker-toggle>
+                <mat-datepicker #expDatePicker></mat-datepicker>
+              </mat-form-field>
+            </div>
+            <div class="po-fields-grid po-grid-3">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Reference No</mat-label>
+                <input matInput formControlName="referenceNo" placeholder="e.g. REQ-2026-001" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Payment Terms</mat-label>
+                <input matInput formControlName="paymentTerms" placeholder="e.g. Net 30" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Shipping Terms</mat-label>
+                <input matInput formControlName="shippingTerms" placeholder="e.g. FOB" />
+              </mat-form-field>
+            </div>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic" class="po-field-full">
+              <mat-label>Delivery Address</mat-label>
+              <mat-icon matPrefix>location_on</mat-icon>
+              <textarea matInput formControlName="deliveryAddress" rows="2" placeholder="Full delivery address…"></textarea>
+            </mat-form-field>
+            <div class="po-gst-toggle">
+              <mat-slide-toggle color="primary" [checked]="isInterState" (change)="toggleInterState($event.checked)">
+                Inter-state supply (apply IGST instead of CGST + SGST)
+              </mat-slide-toggle>
+            </div>
+          </div>
+        </section>
+
+        <section class="po-section">
+          <div class="po-section-header">
+            <mat-icon class="po-section-icon">inventory_2</mat-icon>
+            <span class="po-section-title">Line Items</span>
+            <span class="po-item-count">{{ items.length }} item{{ items.length !== 1 ? 's' : '' }}</span>
+          </div>
+
+          <div class="po-items-mobile" formArrayName="items">
+            @for (line of items.controls; track $index; let i = $index) {
+              <div class="po-line-card" [formGroupName]="i">
+                <div class="po-line-card-header">
+                  <span class="po-line-num">Item {{ i + 1 }}</span>
+                  <button mat-icon-button type="button" class="po-line-remove" (click)="removeLine(i)" [disabled]="items.length === 1">
+                    <mat-icon>delete_outline</mat-icon>
+                  </button>
+                </div>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="po-field-full">
+                  <mat-label>Product *</mat-label>
+                  <mat-select formControlName="productId" (selectionChange)="onProductSelect(i, $event.value)">
+                    @for (p of products; track p.uniqueKeyID) {
+                      <mat-option [value]="p.uniqueKeyID">{{ p.productName || p.name }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <div class="po-fields-grid po-grid-2">
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>HSN / SAC</mat-label>
+                    <input matInput formControlName="hsnSac" (change)="onLineChange(i)" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Unit</mat-label>
+                    <input matInput formControlName="measurement" />
+                  </mat-form-field>
+                </div>
+                <div class="po-fields-grid po-grid-3">
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Qty *</mat-label>
+                    <input matInput type="number" formControlName="orderedQty" min="0.001" step="0.001" (input)="onLineChange(i)" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Rate (₹) *</mat-label>
+                    <span matPrefix>₹&nbsp;</span>
+                    <input matInput type="number" formControlName="rate" min="0" step="0.01" (input)="onLineChange(i)" />
+                  </mat-form-field>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>Discount %</mat-label>
+                    <input matInput type="number" formControlName="discountPct" min="0" max="100" (input)="onLineChange(i)" />
+                    <span matSuffix>%</span>
+                  </mat-form-field>
+                </div>
+                <div class="po-fields-grid po-grid-2">
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                    <mat-label>GST Rate</mat-label>
+                    <mat-select [value]="isInterState ? line.get('igstRate')?.value : (line.get('cgstRate')?.value || 0) * 2"
+                      (selectionChange)="onGstRateChange(i, $event.value)">
+                      @for (r of gstRates; track r) { <mat-option [value]="r">{{ r }}%</mat-option> }
+                    </mat-select>
+                  </mat-form-field>
+                  <div class="po-line-total-display">
+                    <span class="po-line-total-label">Line Total</span>
+                    <span class="po-line-total-val">₹{{ line.get('totalAmount')?.value | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+                <div class="po-line-tax-row">
+                  <span class="po-tax-chip">Taxable: ₹{{ line.get('taxableAmount')?.value | number:'1.2-2' }}</span>
+                  @if (!isInterState) {
+                    <span class="po-tax-chip">CGST: ₹{{ line.get('cgstAmount')?.value | number:'1.2-2' }}</span>
+                    <span class="po-tax-chip">SGST: ₹{{ line.get('sgstAmount')?.value | number:'1.2-2' }}</span>
+                  } @else {
+                    <span class="po-tax-chip">IGST: ₹{{ line.get('igstAmount')?.value | number:'1.2-2' }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="po-items-desktop">
+            <div class="po-items-table-wrap" formArrayName="items">
+              <table class="po-items-table">
+                <thead>
+                  <tr>
+                    <th class="po-th-product">Product</th><th>HSN</th><th>Unit</th>
+                    <th class="po-th-num">Qty</th><th class="po-th-num">Rate ₹</th>
+                    <th class="po-th-num">Disc %</th><th class="po-th-num">Taxable ₹</th>
+                    <th class="po-th-num">GST%</th>
+                    @if (!isInterState) { <th class="po-th-num">CGST ₹</th><th class="po-th-num">SGST ₹</th> }
+                    @else              { <th class="po-th-num">IGST ₹</th> }
+                    <th class="po-th-num po-th-total">Total ₹</th>
+                    <th class="po-th-del"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (line of items.controls; track $index; let i = $index) {
+                    <tr [formGroupName]="i" class="po-item-row">
+                      <td class="po-td-product">
+                        <mat-select formControlName="productId" (selectionChange)="onProductSelect(i, $event.value)" class="po-inline-select">
+                          @for (p of products; track p.uniqueKeyID) { <mat-option [value]="p.uniqueKeyID">{{ p.productName || p.name }}</mat-option> }
+                        </mat-select>
+                      </td>
+                      <td><input formControlName="hsnSac" class="po-inline-input" (change)="onLineChange(i)" /></td>
+                      <td><input formControlName="measurement" class="po-inline-input po-input-sm" /></td>
+                      <td><input formControlName="orderedQty" type="number" min="0.001" class="po-inline-input po-input-num" (input)="onLineChange(i)" /></td>
+                      <td><input formControlName="rate" type="number" min="0" class="po-inline-input po-input-num" (input)="onLineChange(i)" /></td>
+                      <td><input formControlName="discountPct" type="number" min="0" max="100" class="po-inline-input po-input-num" (input)="onLineChange(i)" /></td>
+                      <td class="po-td-num po-td-computed">{{ line.get('taxableAmount')?.value | number:'1.2-2' }}</td>
+                      <td>
+                        <mat-select [value]="isInterState ? line.get('igstRate')?.value : (line.get('cgstRate')?.value || 0) * 2"
+                          (selectionChange)="onGstRateChange(i, $event.value)" class="po-inline-select po-select-sm">
+                          @for (r of gstRates; track r) { <mat-option [value]="r">{{ r }}%</mat-option> }
+                        </mat-select>
+                      </td>
+                      @if (!isInterState) {
+                        <td class="po-td-num po-td-computed">{{ line.get('cgstAmount')?.value | number:'1.2-2' }}</td>
+                        <td class="po-td-num po-td-computed">{{ line.get('sgstAmount')?.value | number:'1.2-2' }}</td>
+                      } @else {
+                        <td class="po-td-num po-td-computed">{{ line.get('igstAmount')?.value | number:'1.2-2' }}</td>
+                      }
+                      <td class="po-td-num po-td-total">{{ line.get('totalAmount')?.value | number:'1.2-2' }}</td>
+                      <td>
+                        <button mat-icon-button type="button" class="po-del-line-btn" (click)="removeLine(i)" [disabled]="items.length === 1">
+                          <mat-icon>delete_outline</mat-icon>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="po-add-line-row">
+            <button mat-stroked-button type="button" class="po-add-line-btn" (click)="addLine()">
+              <mat-icon>add</mat-icon> Add Line Item
+            </button>
+          </div>
+        </section>
+
+        <section class="po-section-totals-wrap">
+          <div class="po-charges-col">
+            <div class="po-section-header">
+              <mat-icon class="po-section-icon">receipt</mat-icon>
+              <span class="po-section-title">Additional Charges</span>
+            </div>
+            <div class="po-section-body">
+              <div class="po-fields-grid po-grid-3">
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Freight (₹)</mat-label>
+                  <span matPrefix>₹&nbsp;</span>
+                  <input matInput type="number" formControlName="freightCharges" min="0" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Other Charges (₹)</mat-label>
+                  <span matPrefix>₹&nbsp;</span>
+                  <input matInput type="number" formControlName="otherCharges" min="0" />
+                </mat-form-field>
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>Discount (₹)</mat-label>
+                  <span matPrefix>₹&nbsp;</span>
+                  <input matInput type="number" formControlName="discountAmount" min="0" />
+                </mat-form-field>
+              </div>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="po-field-full">
+                <mat-label>Remarks</mat-label>
+                <textarea matInput formControlName="remark" rows="3" placeholder="Any notes for this purchase order…"></textarea>
+              </mat-form-field>
+            </div>
+          </div>
+          <div class="po-totals-col">
+            <div class="po-totals-card">
+              <div class="po-totals-title">Order Summary</div>
+              <div class="po-totals-grid">
+                <div class="po-totals-row"><span class="po-totals-label">Taxable Amount</span><span class="po-totals-val">₹{{ subtotal | number:'1.2-2' }}</span></div>
+                @if (!isInterState) {
+                  <div class="po-totals-row"><span class="po-totals-label">CGST</span><span class="po-totals-val">₹{{ totalCgst | number:'1.2-2' }}</span></div>
+                  <div class="po-totals-row"><span class="po-totals-label">SGST</span><span class="po-totals-val">₹{{ totalSgst | number:'1.2-2' }}</span></div>
+                } @else {
+                  <div class="po-totals-row"><span class="po-totals-label">IGST</span><span class="po-totals-val">₹{{ totalIgst | number:'1.2-2' }}</span></div>
+                }
+                @if (freight > 0) { <div class="po-totals-row"><span class="po-totals-label">Freight</span><span class="po-totals-val">₹{{ freight | number:'1.2-2' }}</span></div> }
+                @if (other > 0)   { <div class="po-totals-row"><span class="po-totals-label">Other Charges</span><span class="po-totals-val">₹{{ other | number:'1.2-2' }}</span></div> }
+                @if (discount > 0){ <div class="po-totals-row po-totals-discount"><span class="po-totals-label">Discount</span><span class="po-totals-val">− ₹{{ discount | number:'1.2-2' }}</span></div> }
+                <div class="po-totals-divider"></div>
+                <div class="po-totals-row po-totals-grand">
+                  <span class="po-totals-label">Grand Total</span>
+                  <span class="po-totals-val">₹{{ grandTotal | number:'1.2-2' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="po-form-footer">
+          <button mat-stroked-button type="button" (click)="backToList()"><mat-icon>close</mat-icon> Cancel</button>
+          <div class="po-footer-primary-actions">
+            <button mat-stroked-button type="button" class="po-draft-btn" (click)="save(false)"><mat-icon>save_as</mat-icon> Save Draft</button>
+            <button mat-flat-button color="primary" type="button" class="po-submit-btn" (click)="save(true)"><mat-icon>send</mat-icon> Submit PO</button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+  }
+
+  @if (view === 'detail' && selectedPO) {
+    <div class="po-detail-shell">
+      <div class="po-detail-header">
+        <div class="po-detail-header-left">
+          <button mat-icon-button class="po-back-btn" (click)="backToList()"><mat-icon>arrow_back</mat-icon></button>
+          <div>
+            <div class="po-detail-num"><code>{{ selectedPO.poNumber }}</code></div>
+            <div class="po-detail-sub">
+              @if (selectedPO.createDate) { Created {{ selectedPO.createDate | date:'dd MMM yyyy' }} }
+              @if (selectedPO.approvedBy) { · Approved by <strong>{{ selectedPO.approvedBy }}</strong> }
+            </div>
+          </div>
+        </div>
+        <div class="po-detail-header-right">
+          <span class="po-status-chip po-status-{{ selectedPO.status }} po-status-large">{{ selectedPO.status | titlecase }}</span>
+          @if (selectedPO.status === 'draft' || selectedPO.status === 'submitted') {
+            <button mat-flat-button color="primary" class="po-submit-btn" (click)="approve(selectedPO.poNumber!)">
+              <mat-icon>check_circle</mat-icon> Approve
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="po-detail-meta-grid">
+        <div class="po-meta-card"><span class="po-meta-label">Vendor</span><span class="po-meta-val">{{ selectedPO.vendorName || selectedPO.vendorId }}</span></div>
+        <div class="po-meta-card"><span class="po-meta-label">PO Date</span><span class="po-meta-val">{{ selectedPO.poDate | date:'dd MMM yyyy' }}</span></div>
+        <div class="po-meta-card"><span class="po-meta-label">Expected Delivery</span><span class="po-meta-val">{{ selectedPO.expectedDate ? (selectedPO.expectedDate | date:'dd MMM yyyy') : '—' }}</span></div>
+        <div class="po-meta-card"><span class="po-meta-label">Grand Total</span><span class="po-meta-val po-meta-amount">₹{{ selectedPO.grandTotal | number:'1.2-2' }}</span></div>
+        @if (selectedPO.paymentTerms) { <div class="po-meta-card"><span class="po-meta-label">Payment Terms</span><span class="po-meta-val">{{ selectedPO.paymentTerms }}</span></div> }
+        @if (selectedPO.referenceNo)  { <div class="po-meta-card"><span class="po-meta-label">Reference</span><span class="po-meta-val"><code>{{ selectedPO.referenceNo }}</code></span></div> }
+      </div>
+
+      <mat-card class="po-detail-card">
+        <mat-card-content>
+          <div class="po-receipt-header">
+            <span class="po-receipt-label">Receipt Progress</span>
+            <span class="po-receipt-pct">{{ getReceiptProgress(selectedPO) }}%</span>
+          </div>
+          <mat-progress-bar mode="determinate" [value]="getReceiptProgress(selectedPO)" class="po-detail-progress-bar"></mat-progress-bar>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="po-detail-card">
+        <mat-card-header>
+          <mat-card-title class="po-detail-card-title"><mat-icon>inventory_2</mat-icon> Line Items</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="po-detail-items-mobile">
+            @for (item of selectedPO.items; track item.productId) {
+              <div class="po-detail-item-row">
+                <div class="po-detail-item-name">{{ item.productName || item.productId }}</div>
+                <div class="po-detail-item-meta">{{ item.orderedQty }} {{ item.measurement }}@if (item.hsnSac) { · HSN: {{ item.hsnSac }} }</div>
+                <div class="po-detail-item-row2">
+                  <div><span class="po-detail-item-label">Rate</span><span>₹{{ item.rate | number:'1.2-2' }}</span></div>
+                  <div><span class="po-detail-item-label">Received</span><span [class.po-received-full]="item.receivedQty >= item.orderedQty">{{ item.receivedQty || 0 }}</span></div>
+                  <div class="po-detail-item-total">₹{{ item.totalAmount | number:'1.2-2' }}</div>
+                </div>
+              </div>
+            }
+          </div>
+          <div class="po-detail-items-desktop">
+            <table class="po-items-table po-detail-table">
+              <thead><tr>
+                <th>Product</th><th>HSN</th>
+                <th class="po-th-num">Ordered</th><th class="po-th-num">Received</th>
+                <th class="po-th-num">Rate ₹</th><th class="po-th-num">GST ₹</th>
+                <th class="po-th-num po-th-total">Total ₹</th>
+              </tr></thead>
+              <tbody>
+                @for (item of selectedPO.items; track item.productId) {
+                  <tr class="po-item-row">
+                    <td class="po-detail-prod-name">{{ item.productName || item.productId }}</td>
+                    <td class="po-td-hsn">{{ item.hsnSac || '—' }}</td>
+                    <td class="po-td-num">{{ item.orderedQty }} {{ item.measurement }}</td>
+                    <td class="po-td-num" [class.po-received-full]="item.receivedQty >= item.orderedQty">{{ item.receivedQty || 0 }}</td>
+                    <td class="po-td-num">₹{{ item.rate | number:'1.4-4' }}</td>
+                    <td class="po-td-num">₹{{ (item.cgstAmount + item.sgstAmount + item.igstAmount) | number:'1.2-2' }}</td>
+                    <td class="po-td-num po-td-total">₹{{ item.totalAmount | number:'1.2-2' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <div class="po-detail-totals">
+            <div class="po-detail-totals-inner">
+              <div class="po-totals-row"><span class="po-totals-label">Subtotal</span><span class="po-totals-val">₹{{ selectedPO.subtotal | number:'1.2-2' }}</span></div>
+              <div class="po-totals-row"><span class="po-totals-label">Total GST</span><span class="po-totals-val">₹{{ selectedPO.totalGstAmount | number:'1.2-2' }}</span></div>
+              @if (selectedPO.freightCharges > 0) {
+                <div class="po-totals-row"><span class="po-totals-label">Freight</span><span class="po-totals-val">₹{{ selectedPO.freightCharges | number:'1.2-2' }}</span></div>
+              }
+              <div class="po-totals-divider"></div>
+              <div class="po-totals-row po-totals-grand">
+                <span class="po-totals-label">Grand Total</span>
+                <span class="po-totals-val">₹{{ selectedPO.grandTotal | number:'1.2-2' }}</span>
+              </div>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      @if (selectedPO.remark) {
+        <mat-card class="po-detail-card">
+          <mat-card-content>
+            <div class="po-remark-label">Remarks</div>
+            <p class="po-remark-body">{{ selectedPO.remark }}</p>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
+
+</div>

@@ -1,0 +1,51 @@
+/* src/app/Component/sales-returns/sales-returns.component.css - reused from sales-reports for visual consistency */
+.page-content    { padding: var(--space-4); max-width: 1320px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--space-4); }
+.page-header     { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); }
+.page-title      { display: flex; align-items: center; gap: var(--space-2); font-size: var(--md-sys-typescale-headline-small-size); font-weight: var(--md-sys-typescale-weight-bold); color: var(--md-sys-color-on-surface); margin: 0; }
+.page-title mat-icon { color: var(--md-sys-color-primary); }
+.page-subtitle   { font-size: var(--md-sys-typescale-body-small-size); color: var(--md-sys-color-on-surface-variant); margin: 4px 0 0; }
+
+/* Filter card */
+.filter-card     { border-radius: var(--md-sys-shape-corner-large) !important; padding: var(--space-4); }
+.filter-form     { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: flex-end; }
+.filter-form mat-form-field { flex: 1 1 160px; min-width: 140px; }
+
+/* Summary totals */
+.summary-totals  { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: var(--space-3); }
+.total-card      { background: var(--md-sys-color-surface); border: 1px solid var(--md-sys-color-outline); border-radius: var(--md-sys-shape-corner-large); padding: var(--space-3) var(--space-4); display: flex; flex-direction: column; gap: 4px; box-shadow: var(--md-sys-elevation-1); }
+.total-label     { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--md-sys-color-on-surface-variant); font-weight: var(--md-sys-typescale-weight-bold); }
+.total-val       { font-size: 22px; font-weight: var(--md-sys-typescale-weight-bold); font-family: var(--md-sys-typescale-mono-family); color: var(--md-sys-color-on-surface); }
+.total-returns   { border-color: var(--md-sys-color-error); }
+.total-returns .total-val { color: var(--md-sys-color-error); }
+.total-net .total-val   { color: var(--md-sys-color-primary); }
+
+/* Table search */
+.table-search    { width: 100%; max-width: 380px; }
+
+/* Loading / empty */
+.loading-state   { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-6); color: var(--md-sys-color-on-surface-variant); }
+.empty-state     { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); padding: var(--space-8) var(--space-4); text-align: center; }
+.empty-state mat-icon { font-size: 48px; width: 48px; height: 48px; color: var(--md-sys-color-on-surface-variant); opacity: 0.4; }
+.empty-state h3  { margin: 0; font-size: var(--md-sys-typescale-title-medium-size); color: var(--md-sys-color-on-surface); }
+.empty-state p   { margin: 0; color: var(--md-sys-color-on-surface-variant); }
+
+/* Table */
+.table-card      { border-radius: var(--md-sys-shape-corner-large) !important; overflow: hidden; }
+.table-scroll    { overflow-x: auto; }
+.report-table    { width: 100%; min-width: 720px; }
+.table-row:hover td { background: var(--md-sys-color-surface-container); }
+.col-right       { text-align: right !important; }
+.col-primary     { color: var(--md-sys-color-primary) !important; font-weight: var(--md-sys-typescale-weight-bold); }
+.col-warn        { color: var(--md-sys-color-error) !important; }
+.text-warn       { color: var(--md-sys-color-error); }
+.mono            { font-family: var(--md-sys-typescale-mono-family); }
+.col-reason      { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Badges */
+.badge           { display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: var(--md-sys-shape-corner-full); font-size: 11px; font-weight: var(--md-sys-typescale-weight-bold); white-space: nowrap; }
+.badge mat-icon  { font-size: 13px; width: 13px; height: 13px; }
+.badge-approved  { background: var(--md-sys-color-success-container); color: var(--md-sys-color-on-success-container); }
+.badge-locked    { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
+.badge-draft     { background: var(--md-sys-color-surface-variant); color: var(--md-sys-color-on-surface-variant); }
+.badge-credit    { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+.badge-refund    { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
