@@ -151,6 +151,7 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
     this.editinvoiceno = this.activeroute.snapshot.paramMap.get('invoiceno');
     if (this.editinvoiceno == null) {
       this.isedit = false;
+      this.isLoading = false;
     } else {
       this.isedit = true;
       this.pagetitle = 'Edit Invoice';

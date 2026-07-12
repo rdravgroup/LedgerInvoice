@@ -16,8 +16,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { of } from 'rxjs';
 
 import { CreateinvoiceComponent } from './createinvoice.component';
+import { MasterService } from '../../_service/master.service';
 
 describe('CreateinvoiceComponent', () => {
   let component: CreateinvoiceComponent;
@@ -48,6 +50,10 @@ describe('CreateinvoiceComponent', () => {
     })
     .compileComponents();
 
+    const masterService = TestBed.inject(MasterService);
+    spyOn(masterService as any, 'GetCustomer').and.returnValue(of([]));
+    spyOn(masterService as any, 'GetProducts').and.returnValue(of([]));
+
     fixture = TestBed.createComponent(CreateinvoiceComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -55,5 +61,9 @@ describe('CreateinvoiceComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should not stay in loading state for a new invoice', () => {
+    expect(component.isLoading).toBeFalse();
   });
 });
