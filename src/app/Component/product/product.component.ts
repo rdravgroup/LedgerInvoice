@@ -208,7 +208,7 @@ export class ProductComponent implements OnInit, OnDestroy {
   editProductCode: string = '';
   totalProducts = 0;
   activeProducts = 0;
-  showExtraFields = true;
+  showExtraFields = false;
 
   constructor(
     private fb: FormBuilder,
@@ -250,6 +250,13 @@ export class ProductComponent implements OnInit, OnDestroy {
       // Purchase fields
       purchaseRate: [null, [Validators.min(0)]],
       purchaseRateDate: [null],
+      // Stock fields
+      stockQty: [0, [Validators.min(0)]],
+      minStockQty: [0, [Validators.min(0)]],
+      maxStockQty: [0, [Validators.min(0)]],
+      reorderLevel: [0, [Validators.min(0)]],
+      lastPurchaseRate: [0, [Validators.min(0)]],
+      lastPurchaseDate: [null],
       remark: [''],
       isActive: [true]
     });
@@ -258,7 +265,18 @@ export class ProductComponent implements OnInit, OnDestroy {
   }
 
   private setExtraFieldsState(enabled: boolean) {
-    const keys = ['cgstRate', 'scgstRate', 'totalGstRate', 'rateWithoutTax'];
+    const keys = [
+      'cgstRate',
+      'scgstRate',
+      'totalGstRate',
+      'rateWithoutTax',
+      'stockQty',
+      'minStockQty',
+      'maxStockQty',
+      'reorderLevel',
+      'lastPurchaseRate',
+      'lastPurchaseDate'
+    ];
     for (const k of keys) {
       const c = this.productForm.get(k);
       if (!c) { continue; }
@@ -317,6 +335,7 @@ export class ProductComponent implements OnInit, OnDestroy {
 
   onSubmit() {
     if (this.productForm.invalid) {
+      this.productForm.markAllAsTouched();
       this.toastr.warning('Please fill all required fields', 'Validation');
       return;
     }
@@ -329,7 +348,12 @@ export class ProductComponent implements OnInit, OnDestroy {
     };
 
     const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
-    this.service.SaveProduct(payload, effectiveCompanyId ?? undefined).subscribe({
+    if (!effectiveCompanyId) {
+      this.toastr.warning('Please select a company before saving products.', 'Validation');
+      return;
+    }
+
+    this.service.SaveProduct(payload, effectiveCompanyId).subscribe({
       next: (res: any) => {
         if (res.result === 'pass') {
           this.toastr.success(
@@ -339,7 +363,7 @@ export class ProductComponent implements OnInit, OnDestroy {
           this.resetForm();
           this.loadProducts();
         } else {
-          this.toastr.error(res.message || 'Failed to save', 'Error');
+          this.toastr.error(res.ErrorMessage || res.message || 'Failed to save', 'Error');
         }
       },
       error: () => this.toastr.error('Failed to save product', 'Error')
@@ -364,6 +388,12 @@ export class ProductComponent implements OnInit, OnDestroy {
       rateWithTax: product.rateWithTax,
       purchaseRate: product.purchaseRate,
       purchaseRateDate: product.purchaseRateDate ? new Date(product.purchaseRateDate) : null,
+      stockQty: product.stockQty ?? 0,
+      minStockQty: product.minStockQty ?? 0,
+      maxStockQty: product.maxStockQty ?? 0,
+      reorderLevel: product.reorderLevel ?? 0,
+      lastPurchaseRate: product.lastPurchaseRate ?? 0,
+      lastPurchaseDate: product.lastPurchaseDate ? new Date(product.lastPurchaseDate) : null,
       remark: product.remark,
       isActive: product.isActive
     });
@@ -389,10 +419,10 @@ export class ProductComponent implements OnInit, OnDestroy {
   resetForm() {
     this.isEditMode = false;
     this.editProductCode = '';
-    this.showExtraFields = true;
-    this.productForm.reset({ isActive: true, rateWithTax: 0, purchaseRate: null, purchaseRateDate: null });
+    this.showExtraFields = false;
+    this.productForm.reset({ isActive: true, rateWithTax: 0, purchaseRate: null, purchaseRateDate: null, stockQty: 0, minStockQty: 0, maxStockQty: 0, reorderLevel: 0, lastPurchaseRate: 0, lastPurchaseDate: null });
     this.productForm.patchValue({ cgstRate: 0, scgstRate: 0, totalGstRate: 0, rateWithoutTax: 0 });
-    // Ensure controls are enabled for default state
+    // Keep hidden extra fields disabled until user expands them
     this.setExtraFieldsState(this.showExtraFields);
   }
 }

@@ -39,10 +39,13 @@
 
     <form [formGroup]="productForm" (ngSubmit)="onSubmit()">
       <div class="form-grid">
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" class="full-span">
           <mat-label>Product Name</mat-label>
           <input matInput formControlName="productName" placeholder="Enter product name">
           <mat-icon matPrefix>shopping_bag</mat-icon>
+          <mat-error *ngIf="productForm.get('productName')?.hasError('required')">
+            Product Name is required
+          </mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -53,6 +56,9 @@
             </mat-option>
           </mat-select>
           <mat-icon matPrefix>category</mat-icon>
+          <mat-error *ngIf="productForm.get('categoryCode')?.hasError('required')">
+            Category is required
+          </mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -63,6 +69,9 @@
             </mat-option>
           </mat-select>
           <mat-icon matPrefix>straighten</mat-icon>
+          <mat-error *ngIf="productForm.get('measurement')?.hasError('required')">
+            Measurement is required
+          </mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -75,12 +84,21 @@
           <mat-label>Rate With Tax</mat-label>
           <input matInput type="number" formControlName="rateWithTax" placeholder="0.00">
           <mat-icon matPrefix>currency_rupee</mat-icon>
+          <mat-error *ngIf="productForm.get('rateWithTax')?.hasError('required')">
+            Rate with tax is required
+          </mat-error>
+          <mat-error *ngIf="productForm.get('rateWithTax')?.hasError('min')">
+            Rate must be 0 or greater
+          </mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label>Purchase Rate</mat-label>
           <input matInput type="number" formControlName="purchaseRate" placeholder="0.00">
           <mat-icon matPrefix>price_check</mat-icon>
+          <mat-error *ngIf="productForm.get('purchaseRate')?.hasError('min')">
+            Purchase rate cannot be negative
+          </mat-error>
         </mat-form-field>
 
         <mat-form-field appearance="outline">
@@ -90,41 +108,123 @@
           <mat-datepicker #purchaseRatePicker></mat-datepicker>
         </mat-form-field>
 
-        <div class="checkbox-field">
+        <div class="checkbox-field full-span">
           <mat-checkbox [(ngModel)]="showExtraFields" (ngModelChange)="onShowExtraFieldsChange($event)" [ngModelOptions]="{standalone: true}">
-            Show Extra Fields
+            Show extra fields for advanced product options
           </mat-checkbox>
         </div>
+      </div>
 
-        <div *ngIf="showExtraFields" class="extra-fields">
+      <div *ngIf="showExtraFields" class="section-card">
+        <div class="section-header">
+          <div>
+            <h3>Pricing & Tax</h3>
+            <p>Price details and tax rates applied to this product.</p>
+          </div>
+        </div>
+        <div class="section-grid">
           <mat-form-field appearance="outline">
             <mat-label>Rate Without Tax</mat-label>
             <input matInput type="number" formControlName="rateWithoutTax" placeholder="0.00">
             <mat-icon matPrefix>currency_rupee</mat-icon>
+            <mat-error *ngIf="productForm.get('rateWithoutTax')?.hasError('min')">
+              Value cannot be negative
+            </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>CGST Rate (%)</mat-label>
             <input matInput type="number" formControlName="cgstRate" placeholder="0">
             <mat-icon matPrefix>percent</mat-icon>
+            <mat-error *ngIf="productForm.get('cgstRate')?.hasError('min')">
+              Value cannot be negative
+            </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>SGST Rate (%)</mat-label>
             <input matInput type="number" formControlName="scgstRate" placeholder="0">
             <mat-icon matPrefix>percent</mat-icon>
+            <mat-error *ngIf="productForm.get('scgstRate')?.hasError('min')">
+              Value cannot be negative
+            </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Total GST Rate (%)</mat-label>
             <input matInput type="number" formControlName="totalGstRate" placeholder="0">
             <mat-icon matPrefix>percent</mat-icon>
+            <mat-error *ngIf="productForm.get('totalGstRate')?.hasError('min')">
+              Value cannot be negative
+            </mat-error>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div *ngIf="showExtraFields" class="section-card">
+        <div class="section-header">
+          <div>
+            <h3>Inventory</h3>
+            <p>Maintain stock quantity, reorder limits, and purchase history.</p>
+          </div>
+        </div>
+        <div class="section-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Stock Qty</mat-label>
+            <input matInput type="number" formControlName="stockQty" placeholder="0">
+            <mat-icon matPrefix>inventory_2</mat-icon>
+            <mat-error *ngIf="productForm.get('stockQty')?.hasError('min')">
+              Value cannot be negative
+            </mat-error>
           </mat-form-field>
 
-          
-        </div>
+          <mat-form-field appearance="outline">
+            <mat-label>Min Stock Qty</mat-label>
+            <input matInput type="number" formControlName="minStockQty" placeholder="0">
+            <mat-icon matPrefix>inventory_2</mat-icon>
+            <mat-error *ngIf="productForm.get('minStockQty')?.hasError('min')">
+              Value cannot be negative
+            </mat-error>
+          </mat-form-field>
 
-        <mat-form-field appearance="outline">
+          <mat-form-field appearance="outline">
+            <mat-label>Max Stock Qty</mat-label>
+            <input matInput type="number" formControlName="maxStockQty" placeholder="0">
+            <mat-icon matPrefix>inventory_2</mat-icon>
+            <mat-error *ngIf="productForm.get('maxStockQty')?.hasError('min')">
+              Value cannot be negative
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Reorder Level</mat-label>
+            <input matInput type="number" formControlName="reorderLevel" placeholder="0">
+            <mat-icon matPrefix>inventory_2</mat-icon>
+            <mat-error *ngIf="productForm.get('reorderLevel')?.hasError('min')">
+              Value cannot be negative
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Last Purchase Rate</mat-label>
+            <input matInput type="number" formControlName="lastPurchaseRate" placeholder="0.00">
+            <mat-icon matPrefix>price_change</mat-icon>
+            <mat-error *ngIf="productForm.get('lastPurchaseRate')?.hasError('min')">
+              Value cannot be negative
+            </mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Last Purchase Date</mat-label>
+            <input matInput [matDatepicker]="lastPurchasePicker" formControlName="lastPurchaseDate" placeholder="Choose a date">
+            <mat-datepicker-toggle matSuffix [for]="lastPurchasePicker"></mat-datepicker-toggle>
+            <mat-datepicker #lastPurchasePicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <mat-form-field appearance="outline" class="full-span">
           <mat-label>Remark</mat-label>
           <input matInput formControlName="remark" placeholder="Enter remark">
           <mat-icon matPrefix>note</mat-icon>

@@ -92,11 +92,93 @@
 /* ── Form grid ──────────────────────────────────────────────── */
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0 var(--space-4);
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-4);
   padding: var(--space-4) var(--space-5);
 }
+.form-grid.full-width {
+  grid-column: 1 / -1;
+}
 .form-grid mat-form-field { width: 100%; }
+
+.full-span {
+  grid-column: 1 / -1;
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--md-sys-shape-corner-medium);
+  background: var(--md-sys-color-surface-container-high);
+  border: 1px solid var(--md-sys-color-outline);
+}
+
+.section-card {
+  background: var(--md-sys-color-surface-container-low);
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-corner-medium);
+  padding: var(--space-4);
+  margin: var(--space-2) var(--space-5);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: var(--md-sys-typescale-title-small-size);
+  font-weight: var(--md-sys-typescale-weight-bold);
+}
+
+.section-header p {
+  margin: 0;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 0.95rem;
+}
+
+.section-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--space-4);
+}
+
+.status-toggle {
+  display: flex;
+  align-items: center;
+  padding: 0 var(--space-5);
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 960px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+    padding: var(--space-3);
+  }
+
+  .section-card {
+    margin: var(--space-2) var(--space-3);
+  }
+
+  .status-toggle {
+    padding: 0 var(--space-3);
+  }
+}
+
+@media (max-width: 600px) {
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+}
 
 /* ── Form actions ───────────────────────────────────────────── */
 .form-actions {

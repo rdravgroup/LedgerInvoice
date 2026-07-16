@@ -27,6 +27,12 @@ export interface ProductDTO {
   scgstRate: number | null;
   rateWithoutTax: number | null;
   rateWithTax: number | null;
+  stockQty: number | null;
+  minStockQty: number | null;
+  maxStockQty: number | null;
+  reorderLevel: number | null;
+  lastPurchaseRate: number | null;
+  lastPurchaseDate: string | null;
   createIp: string | null;
   updateIp: string | null;
   remark: string | null;

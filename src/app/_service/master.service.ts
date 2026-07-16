@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { environment } from '../../environments/environment';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { catchError, throwError } from 'rxjs';
 
 @Injectable({
@@ -160,9 +160,8 @@ export class MasterService {
   }
 
   SaveProduct(productData: any, companyId?: string) {
-    let url = this.baseUrl + 'Product/SaveProduct';
-    if (companyId) url += '?companyId=' + encodeURIComponent(companyId);
-    return this.http.post(url, productData);
+    const options = companyId ? { params: new HttpParams().set('companyId', companyId) } : {};
+    return this.http.post(this.baseUrl + 'Product/SaveProduct', productData, options);
   }
 
   RemoveProduct(code: string, companyId?: string) {
