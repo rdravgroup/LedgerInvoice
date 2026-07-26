@@ -41,6 +41,7 @@
       <!-- Mode toggle (Password / OTP) -->
       <div class="mode-toggle" role="tablist" aria-label="Login method">
         <button
+          type="button"
           role="tab"
           [attr.aria-selected]="loginMode === 'password'"
           class="mode-btn"
@@ -50,6 +51,7 @@
           Password
         </button>
         <button
+          type="button"
           role="tab"
           [attr.aria-selected]="loginMode === 'otp'"
           class="mode-btn"
@@ -66,7 +68,7 @@
 
           <mat-form-field appearance="outline" class="field-full">
             <mat-label>Username or Email</mat-label>
-            <input matInput formControlName="username" type="text"
+            <input #usernameInput matInput formControlName="username" type="text"
                    autocomplete="username" autocapitalize="none"
                    placeholder="Enter username or email" />
             <mat-icon matPrefix aria-hidden="true">person_outline</mat-icon>
@@ -128,7 +130,7 @@
           @if (!otpSent) {
             <mat-form-field appearance="outline" class="field-full">
               <mat-label>Email Address</mat-label>
-              <input matInput formControlName="email" type="email"
+              <input #emailInput matInput formControlName="email" type="email"
                      autocomplete="email"
                      placeholder="example@email.com" />
               <mat-icon matPrefix aria-hidden="true">mail_outline</mat-icon>

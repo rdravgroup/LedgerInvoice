@@ -77,7 +77,8 @@ export class MasterService {
   }
   
   RemoveInvoice(invoiceno: any) {
-    return this.http.delete(this.baseUrl + 'Invoice/Remove?InvoiceNo=' + invoiceno)
+    const encodedInvoiceNo = encodeURIComponent(invoiceno);
+    return this.http.delete(this.baseUrl + 'Invoice/Remove?InvoiceNo=' + encodedInvoiceNo)
       .pipe(catchError(err => this.handleError(err, 'Remove invoice')));
   }
 

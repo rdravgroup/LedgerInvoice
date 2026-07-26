@@ -129,7 +129,10 @@
                   <mat-icon>assignment_return</mat-icon>
                 </button>
               }
-              <button mat-stroked-button color="warn" (click)="invoiceremove(row.invoiceNumber, row.coName)">
+              <button mat-stroked-button color="warn"
+                      (click)="invoiceremove(row.invoiceNumber, row.coName)"
+                      [disabled]="isSuperDuper || row.isLocked"
+                      matTooltip="{{ row.isLocked ? 'Invoice locked — cannot delete' : 'Delete invoice' }}">
                 <mat-icon aria-hidden="true">delete</mat-icon>
               </button>
             </div>
@@ -142,7 +145,8 @@
   <!-- Desktop: mat-table -->
   @if (!loading && dataSource.data.length > 0) {
     <mat-card class="table-card" [class.hidden]="isMobile">
-      <table mat-table [dataSource]="dataSource" matSort #sort="matSort" class="full-table" role="grid">
+      <div class="table-wrap">
+        <table mat-table [dataSource]="dataSource" matSort #sort="matSort" class="full-table" role="grid">
 
         <!-- Invoice Number -->
         <ng-container matColumnDef="invoiceNumber">
@@ -282,8 +286,8 @@
 
             <button mat-icon-button color="warn"
                     (click)="invoiceremove(row.invoiceNumber, row.coName)"
-                    [disabled]="isSuperDuper"
-                    matTooltip="Delete invoice">
+                    [disabled]="isSuperDuper || row.isLocked"
+                    matTooltip="{{ row.isLocked ? 'Invoice locked — cannot delete' : 'Delete invoice' }}">
               <mat-icon aria-hidden="true">delete</mat-icon>
             </button>
           </td>
@@ -292,7 +296,7 @@
         <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
       </table>
-
+      </div>
       <mat-paginator [pageSizeOptions]="[10, 20, 50]" [pageSize]="20" showFirstLastButtons
                      aria-label="Select page">
       </mat-paginator>

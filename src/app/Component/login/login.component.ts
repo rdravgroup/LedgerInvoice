@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MaterialModule } from '../../material.module';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
@@ -18,7 +18,10 @@ import { CommonModule } from '@angular/common';
   templateUrl: './login.component.html',
   styleUrl: './login.component.css'
 })
-export class LoginComponent implements OnInit, OnDestroy {
+export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
+  @ViewChild('usernameInput') usernameInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('emailInput') emailInput?: ElementRef<HTMLInputElement>;
+
   _response!: LoginResponse;
   _loginForm!: FormGroup;
   _otpLoginForm!: FormGroup;
@@ -94,6 +97,10 @@ export class LoginComponent implements OnInit, OnDestroy {
   // Only keep the following correct implementations:
   // ...existing code...
 
+  ngAfterViewInit(): void {
+    requestAnimationFrame(() => this.focusInputForMode(this.loginMode));
+  }
+
   ngOnDestroy(): void {
     if (this.otpCooldownTimer) {
       clearInterval(this.otpCooldownTimer);
@@ -109,6 +116,15 @@ export class LoginComponent implements OnInit, OnDestroy {
       this._loginForm.reset();
     } else {
       this._otpLoginForm.reset();
+    }
+    requestAnimationFrame(() => this.focusInputForMode(mode));
+  }
+
+  private focusInputForMode(mode: 'password' | 'otp'): void {
+    if (mode === 'password') {
+      this.usernameInput?.nativeElement?.focus();
+    } else {
+      this.emailInput?.nativeElement?.focus();
     }
   }
 

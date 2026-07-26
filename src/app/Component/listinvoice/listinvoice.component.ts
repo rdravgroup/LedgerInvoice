@@ -191,11 +191,19 @@ export class ListinvoiceComponent implements OnInit, AfterViewInit, OnDestroy {
       if (!confirmed) return;
       this.service.RemoveInvoice(invoiceno)
         .pipe(takeUntil(this.destroy$))
-        .subscribe((res: any) => {
-          if (res.Result === 'pass' || res.result === 'pass') {
-            this.alert.success('Invoice deleted successfully.', 'Delete Invoice');
-            this.LoadInvoice();
-          } else {
+        .subscribe({
+          next: (res: any) => {
+            const success = res?.Result === 'pass' || res?.result === 'pass';
+            if (success) {
+              this.alert.success('Invoice deleted successfully.', 'Delete Invoice');
+              this.LoadInvoice();
+            } else {
+              const message = res?.Message || res?.message || 'Failed to delete invoice.';
+              this.alert.error(message, 'Invoice');
+            }
+          },
+          error: (err) => {
+            if (this.handleSubscriptionExpired(err, () => this.invoiceremove(invoiceno, coName))) return;
             this.alert.error('Failed to delete invoice.', 'Invoice');
           }
         });
