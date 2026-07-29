@@ -155,6 +155,8 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
     } else {
       this.isedit = true;
       this.pagetitle = 'Edit Invoice';
+      // Load invoice data when opened for edit
+      this.SetEditInfo(this.editinvoiceno);
     }
   }
 
