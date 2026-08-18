@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ViewChild, OnDestroy } from '@angular/core';
+import { Component, OnInit, ViewChild, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MaterialModule } from '../../material.module';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -29,6 +29,7 @@ interface Invoice {
   invNum: string;
   invoiceNumber: string;
   invDate: string;
+  createDate?: string;
   cuName: string;
   coName: string;
   totalAmt: number;
@@ -56,7 +57,7 @@ interface Invoice {
   templateUrl: './listinvoice.component.html',
   styleUrls: ['./listinvoice.component.css'],
 })
-export class ListinvoiceComponent implements OnInit, AfterViewInit, OnDestroy {
+export class ListinvoiceComponent implements OnInit, OnDestroy {
   displayedColumns: string[] = ['invoiceNumber', 'invDate', 'cuName', 'totalAmt', 'status', 'actions'];
   dataSource = new MatTableDataSource<Invoice>();
 
@@ -67,8 +68,20 @@ export class ListinvoiceComponent implements OnInit, AfterViewInit, OnDestroy {
   canApprove   = false;   // NEW: can approve/lock
   canReturn    = false;   // NEW: can create return
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
+  private paginator?: MatPaginator;
+  private sort?: MatSort;
+
+  @ViewChild(MatPaginator)
+  set matPaginator(paginator: MatPaginator | undefined) {
+    this.paginator = paginator;
+    this.attachTableControls();
+  }
+
+  @ViewChild(MatSort)
+  set matSort(sort: MatSort | undefined) {
+    this.sort = sort;
+    this.attachTableControls();
+  }
 
   private destroy$ = new Subject<void>();
 
@@ -104,19 +117,35 @@ export class ListinvoiceComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  ngAfterViewInit(): void {
-    this.dataSource.paginator = this.paginator;
-    this.dataSource.sort = this.sort;
-    setTimeout(() => {
-      if (this.sort) this.sort.sort({ id: 'invoiceNumber', start: 'desc', disableClear: false });
-    }, 0);
-  }
 
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
 
+  private attachTableControls(): void {
+    this.dataSource.sortingDataAccessor = (item: any, property: string) => {
+      if (property === 'invDate') return this.getInvoiceSortTime(item);
+      return item?.[property] ?? '';
+    };
+
+    if (this.paginator) this.dataSource.paginator = this.paginator;
+    if (this.sort) {
+      this.dataSource.sort = this.sort;
+      this.sort.active = 'invDate';
+      this.sort.direction = 'desc';
+    }
+  }
+
+  private sortInvoicesByCreateDate(data: Invoice[]): Invoice[] {
+    return [...data].sort((a: any, b: any) => this.getInvoiceSortTime(b) - this.getInvoiceSortTime(a));
+  }
+
+  private getInvoiceSortTime(item: any): number {
+    const dateVal = item?.createDate || item?.create_date || item?.createdAt || item?.CreateDate || item?.invDate || item?.inv_date || item?.invdate;
+    const time = dateVal ? new Date(dateVal).getTime() : 0;
+    return Number.isFinite(time) ? time : 0;
+  }
   LoadInvoice(): void {
     this.loading = true;
     const performLoad = () => {
@@ -134,14 +163,17 @@ export class ListinvoiceComponent implements OnInit, AfterViewInit, OnDestroy {
               else { for (const key in data) { if (Array.isArray(data[key])) { data = data[key]; break; } } }
             }
             if (Array.isArray(data)) {
+              // Normalize date fields and assign createDate explicitly
+              data = data.map((item: any) => {
+                if (!item.createDate && item.create_date) item.createDate = item.create_date;
+                if (!item.createDate && item.createdAt) item.createDate = item.createdAt;
+                if (!item.createDate && item.CreateDate) item.createDate = item.CreateDate;
+                if (!item.invDate && item.createDate) item.invDate = item.createDate;
+                return item;
+              });
+              data = this.sortInvoicesByCreateDate(data);
               this.dataSource.data = data;
-              const applySort = () => {
-                if (!this.sort) return false;
-                this.dataSource.sort = this.sort;
-                this.sort.sort({ id: 'invoiceNumber', start: 'desc', disableClear: false });
-                return true;
-              };
-              if (!applySort()) setTimeout(() => applySort(), 50);
+              this.attachTableControls();
             } else {
               this.alert.error('Invalid response format', 'Error');
             }
@@ -415,3 +447,4 @@ export class ListinvoiceComponent implements OnInit, AfterViewInit, OnDestroy {
     this.router.navigate(['/sales-reports']);
   }
 }
+

@@ -10,20 +10,33 @@
         <span class="status-dot"></span>
         Ready
       </div>
-      @if (isDialogMode) {
+      <ng-container *ngIf="isDialogMode">
         <button mat-icon-button type="button" (click)="toggleMaximize()" [matTooltip]="isMaximized ? 'Restore' : 'Maximize'" aria-label="Maximize AI Chat">
           <mat-icon>{{ isMaximized ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
         </button>
         <button mat-icon-button type="button" (click)="closeDialog()" matTooltip="Close" aria-label="Close AI Chat">
           <mat-icon>close</mat-icon>
         </button>
-      }
+      </ng-container>
     </div>
   </header>
 
   <mat-card class="chat-shell">
+    <div class="session-bar">
+      <mat-form-field appearance="outline" class="session-select">
+        <mat-label>Saved conversations</mat-label>
+        <mat-select [(value)]="selectedSessionId" (selectionChange)="loadSession($event.value)">
+          <mat-option [value]="null">-- current --</mat-option>
+          <mat-option *ngFor="let s of sessions" [value]="s.id">{{ s.title }} — {{ s.timestamp | date:'short' }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <div class="session-actions">
+        <button mat-stroked-button type="button" (click)="saveSession()">Save</button>
+        <button mat-stroked-button type="button" color="warn" (click)="clearSessions()">Clear All</button>
+      </div>
+    </div>
     <div #messagesViewport class="messages" aria-live="polite">
-      @for (message of messages; track trackMessage($index, message)) {
+      <ng-container *ngFor="let message of messages; trackBy: trackMessage">
         <article class="message-row" [class.user-row]="message.sender === 'user'">
           <div class="avatar" [class.user-avatar]="message.sender === 'user'">
             <mat-icon>{{ message.sender === 'user' ? 'person' : 'auto_awesome' }}</mat-icon>
@@ -35,36 +48,50 @@
               <time>{{ message.timestamp | date:'shortTime' }}</time>
             </div>
             <div class="bubble" [class.user-bubble]="message.sender === 'user'" [class.error-bubble]="message.failed">
-              {{ message.text }}
+              <ng-container *ngIf="message.sender === 'assistant'; else plain">
+                <div [innerHTML]="message.text | markdown"></div>
+              </ng-container>
+              <ng-template #plain>{{ message.text }}</ng-template>
+            </div>
+            <div class="message-actions" *ngIf="message.failed && message.sender === 'assistant'">
+              <button mat-icon-button type="button" matTooltip="Retry" (click)="retryAssistantFailure(message)">
+                <mat-icon>refresh</mat-icon>
+              </button>
             </div>
           </div>
         </article>
-      }
+      </ng-container>
 
-      @if (sending) {
-        <article class="message-row">
-          <div class="avatar">
-            <mat-icon>auto_awesome</mat-icon>
+      <article class="message-row" *ngIf="sending">
+        <div class="avatar">
+          <mat-icon>auto_awesome</mat-icon>
+        </div>
+        <div class="message-stack">
+          <div class="message-meta">
+            <span>ERP Assistant</span>
+            <time>typing</time>
           </div>
-          <div class="message-stack">
-            <div class="message-meta">
-              <span>ERP Assistant</span>
-              <time>typing</time>
-            </div>
-            <div class="bubble typing-bubble">
-              <span></span><span></span><span></span>
-            </div>
+          <div class="bubble typing-bubble">
+            <span></span><span></span><span></span>
           </div>
-        </article>
-      }
+        </div>
+      </article>
     </div>
 
-    <div class="prompt-strip" aria-label="Suggested prompts">
-      @for (prompt of suggestedPrompts; track prompt) {
-        <button mat-stroked-button type="button" class="prompt-chip" (click)="usePrompt(prompt)" [disabled]="sending">
-          {{ prompt }}
+    <div class="quick-actions-bar">
+      <button mat-stroked-button type="button" class="quick-actions-toggle" (click)="quickActionsOpen = !quickActionsOpen" [attr.aria-expanded]="quickActionsOpen">
+        <mat-icon>{{ quickActionsOpen ? 'expand_more' : 'bolt' }}</mat-icon>
+        <span>Quick actions</span>
+      </button>
+    </div>
+
+    <div class="prompt-strip" *ngIf="quickActionsOpen" aria-label="Suggested prompts">
+      <ng-container *ngFor="let prompt of suggestedPrompts">
+        <button mat-stroked-button type="button" class="prompt-chip" (click)="usePrompt(prompt); quickActionsOpen = false" [disabled]="sending">
+          <mat-icon>north_east</mat-icon>
+          <span>{{ prompt }}</span>
         </button>
-      }
+      </ng-container>
     </div>
 
     <div class="composer">
@@ -78,8 +105,12 @@
           (keydown.enter)="handleEnter($event)"
           (paste)="handlePaste($event)"
           placeholder="Ask about an invoice, ledger balance, customer, product, or report"></textarea>
-        <mat-hint align="end">{{ messageControl.value.length }}/2000</mat-hint>
+        <mat-hint align="end">{{ (messageControl.value || '').length }}/2000</mat-hint>
       </mat-form-field>
+
+      <button *ngIf="sending" mat-mini-fab color="warn" type="button" class="stop-button" matTooltip="Stop streaming" (click)="stopStreaming()">
+        <mat-icon>stop</mat-icon>
+      </button>
 
       <button
         mat-fab
@@ -94,3 +125,5 @@
     </div>
   </mat-card>
 </section>
+
+

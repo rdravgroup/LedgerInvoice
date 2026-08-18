@@ -291,19 +291,84 @@ mat-hint.strength-strong { color: var(--md-sys-color-success) !important; }
   border-bottom: 1px solid var(--md-sys-color-outline) !important;
   margin-bottom: 4px;
 }
-.ai-chat-dialog-panel .mat-mdc-dialog-container,
-.ai-chat-dialog-panel .mdc-dialog__container,
-.ai-chat-dialog-panel .mdc-dialog__surface {
+.ai-chat-dialog-panel .mat-mdc-dialog-surface {
+  padding: 0 !important;
+}
+
+/* Anchored dialog variant: bottom-right floating card above FAB */
+.ai-chat-dialog-panel.anchored .mdc-dialog__container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  padding: 0 18px 18px 0;
+  pointer-events: none; /* allow clicks through padding area */
+}
+
+.ai-chat-dialog-panel.anchored .mdc-dialog__surface,
+.ai-chat-dialog-panel.anchored .mat-mdc-dialog-surface {
+  pointer-events: auto;
+  width: min(420px, calc(100vw - 32px));
+  height: auto;
+  max-height: 72vh;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.99));
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.22), 0 10px 18px rgba(15, 23, 42, 0.08);
+}
+
+/* Keep the existing full-screen dialog behaviour when no anchored class is used */
+.ai-chat-dialog-panel.fullscreen .mdc-dialog__container,
+.ai-chat-dialog-panel.fullscreen .mdc-dialog__surface {
   width: 100%;
   height: 100%;
 }
 
-.ai-chat-dialog-panel .mdc-dialog__surface {
-  border-radius: 8px !important;
-  overflow: hidden !important;
+
+/* AI Chat compact anchored widget */
+.ai-chat-dialog-panel.anchored .mdc-dialog__container {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  padding: 0 18px 18px 0;
+  pointer-events: none;
 }
 
-.ai-chat-dialog-panel .mat-mdc-dialog-surface {
-  padding: 0 !important;
+.ai-chat-dialog-panel.anchored .mdc-dialog__surface,
+.ai-chat-dialog-panel.anchored .mat-mdc-dialog-surface {
+  pointer-events: auto;
+  width: 420px !important;
+  height: 560px !important;
+  max-width: calc(100vw - 24px) !important;
+  max-height: calc(100vh - 104px) !important;
+  resize: both;
+  overflow: hidden !important;
+  border-radius: 18px !important;
+  border: 1px solid rgba(148, 163, 184, 0.28) !important;
+  box-shadow: 0 20px 55px rgba(15, 23, 42, 0.28), 0 8px 16px rgba(15, 23, 42, 0.12) !important;
+  transform-origin: bottom right;
+  animation: aiWidgetIn 180ms ease-out both;
+}
+
+@keyframes aiWidgetIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 600px) {
+  .ai-chat-dialog-panel.anchored .mdc-dialog__container {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .ai-chat-dialog-panel.anchored .mdc-dialog__surface,
+  .ai-chat-dialog-panel.anchored .mat-mdc-dialog-surface {
+    width: 100vw !important;
+    height: min(76vh, 620px) !important;
+    max-width: 100vw !important;
+    max-height: calc(100vh - 16px) !important;
+    resize: none;
+    border-radius: 18px 18px 0 0 !important;
+  }
 }
 
