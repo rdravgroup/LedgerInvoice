@@ -17,6 +17,7 @@ export interface Company {
   accountNumber?: string;
   ifsc?: string;
   accountAddress?: string;
+  salesInvoiceRateMode?: 'with_tax' | 'without_tax' | string;
   createdDate?: string;
   updatedDate?: string;
   uniqueKeyID?: string;
@@ -26,3 +27,4 @@ export interface MapCompanyCodeRequest {
   companyId: string;
   username: string;
 }
+

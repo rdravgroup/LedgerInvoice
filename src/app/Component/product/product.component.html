@@ -80,6 +80,18 @@
           <mat-icon matPrefix>tag</mat-icon>
         </mat-form-field>
 
+                <mat-form-field appearance="outline">
+          <mat-label>Rate Without Tax</mat-label>
+          <input matInput type="number" formControlName="rateWithoutTax" placeholder="0.00">
+          <mat-icon matPrefix>currency_rupee</mat-icon>
+          <mat-error *ngIf="productForm.get('rateWithoutTax')?.hasError('required')">
+            Rate without tax is required
+          </mat-error>
+          <mat-error *ngIf="productForm.get('rateWithoutTax')?.hasError('min')">
+            Rate must be 0 or greater
+          </mat-error>
+        </mat-form-field>
+
         <mat-form-field appearance="outline">
           <mat-label>Rate With Tax</mat-label>
           <input matInput type="number" formControlName="rateWithTax" placeholder="0.00">
@@ -123,16 +135,7 @@
           </div>
         </div>
         <div class="section-grid">
-          <mat-form-field appearance="outline">
-            <mat-label>Rate Without Tax</mat-label>
-            <input matInput type="number" formControlName="rateWithoutTax" placeholder="0.00">
-            <mat-icon matPrefix>currency_rupee</mat-icon>
-            <mat-error *ngIf="productForm.get('rateWithoutTax')?.hasError('min')">
-              Value cannot be negative
-            </mat-error>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
+<mat-form-field appearance="outline">
             <mat-label>CGST Rate (%)</mat-label>
             <input matInput type="number" formControlName="cgstRate" placeholder="0">
             <mat-icon matPrefix>percent</mat-icon>
@@ -249,3 +252,6 @@
     </form>
   </div>
 </div>
+
+
+

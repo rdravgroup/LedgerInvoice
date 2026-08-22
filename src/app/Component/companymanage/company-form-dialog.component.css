@@ -1,47 +1,220 @@
-/* company-form-dialog.component.css */
-.cfd-wrap { display: flex; flex-direction: column; }
+.cfd-wrap {
+  display: flex;
+  flex-direction: column;
+  max-height: min(88vh, 820px);
+  background: #f8fafc;
+  color: #0f172a;
+  overflow: hidden;
+}
 
 .cfd-header {
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 20px 24px 16px;
-  border-bottom: 1px solid #e2e8f0;
-  background: linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);
-  color: white; flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px 24px;
+  color: #ffffff;
+  background: linear-gradient(135deg, #0f766e 0%, #2563eb 100%);
+  flex-shrink: 0;
 }
+
 .cfd-header-icon {
-  width: 44px; height: 44px; border-radius: 12px;
-  background: rgba(255,255,255,.2);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.18);
+  display: grid;
+  place-items: center;
+  flex: 0 0 46px;
 }
-.cfd-header-icon mat-icon { font-size: 24px !important; color: white !important; }
-.cfd-title { font-size: 18px; font-weight: 700; margin: 0 0 2px; letter-spacing: -.2px; }
-.cfd-sub   { font-size: 12px; opacity: .8; margin: 0; }
-.cfd-close { margin-left: auto; color: rgba(255,255,255,.9) !important; }
 
-.cfd-content { padding: 16px 24px !important; overflow-y: auto; }
+.cfd-header-icon mat-icon {
+  color: #ffffff !important;
+  font-size: 25px;
+  width: 25px;
+  height: 25px;
+}
 
-.cfd-form { display: flex; flex-direction: column; gap: 0; }
-.cfd-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
-.cfd-field      { width: 100%; }
-.cfd-field-full { width: 100%; }
-.req { color: #dc2626; font-weight: 700; }
+.cfd-heading {
+  min-width: 0;
+  flex: 1;
+}
+
+.cfd-eyebrow {
+  margin: 0 0 3px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  opacity: 0.84;
+}
+
+.cfd-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.cfd-sub {
+  margin: 5px 0 0;
+  max-width: 620px;
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.cfd-close {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.14) !important;
+  flex: 0 0 auto;
+}
+
+.cfd-content {
+  padding: 18px 22px !important;
+  overflow-y: auto;
+}
+
+.cfd-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cfd-section {
+  padding: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+}
+
+.cfd-section-primary {
+  border-color: rgba(37, 99, 235, 0.22);
+}
+
+.cfd-section-title {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.cfd-section-title mat-icon {
+  width: 28px;
+  height: 28px;
+  font-size: 20px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.cfd-section-title h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.cfd-section-title p {
+  margin: 3px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.cfd-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 14px;
+}
+
+.cfd-col-2 {
+  grid-column: span 2;
+}
+
+.cfd-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+}
+
+.cfd-uppercase {
+  text-transform: uppercase;
+}
 
 .cfd-actions {
-  padding: 14px 24px 16px !important;
-  border-top: 1px solid #e2e8f0;
+  padding: 14px 22px 18px !important;
+  border-top: 1px solid rgba(148, 163, 184, 0.24);
   display: flex !important;
   justify-content: flex-end !important;
   gap: 10px;
+  background: #ffffff;
   flex-shrink: 0;
 }
-.cfd-btn-cancel, .cfd-btn-save { height: 44px !important; border-radius: 10px !important; font-weight: 700 !important; gap: 6px; display: flex !important; align-items: center !important; }
-.cfd-btn-save { min-width: 160px; }
-.btn-spin { display: inline-block; }
 
-@media (max-width: 599px) {
-  .cfd-header { padding: 16px; }
-  .cfd-content { padding: 12px 16px !important; }
-  .cfd-row { grid-template-columns: 1fr; }
-  .cfd-actions { padding: 12px 16px !important; flex-direction: column; }
-  .cfd-btn-cancel, .cfd-btn-save { width: 100% !important; justify-content: center !important; }
+.cfd-btn-cancel,
+.cfd-btn-save {
+  min-height: 42px !important;
+  border-radius: 8px !important;
+  font-weight: 800 !important;
+  gap: 6px;
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+.cfd-btn-save {
+  min-width: 168px;
+}
+
+.btn-spin {
+  display: inline-block;
+  margin-right: 4px;
+}
+
+@media (max-width: 760px) {
+  .cfd-wrap {
+    max-height: 100vh;
+  }
+
+  .cfd-header {
+    padding: 16px;
+  }
+
+  .cfd-header-icon {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+  }
+
+  .cfd-title {
+    font-size: 18px;
+  }
+
+  .cfd-sub {
+    font-size: 12px;
+  }
+
+  .cfd-content {
+    padding: 14px !important;
+  }
+
+  .cfd-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cfd-col-2 {
+    grid-column: span 1;
+  }
+
+  .cfd-actions {
+    padding: 12px 14px 14px !important;
+    flex-direction: column-reverse;
+  }
+
+  .cfd-btn-cancel,
+  .cfd-btn-save {
+    width: 100% !important;
+    justify-content: center !important;
+  }
 }

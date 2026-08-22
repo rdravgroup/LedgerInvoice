@@ -119,7 +119,7 @@ export class CompanyManageComponent implements OnInit, AfterViewInit {
 
   openCreate(): void {
     const cfg: any = {
-      width: this.isMobile ? '100%' : '720px',
+      width: this.isMobile ? '100%' : '920px',
       data: null
     };
     this.dialog.open(CompanyFormDialogComponent, cfg).afterClosed().subscribe((res) => {
@@ -137,14 +137,14 @@ export class CompanyManageComponent implements OnInit, AfterViewInit {
     // Fetch full company details before opening the edit dialog so address and other fields are present
     this.companyService.getCompanyById(item.companyId).subscribe({
       next: (company) => {
-        const cfg: any = { width: this.isMobile ? '100%' : '720px', data: { company } };
+        const cfg: any = { width: this.isMobile ? '100%' : '920px', maxWidth: this.isMobile ? '100vw' : '96vw', data: { company } };
         this.dialog.open(CompanyFormDialogComponent, cfg).afterClosed().subscribe((res) => {
           this.handleDialogResult(res);
         });
       },
       error: () => {
         // Fallback to opening with list item if detailed fetch fails
-        const cfg: any = { width: this.isMobile ? '100%' : '720px', data: { company: item } };
+        const cfg: any = { width: this.isMobile ? '100%' : '920px', maxWidth: this.isMobile ? '100vw' : '96vw', data: { company: item } };
         this.dialog.open(CompanyFormDialogComponent, cfg).afterClosed().subscribe((res) => {
           this.handleDialogResult(res);
         });
@@ -318,3 +318,4 @@ export class CompanyManageComponent implements OnInit, AfterViewInit {
   }
 
 }
+

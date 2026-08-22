@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { AfterViewChecked, Component, ElementRef, OnInit, Optional, ViewChild } from '@angular/core';
+import { AfterViewChecked, Component, ElementRef, OnDestroy, OnInit, Optional, ViewChild } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -18,7 +18,7 @@ import { ChatMessage } from '../../_model/ai-chat.model';
   templateUrl: './ai-chat.component.html',
   styleUrls: ['./ai-chat.component.css']
 })
-export class AiChatComponent implements AfterViewChecked {
+export class AiChatComponent implements AfterViewChecked, OnDestroy {
   @ViewChild('messagesViewport') private messagesViewport?: ElementRef<HTMLDivElement>;
 
   messageControl = new FormControl('', {
@@ -35,13 +35,22 @@ export class AiChatComponent implements AfterViewChecked {
     }
   ];
 
-  suggestedPrompts = [
-    'Total sales as of now',
-    'How many invoices were created in the past month?',
-    'Show month wise sales',
-    'Show outstanding ageing',
-    'Show low stock products',
-    'Show purchase summary this month'
+  quickActionGroups = [
+    {
+      title: 'Sales',
+      icon: 'trending_up',
+      prompts: ['Business this month from sales and receivables', 'Total sales as of now', 'Show month wise sales']
+    },
+    {
+      title: 'Invoices',
+      icon: 'receipt_long',
+      prompts: ['How many invoices were created in the past month?', 'Create a sales invoice for 5 laptops', 'Show outstanding ageing']
+    },
+    {
+      title: 'Inventory',
+      icon: 'inventory_2',
+      prompts: ['Show low stock products', 'Show product summary', 'Show purchase summary this month']
+    }
   ];
 
   // session management
@@ -51,9 +60,14 @@ export class AiChatComponent implements AfterViewChecked {
   sending = false;
   isMaximized = false;
   quickActionsOpen = false;
+  isDragging = false;
   private shouldScroll = true;
   private currentAbortController?: AbortController | null = null;
   private storageKey = '';
+  private dragOffsetX = 0;
+  private dragOffsetY = 0;
+  private readonly dragMoveHandler = (event: PointerEvent) => this.onDragMove(event);
+  private readonly dragEndHandler = () => this.stopDrag();
 
   constructor(
     private aiChatService: AiChatService,
@@ -132,6 +146,11 @@ export class AiChatComponent implements AfterViewChecked {
     if (!this.shouldScroll) return;
     this.scrollToBottom();
     this.shouldScroll = false;
+  }
+
+  ngOnDestroy(): void {
+    this.stopDrag();
+    try { this.currentAbortController?.abort(); } catch { /* ignore */ }
   }
 
   sendMessage(event?: Event): void {
@@ -292,6 +311,50 @@ export class AiChatComponent implements AfterViewChecked {
     event.stopPropagation();
   }
 
+
+  startDrag(event: PointerEvent): void {
+    if (!this.dialogRef || this.isMaximized || event.button !== 0) return;
+
+    const target = event.target as HTMLElement | null;
+    if (target?.closest('button, a, input, textarea, mat-select, .no-drag')) return;
+
+    const pane = this.getDialogPane();
+    if (!pane) return;
+
+    const rect = pane.getBoundingClientRect();
+    this.dragOffsetX = event.clientX - rect.left;
+    this.dragOffsetY = event.clientY - rect.top;
+    this.isDragging = true;
+    document.body.classList.add('ai-chat-dragging');
+    window.addEventListener('pointermove', this.dragMoveHandler);
+    window.addEventListener('pointerup', this.dragEndHandler, { once: true });
+    event.preventDefault();
+  }
+
+  private onDragMove(event: PointerEvent): void {
+    if (!this.dialogRef || !this.isDragging) return;
+
+    const pane = this.getDialogPane();
+    const width = pane?.offsetWidth || 440;
+    const height = pane?.offsetHeight || 600;
+    const margin = 8;
+    const left = Math.min(Math.max(event.clientX - this.dragOffsetX, margin), window.innerWidth - width - margin);
+    const top = Math.min(Math.max(event.clientY - this.dragOffsetY, margin), window.innerHeight - height - margin);
+
+    this.dialogRef.updatePosition({ left: `${left}px`, top: `${top}px` });
+  }
+
+  private stopDrag(): void {
+    if (!this.isDragging) return;
+    this.isDragging = false;
+    document.body.classList.remove('ai-chat-dragging');
+    window.removeEventListener('pointermove', this.dragMoveHandler);
+    window.removeEventListener('pointerup', this.dragEndHandler);
+  }
+
+  private getDialogPane(): HTMLElement | null {
+    return this.messagesViewport?.nativeElement.closest('.cdk-overlay-pane') as HTMLElement | null;
+  }
   trackMessage(_: number, message: ChatMessage): string {
     return message.id;
   }
@@ -301,12 +364,12 @@ export class AiChatComponent implements AfterViewChecked {
 
     this.isMaximized = !this.isMaximized;
     if (this.isMaximized) {
-      this.dialogRef.updateSize('min(960px, calc(100vw - 32px))', 'min(760px, calc(100vh - 32px))');
+      this.dialogRef.updateSize('min(980px, calc(100vw - 32px))', 'min(780px, calc(100vh - 32px))');
       this.dialogRef.updatePosition({ right: '24px', bottom: '24px' });
       return;
     }
 
-    this.dialogRef.updateSize('420px', '560px');
+    this.dialogRef.updateSize('440px', '600px');
     this.dialogRef.updatePosition({ right: '24px', bottom: '88px' });
   }
 
@@ -320,6 +383,10 @@ export class AiChatComponent implements AfterViewChecked {
     element.scrollTop = element.scrollHeight;
   }
 }
+
+
+
+
 
 
 

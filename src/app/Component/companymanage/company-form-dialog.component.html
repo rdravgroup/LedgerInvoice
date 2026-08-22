@@ -1,94 +1,181 @@
-<!-- company-form-dialog.component.html — MD3 redesign -->
-<div class="cfd-wrap card p-3">
+<div class="cfd-wrap">
   <div class="cfd-header">
     <div class="cfd-header-icon">
-      <mat-icon>{{ isEdit ? 'edit' : 'add_business' }}</mat-icon>
+      <mat-icon>{{ isEdit ? 'edit_note' : 'add_business' }}</mat-icon>
     </div>
-    <div>
+    <div class="cfd-heading">
+      <p class="cfd-eyebrow">Company profile</p>
       <h2 class="cfd-title">{{ isEdit ? 'Edit Company' : 'Create Company' }}</h2>
-      <p class="cfd-sub">{{ isEdit ? 'Update company information' : 'Register a new company' }}</p>
+      <p class="cfd-sub">{{ isEdit ? 'Update registered contact, address, tax, and bank details.' : 'Add company details used across invoices, reports, and billing documents.' }}</p>
     </div>
-    <button mat-icon-button mat-dialog-close class="cfd-close" aria-label="Close">
+    <button mat-icon-button type="button" mat-dialog-close class="cfd-close" aria-label="Close">
       <mat-icon>close</mat-icon>
     </button>
   </div>
 
   <mat-dialog-content class="cfd-content">
     <form [formGroup]="form" class="cfd-form" novalidate>
+      <section class="cfd-section cfd-section-primary">
+        <div class="cfd-section-title">
+          <mat-icon>badge</mat-icon>
+          <div>
+            <h3>Identity</h3>
+            <p>Basic registered company information.</p>
+          </div>
+        </div>
 
-      <!-- Name -->
-      <mat-form-field appearance="outline" class="cfd-field-full">
-        <mat-label>Company Name <span class="req">*</span></mat-label>
-        <input matInput formControlName="name" placeholder="Enter company name" />
-        <mat-icon matPrefix>business</mat-icon>
-        <mat-error *ngIf="form.get('name')?.hasError('required')">Name is required</mat-error>
-      </mat-form-field>
+        <div class="cfd-grid">
+          <mat-form-field appearance="outline" class="cfd-col-2">
+            <mat-label>Company Name</mat-label>
+            <input matInput formControlName="name" placeholder="Enter company name" />
+            <mat-icon matPrefix>business</mat-icon>
+            <mat-error *ngIf="form.get('name')?.hasError('required')">Company name is required</mat-error>
+          </mat-form-field>
 
-      <!-- Email + Mobile -->
-      <div class="cfd-row">
-        <mat-form-field appearance="outline" class="cfd-field">
-          <mat-label>Email <span class="req">*</span></mat-label>
-          <input matInput formControlName="emailId" type="email" />
-          <mat-icon matPrefix>mail_outline</mat-icon>
-          <mat-error *ngIf="form.get('emailId')?.hasError('required')">Required</mat-error>
-          <mat-error *ngIf="form.get('emailId')?.hasError('email')">Invalid email</mat-error>
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="cfd-field">
-          <mat-label>Mobile <span class="req">*</span></mat-label>
-          <input matInput formControlName="mobileNo" type="tel" inputmode="tel" />
-          <mat-icon matPrefix>phone</mat-icon>
-          <mat-error *ngIf="form.get('mobileNo')?.hasError('required')">Required</mat-error>
-        </mat-form-field>
-      </div>
+          <mat-form-field appearance="outline">
+            <mat-label>Company Code</mat-label>
+            <input matInput formControlName="companyId" readonly />
+            <mat-icon matPrefix>tag</mat-icon>
+          </mat-form-field>
 
-      <!-- GST + Bank -->
-      <div class="cfd-row">
-        <mat-form-field appearance="outline" class="cfd-field">
-          <mat-label>GST Number</mat-label>
-          <input matInput formControlName="gstNumber" style="font-family:monospace" />
-          <mat-icon matPrefix>receipt</mat-icon>
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="cfd-field">
-          <mat-label>Bank Name</mat-label>
-          <input matInput formControlName="bankName" />
-          <mat-icon matPrefix>account_balance</mat-icon>
-        </mat-form-field>
-      </div>
+          <mat-form-field appearance="outline">
+            <mat-label>GST Number</mat-label>
+            <input matInput formControlName="gstNumber" class="cfd-mono" />
+            <mat-icon matPrefix>receipt_long</mat-icon>
+          </mat-form-field>
+        </div>
+      </section>
 
-      <!-- Account + IFSC -->
-      <div class="cfd-row">
-        <mat-form-field appearance="outline" class="cfd-field">
-          <mat-label>Account Number</mat-label>
-          <input matInput formControlName="accountNumber" style="font-family:monospace" />
-          <mat-icon matPrefix>credit_card</mat-icon>
-        </mat-form-field>
-        <mat-form-field appearance="outline" class="cfd-field">
-          <mat-label>IFSC Code</mat-label>
-          <input matInput formControlName="ifsc" style="font-family:monospace;text-transform:uppercase" />
-          <mat-icon matPrefix>swap_horiz</mat-icon>
-        </mat-form-field>
-      </div>
+      <section class="cfd-section">
+        <div class="cfd-section-title">
+          <mat-icon>contact_phone</mat-icon>
+          <div>
+            <h3>Contact</h3>
+            <p>Email and phone numbers shown in company records.</p>
+          </div>
+        </div>
 
-      <!-- Address -->
-      <mat-form-field appearance="outline" class="cfd-field-full">
-        <mat-label>Address <span class="req">*</span></mat-label>
-        <textarea matInput rows="3" formControlName="addressDetails" placeholder="Enter full address"></textarea>
-        <mat-icon matPrefix>location_on</mat-icon>
-        <mat-error *ngIf="form.get('addressDetails')?.hasError('required')">Address is required</mat-error>
-      </mat-form-field>
+        <div class="cfd-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Email</mat-label>
+            <input matInput formControlName="emailId" type="email" placeholder="company@example.com" />
+            <mat-icon matPrefix>mail_outline</mat-icon>
+            <mat-error *ngIf="form.get('emailId')?.hasError('required')">Email is required</mat-error>
+            <mat-error *ngIf="form.get('emailId')?.hasError('email')">Enter a valid email</mat-error>
+          </mat-form-field>
 
+          <mat-form-field appearance="outline">
+            <mat-label>Mobile</mat-label>
+            <input matInput formControlName="mobileNo" type="tel" inputmode="tel" />
+            <mat-icon matPrefix>phone</mat-icon>
+            <mat-error *ngIf="form.get('mobileNo')?.hasError('required')">Mobile number is required</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Alternate Mobile</mat-label>
+            <input matInput formControlName="alternateMobile" type="tel" inputmode="tel" />
+            <mat-icon matPrefix>phone_iphone</mat-icon>
+          </mat-form-field>
+        </div>
+      </section>
+
+      <section class="cfd-section">
+        <div class="cfd-section-title">
+          <mat-icon>location_on</mat-icon>
+          <div>
+            <h3>Address</h3>
+            <p>Used on invoices and company documents.</p>
+          </div>
+        </div>
+
+        <div class="cfd-grid">
+          <mat-form-field appearance="outline" class="cfd-col-2">
+            <mat-label>Full Address</mat-label>
+            <textarea matInput rows="4" formControlName="addressDetails" placeholder="Building, street, area, city, PIN"></textarea>
+            <mat-icon matPrefix>home_work</mat-icon>
+            <mat-error *ngIf="form.get('addressDetails')?.hasError('required')">Address is required</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Country</mat-label>
+            <mat-select formControlName="countryCode" (selectionChange)="onCountryChange($event.value)">
+              <mat-option *ngFor="let country of countryList" [value]="country.countryCode">
+                {{ country.countryName }} ({{ country.countryCode }})
+              </mat-option>
+            </mat-select>
+            <mat-icon matPrefix>flag</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>State</mat-label>
+            <mat-select formControlName="stateCode" (selectionChange)="onStateChange($event.value)" [disabled]="!stateList.length">
+              <mat-option *ngFor="let state of stateList" [value]="state.stateCode">
+                {{ state.stateName }} ({{ state.stateCode }})
+              </mat-option>
+            </mat-select>
+            <mat-icon matPrefix>pin_drop</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="cfd-col-2">
+            <mat-label>Sales Invoice Rate</mat-label>
+            <mat-select formControlName="salesInvoiceRateMode">
+              <mat-option value="without_tax">Rate Without Tax</mat-option>
+              <mat-option value="with_tax">Rate With Tax</mat-option>
+            </mat-select>
+            <mat-icon matPrefix>calculate</mat-icon>
+          </mat-form-field>
+        </div>
+      </section>
+
+      <section class="cfd-section">
+        <div class="cfd-section-title">
+          <mat-icon>account_balance</mat-icon>
+          <div>
+            <h3>Bank Details</h3>
+            <p>Optional payment details printed when available.</p>
+          </div>
+        </div>
+
+        <div class="cfd-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Bank Name</mat-label>
+            <input matInput formControlName="bankName" />
+            <mat-icon matPrefix>account_balance</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Account Number</mat-label>
+            <input matInput formControlName="accountNumber" class="cfd-mono" />
+            <mat-icon matPrefix>credit_card</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>IFSC Code</mat-label>
+            <input matInput formControlName="ifsc" class="cfd-mono cfd-uppercase" />
+            <mat-icon matPrefix>swap_horiz</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Bank Branch / Address</mat-label>
+            <input matInput formControlName="accountAddress" />
+            <mat-icon matPrefix>location_city</mat-icon>
+          </mat-form-field>
+        </div>
+      </section>
     </form>
   </mat-dialog-content>
 
   <mat-dialog-actions class="cfd-actions">
-    <button mat-stroked-button (click)="cancel()" class="cfd-btn-cancel">
-      <mat-icon>close</mat-icon> Cancel
+    <button mat-stroked-button type="button" (click)="cancel()" class="cfd-btn-cancel">
+      <mat-icon>close</mat-icon>
+      <span>Cancel</span>
     </button>
-    <button mat-flat-button color="primary" (click)="save()"
-            [disabled]="form.invalid || submitting" class="cfd-btn-save">
+    <button mat-flat-button color="primary" type="button" (click)="save()" [disabled]="form.invalid || submitting" class="cfd-btn-save">
       <mat-spinner *ngIf="submitting" diameter="18" class="btn-spin"></mat-spinner>
       <mat-icon *ngIf="!submitting">{{ isEdit ? 'save' : 'add' }}</mat-icon>
-      <span>{{ submitting ? 'Saving…' : (isEdit ? 'Save Changes' : 'Create Company') }}</span>
+      <span>{{ submitting ? 'Saving...' : (isEdit ? 'Save Changes' : 'Create Company') }}</span>
     </button>
   </mat-dialog-actions>
 </div>
+
+

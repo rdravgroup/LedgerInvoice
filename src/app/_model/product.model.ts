@@ -143,3 +143,4 @@ export interface SalesProductDTO {
   cgstRate: number | null;
   scgstRate: number | null;
 }
+

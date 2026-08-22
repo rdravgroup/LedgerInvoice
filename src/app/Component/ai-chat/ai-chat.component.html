@@ -1,11 +1,11 @@
 <section class="ai-chat-page" [class.dialog-mode]="isDialogMode" [class.maximized]="isMaximized" (click)="stopDialogEvent($event)">
-  <header class="chat-header">
+  <header class="chat-header" [class.dragging]="isDragging" (pointerdown)="startDrag($event)">
     <div>
       <p class="eyebrow">AI Assistant</p>
       <h1>CodeXClear ERP Chat</h1>
       <p class="subtitle">Ask practical questions about billing, ledger, customers, products, purchases, and reports.</p>
     </div>
-    <div class="chat-header-actions">
+    <div class="chat-header-actions no-drag">
       <div class="status-chip">
         <span class="status-dot"></span>
         Ready
@@ -78,23 +78,37 @@
       </article>
     </div>
 
-    <div class="quick-actions-bar">
-      <button mat-stroked-button type="button" class="quick-actions-toggle" (click)="quickActionsOpen = !quickActionsOpen" [attr.aria-expanded]="quickActionsOpen">
-        <mat-icon>{{ quickActionsOpen ? 'expand_more' : 'bolt' }}</mat-icon>
-        <span>Quick actions</span>
-      </button>
-    </div>
-
-    <div class="prompt-strip" *ngIf="quickActionsOpen" aria-label="Suggested prompts">
-      <ng-container *ngFor="let prompt of suggestedPrompts">
-        <button mat-stroked-button type="button" class="prompt-chip" (click)="usePrompt(prompt); quickActionsOpen = false" [disabled]="sending">
-          <mat-icon>north_east</mat-icon>
-          <span>{{ prompt }}</span>
+    <div class="prompt-popover no-drag" *ngIf="quickActionsOpen" aria-label="Suggested prompts">
+      <div class="prompt-popover-header">
+        <div>
+          <span class="prompt-kicker">Assistant shortcuts</span>
+          <strong>Choose a quick action</strong>
+        </div>
+        <button mat-icon-button type="button" (click)="quickActionsOpen = false" matTooltip="Close quick actions" aria-label="Close quick actions">
+          <mat-icon>close</mat-icon>
         </button>
-      </ng-container>
+      </div>
+
+      <div class="prompt-lanes">
+        <section class="prompt-group" *ngFor="let group of quickActionGroups">
+          <div class="prompt-group-title">
+            <mat-icon>{{ group.icon }}</mat-icon>
+            <span>{{ group.title }}</span>
+          </div>
+          <div class="prompt-items">
+            <button mat-stroked-button type="button" class="prompt-chip" *ngFor="let prompt of group.prompts" (click)="usePrompt(prompt); quickActionsOpen = false" [disabled]="sending">
+              <mat-icon>north_east</mat-icon>
+              <span>{{ prompt }}</span>
+            </button>
+          </div>
+        </section>
+      </div>
     </div>
 
-    <div class="composer">
+    <div class="composer no-drag">
+      <button mat-mini-fab type="button" class="quick-logo-button" [class.active]="quickActionsOpen" (click)="quickActionsOpen = !quickActionsOpen" [attr.aria-expanded]="quickActionsOpen" matTooltip="Quick actions" aria-label="Open quick actions">
+        <mat-icon>{{ quickActionsOpen ? 'close' : 'auto_awesome_motion' }}</mat-icon>
+      </button>
       <mat-form-field appearance="outline" class="message-field">
         <mat-label>Message</mat-label>
         <textarea
@@ -125,5 +139,7 @@
     </div>
   </mat-card>
 </section>
+
+
 
 

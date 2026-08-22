@@ -16,7 +16,6 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../_service/authentication.service';
 import { SelectedCompanyService } from '../../_service/selected-company.service';
-import { UserService } from '../../_service/user.service';
 import { IpService } from '../../_service/ip.service';
 import { takeUntil } from 'rxjs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -30,6 +29,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatButtonModule } from '@angular/material/button';
+import { CompanyService } from '../../_service/company.service';
 import { DecimalFormatterService } from '../../utils/decimal-formatter.service';
 import { APP_CONSTANTS } from '../../_model/app-constants';
 import { PaymentDialogComponent } from '../ledger/payment-dialog/payment-dialog.component';
@@ -111,6 +111,9 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
   private totalAmountSubject = new BehaviorSubject<number>(0);
   outstandingAmount    = 0;
   isLoadingOutstanding = false;
+  salesInvoiceRateMode: 'with_tax' | 'without_tax' = 'without_tax';
+  private companyStateCode = '';
+  private selectedCustomerStateCode = '';
 
   constructor(
     private builder:  FormBuilder,
@@ -124,6 +127,7 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
     private selectedCompanyService: SelectedCompanyService,
     private ipService:   IpService,
     private cdr:      ChangeDetectorRef,
+    private companyService: CompanyService,
     public  decimalFormatter: DecimalFormatterService,
     private dialog:   MatDialog,
     private bottomSheet: MatBottomSheet
@@ -136,6 +140,7 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
     const initialCompany = this.getEffectiveCompanyId();
     this.companyId = initialCompany;
     this.invoiceform.patchValue({ companyId: initialCompany }, { emitEvent: false });
+    this.loadCompanyRateMode(initialCompany);
 
     this.GetCustomers();
     this.GetProducts();
@@ -144,6 +149,7 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
       const eff = this.getEffectiveCompanyId();
       this.companyId = eff;
       this.invoiceform.patchValue({ companyId: eff }, { emitEvent: false });
+      this.loadCompanyRateMode(eff);
       this.GetCustomers();
       this.GetProducts();
     });
@@ -178,7 +184,9 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
       totalAmount: this.builder.control(0), grandTotalAmount: this.builder.control(0),
       cgstRate: this.builder.control(0), sgstRate: this.builder.control(0),
       cgstAmount: this.builder.control(0), sgstAmount: this.builder.control(0),
-      totalGstAmount: this.builder.control(0),
+      igstAmount: this.builder.control(0), totalGstAmount: this.builder.control(0),
+      gstCalculationType: this.builder.control('exclusive', Validators.required),
+      isInterStateSupply: this.builder.control(false),
       createDate: this.builder.control({ value: new Date().toISOString(), disabled: true }),
       updateDate: this.builder.control({ value: new Date().toISOString(), disabled: true }),
       createIp: this.builder.control(''), updateIp: this.builder.control(''),
@@ -192,6 +200,9 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
       quantity:    this.builder.control(1, [Validators.required, Validators.min(0.001)]),
       rateWithTax: this.builder.control(0, [Validators.required, Validators.min(0.01)]),
       amount:      this.builder.control({ value: 0, disabled: true }),
+      gstRate:     this.builder.control(0),
+      cgstRate:    this.builder.control(0),
+      sgstRate:    this.builder.control(0),
     });
     this.mobileItemForm.get('quantity')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.recalcMobileAmount());
     this.mobileItemForm.get('rateWithTax')?.valueChanges.pipe(takeUntil(this.destroy$)).subscribe(() => this.recalcMobileAmount());
@@ -200,7 +211,9 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
   private recalcMobileAmount() {
     const q = +(this.mobileItemForm.get('quantity')?.value  || 0);
     const r = +(this.mobileItemForm.get('rateWithTax')?.value || 0);
-    this.mobileItemForm.get('amount')?.setValue(Math.round(q * r * 1000) / 1000, { emitEvent: false });
+    const gst = +(this.mobileItemForm.get('gstRate')?.value || 0);
+    const gross = this.calculateGrossAmount(q, r, gst);
+    this.mobileItemForm.get('amount')?.setValue(Math.round(gross * 1000) / 1000, { emitEvent: false });
   }
 
   SetEditInfo(invoiceno: any) {
@@ -217,6 +230,7 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
           customerId: d.customerId||'', destination: d.destination||'', remark: d.remark||'',
           invoiceDate, companyId: d.companyId||'', dispatchedThrough: d.dispatchedThrough||'',
           deliveryNote: d.deliveryNote||'', totalAmount: d.totalAmount||0,
+          gstCalculationType: d.gstCalculationType || this.currentGstMode, isInterStateSupply: !!d.isInterStateSupply,
         });
         this.selectedInvoiceDate = invoiceDate;
         this.editinvoiceno = d.invoiceNumber;
@@ -235,7 +249,10 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
         pd.forEach((detail: any) => {
           const row = this.Generaterow();
           row.patchValue({ productId: detail.productId, quantity: Number(detail.quantity||0),
-            rateWithTax: Number(detail.rateWithTax||0), amount: Number(detail.amount||0) });
+            rateWithTax: Number(this.selectInvoiceLineRate(detail) || 0), amount: Number(detail.amount||0),
+            taxableAmount: Number(detail.taxableAmount||0), gstRate: Number(detail.gstRate ?? detail.totalGstRate ?? 0),
+            cgstRate: Number(detail.cgstRate||0), sgstRate: Number(detail.sgstRate ?? detail.scgstRate ?? 0), igstRate: Number(detail.igstRate||0),
+            cgstAmount: Number(detail.cgstAmount||0), sgstAmount: Number(detail.sgstAmount||0), igstAmount: Number(detail.igstAmount||0) });
           this.invoicedetail.push(row); this.rowProductSearch.push('');
         });
         this.summarycalculation(); this.isLoading = false; this.cdr.detectChanges();
@@ -271,12 +288,21 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
 
   transformPayloadForBackend(formData: any): any {
     const now = new Date().toISOString();
-    const products = formData.sales_product_info.map((p: any) => ({
-      invoiceYear: formData.invoiceYear, productId: p.productId, quantity: p.quantity,
-      rateWithoutTax: p.rateWithoutTax||0, rateWithTax: p.rateWithTax, amount: p.amount,
-      createBy: formData.createBy, updateBy: formData.updateBy,
-      createDate: now, updateDate: now, createIp: 'string', updateIp: 'string'
-    }));
+    const products = formData.sales_product_info.map((p: any) => {
+      const inputRate = Number(p.rateWithTax || 0);
+      const quantity = Number(p.quantity || 0);
+      const grossRate = quantity > 0 ? Number(p.amount || 0) / quantity : inputRate;
+      return {
+        invoiceYear: formData.invoiceYear, productId: p.productId, quantity: p.quantity,
+        rateWithoutTax: this.isGstExclusive ? inputRate : Number(p.rateWithoutTax || 0),
+        rateWithTax: this.isGstExclusive ? grossRate : inputRate,
+        amount: p.amount,
+        taxableAmount: p.taxableAmount||0, gstRate: p.gstRate||0, cgstRate: p.cgstRate||0, sgstRate: p.sgstRate||0, igstRate: p.igstRate||0,
+        cgstAmount: p.cgstAmount||0, sgstAmount: p.sgstAmount||0, igstAmount: p.igstAmount||0,
+        createBy: formData.createBy, updateBy: formData.updateBy,
+        createDate: now, updateDate: now, createIp: 'string', updateIp: 'string'
+      };
+    });
     let invoiceDate: string;
     if (formData.invoiceDate instanceof Date) {
       const y = formData.invoiceDate.getFullYear();
@@ -290,7 +316,9 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
       dispatchedThrough: formData.dispatchedThrough||'Not Applicable', deliveryNote: formData.deliveryNote||'Not Applicable',
       remark: formData.remark||'', totalAmount: formData.totalAmount,
       grandTotalAmount: formData.grandTotalAmount||formData.totalAmount,
-      cgstRate: 0, sgstRate: 0, cgstAmount: 0, sgstAmount: 0, totalGstAmount: 0,
+      cgstRate: formData.cgstRate||0, sgstRate: formData.sgstRate||0, cgstAmount: formData.cgstAmount||0, sgstAmount: formData.sgstAmount||0,
+      igstAmount: formData.igstAmount||0, totalGstAmount: formData.totalGstAmount||0,
+      gstCalculationType: formData.gstCalculationType || this.currentGstMode, isInterStateSupply: !!formData.isInterStateSupply,
       createBy: formData.createBy, updateBy: formData.updateBy,
       createDate: now, updateDate: now, createIp: 'string', updateIp: 'string', products
     };
@@ -319,6 +347,14 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
       quantity:      this.builder.control(0),
       rateWithTax:   this.builder.control(0),
       amount:        this.builder.control(0),
+      taxableAmount: this.builder.control(0),
+      gstRate:       this.builder.control(0),
+      cgstRate:      this.builder.control(0),
+      sgstRate:      this.builder.control(0),
+      igstRate:      this.builder.control(0),
+      cgstAmount:    this.builder.control(0),
+      sgstAmount:    this.builder.control(0),
+      igstAmount:    this.builder.control(0),
     });
   }
 
@@ -331,7 +367,7 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
     }
     const companyId = this.invoiceform.get('companyId')?.value || this.getEffectiveCompanyId();
     this.service.GetProductbycode(code, companyId).subscribe({
-      next: (res) => { const p = res as any; if (p) { this.invoiceproduct.get('rateWithTax')?.setValue(p.rateWithTax||0); this.Itemcalculation(index); } },
+      next: (res) => { const p = res as any; if (p) { this.invoiceproduct.patchValue({ rateWithTax: this.selectProductRate(p), gstRate: p.totalGstRate ?? 0, cgstRate: p.cgstRate ?? 0, sgstRate: p.scgstRate ?? 0 }, { emitEvent: false }); this.Itemcalculation(index); } },
       error: () => { this.alert.error('Failed to fetch product details.','Error'); }
     });
   }
@@ -339,9 +375,7 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
   Itemcalculation(index: any) {
     this.invoicedetail  = this.invoiceform.get('sales_product_info') as FormArray;
     this.invoiceproduct = this.invoicedetail.at(index) as FormGroup;
-    const qty  = this.invoiceproduct.get('quantity')?.value;
-    const rate = this.invoiceproduct.get('rateWithTax')?.value;
-    this.invoiceproduct.get('amount')?.setValue(Math.round(qty*rate*1000)/1000);
+    this.patchLineCalculation(this.invoiceproduct);
     this.summarycalculation();
   }
 
@@ -350,13 +384,61 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
   }
 
   summarycalculation() {
-    const arr = this.invoiceform.getRawValue().sales_product_info;
-    const sum = arr.length ? Math.round(arr.reduce((a: number, x: any) => a+Number(x.amount), 0)*100)/100 : 0;
-    this.invoiceform.get('totalAmount')?.setValue(sum);
+    const arr = this.invoiceform.getRawValue().sales_product_info || [];
+    const sum = arr.length ? Math.round(arr.reduce((a: number, x: any) => a + Number(x.amount || 0), 0) * 100) / 100 : 0;
+    const cgst = Math.round(arr.reduce((a: number, x: any) => a + Number(x.cgstAmount || 0), 0) * 100) / 100;
+    const sgst = Math.round(arr.reduce((a: number, x: any) => a + Number(x.sgstAmount || 0), 0) * 100) / 100;
+    const igst = Math.round(arr.reduce((a: number, x: any) => a + Number(x.igstAmount || 0), 0) * 100) / 100;
+    this.invoiceform.patchValue({ totalAmount: sum, grandTotalAmount: sum, cgstAmount: cgst, sgstAmount: sgst, igstAmount: igst, totalGstAmount: cgst + sgst + igst }, { emitEvent: false });
     this.totalAmountSubject.next(sum);
     this.cdr.detectChanges();
   }
 
+  get isGstExclusive(): boolean { return this.currentGstMode === 'exclusive'; }
+  get rateColumnLabel(): string { return this.isGstExclusive ? 'Basic Rate' : 'Rate (incl. tax)'; }
+
+  get isInterStatePreview(): boolean {
+    if (this.companyStateCode && this.selectedCustomerStateCode) {
+      return this.companyStateCode.toLowerCase() !== this.selectedCustomerStateCode.toLowerCase();
+    }
+    return !!this.invoiceform?.get('isInterStateSupply')?.value;
+  }
+
+
+  private calculateGrossAmount(quantity: number, rate: number, gstRate: number): number {
+    const taxable = quantity * rate;
+    return this.isGstExclusive ? taxable + (taxable * gstRate / 100) : taxable;
+  }
+
+  private calculateLineBreakdown(quantity: number, rate: number, gstRate: number) {
+    const gross = this.calculateGrossAmount(quantity, rate, gstRate);
+    const taxable = this.isGstExclusive ? quantity * rate : (gstRate > 0 ? gross / (1 + gstRate / 100) : gross);
+    const gstAmount = Math.max(0, gross - taxable);
+    const interState = this.isInterStatePreview;
+    return {
+      amount: Math.round(gross * 1000) / 1000,
+      taxableAmount: Math.round(taxable * 1000) / 1000,
+      cgstRate: interState ? 0 : gstRate / 2,
+      sgstRate: interState ? 0 : gstRate / 2,
+      igstRate: interState ? gstRate : 0,
+      cgstAmount: interState ? 0 : Math.round((gstAmount / 2) * 100) / 100,
+      sgstAmount: interState ? 0 : Math.round((gstAmount / 2) * 100) / 100,
+      igstAmount: interState ? Math.round(gstAmount * 100) / 100 : 0,
+    };
+  }
+
+  private patchLineCalculation(row: FormGroup): void {
+    const quantity = +(row.get('quantity')?.value || 0);
+    const rate = +(row.get('rateWithTax')?.value || 0);
+    const gstRate = +(row.get('gstRate')?.value || 0);
+    row.patchValue(this.calculateLineBreakdown(quantity, rate, gstRate), { emitEvent: false });
+  }
+
+  recalculateAllItems(): void {
+    this.invproducts?.controls.forEach((row: any) => this.patchLineCalculation(row as FormGroup));
+    this.summarycalculation();
+    this.recalcMobileAmount();
+  }
   getEffectiveCompanyId(): string {
     const sel = this.selectedCompanyService.getSelectedCompanyId();
     const tokenCid = this.authService.getCompanyId() || APP_CONSTANTS.DEFAULT_COMPANY_ID;
@@ -364,6 +446,50 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
     const isSuper = role.toLowerCase() === 'super_admin';
     return (isSuper && sel) ? sel : tokenCid;
   }
+
+  get currentGstMode(): 'inclusive' | 'exclusive' {
+    if (this.isedit) {
+      return this.invoiceform?.get('gstCalculationType')?.value === 'inclusive' ? 'inclusive' : 'exclusive';
+    }
+    return this.salesInvoiceRateMode === 'with_tax' ? 'inclusive' : 'exclusive';
+  }
+
+  private loadCompanyRateMode(companyId: string): void {
+    if (!companyId) { return; }
+    this.companyService.getCompanyById(companyId).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (company: any) => {
+        this.salesInvoiceRateMode = String(company?.salesInvoiceRateMode || company?.SalesInvoiceRateMode || '').toLowerCase() === 'with_tax' ? 'with_tax' : 'without_tax';
+        this.companyStateCode = String(company?.stateCode || company?.StateCode || '').trim();
+        if (!this.isedit) {
+          this.invoiceform.patchValue({ gstCalculationType: this.currentGstMode }, { emitEvent: false });
+        }
+        this.recalculateAllItems();
+      },
+      error: () => {
+        this.salesInvoiceRateMode = 'without_tax';
+        this.companyStateCode = '';
+        if (!this.isedit) {
+          this.invoiceform.patchValue({ gstCalculationType: this.currentGstMode }, { emitEvent: false });
+        }
+        this.recalculateAllItems();
+      }
+    });
+  }
+
+  private selectProductRate(product: any): number {
+    if (!product) { return 0; }
+    return this.currentGstMode === 'exclusive'
+      ? Number(product.rateWithoutTax ?? product.RateWithoutTax ?? product.rateWithTax ?? product.RateWithTax ?? 0)
+      : Number(product.rateWithTax ?? product.RateWithTax ?? product.rateWithoutTax ?? product.RateWithoutTax ?? 0);
+  }
+
+  private selectInvoiceLineRate(detail: any): number {
+    if (!detail) { return 0; }
+    return this.currentGstMode === 'exclusive'
+      ? Number(detail.rateWithoutTax ?? detail.RateWithoutTax ?? detail.rateWithTax ?? detail.RateWithTax ?? 0)
+      : Number(detail.rateWithTax ?? detail.RateWithTax ?? detail.rateWithoutTax ?? detail.RateWithoutTax ?? 0);
+  }
+
 
   GetCustomers() {
     const companyId = this.invoiceform.get('companyId')?.value || this.getEffectiveCompanyId();
@@ -458,7 +584,7 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
     if (editIndex >= 0) {
       const row = this.invproducts.at(editIndex);
       this.mobileItemForm.patchValue({ productId: row.get('productId')?.value||'', quantity: row.get('quantity')?.value||1, rateWithTax: row.get('rateWithTax')?.value||0 });
-    } else this.mobileItemForm.reset({ productId:'', quantity:1, rateWithTax:0 });
+    } else this.mobileItemForm.reset({ productId:'', quantity:1, rateWithTax:0, gstRate:0, cgstRate:0, sgstRate:0 });
     this.recalcMobileAmount();
     this.openSheetRef = this.bottomSheet.open(this.mobileItemSheetTpl as any, { panelClass:'inv-mobile-sheet-panel', disableClose:false });
   }
@@ -468,14 +594,14 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
   saveMobileItem(): void {
     if (this.mobileItemForm.invalid) { this.mobileItemForm.markAllAsTouched(); this.alert.warning('Fill all required fields','Validation'); return; }
     const val = this.mobileItemForm.getRawValue();
-    const amt = Math.round((+val.quantity)*(+val.rateWithTax)*1000)/1000;
+    const line = this.calculateLineBreakdown(+val.quantity, +val.rateWithTax, +val.gstRate || 0);
     if (this.mobileEditIndex >= 0) {
       const row = this.invproducts.at(this.mobileEditIndex) as FormGroup;
-      row.patchValue({ productId:val.productId, quantity:val.quantity, rateWithTax:val.rateWithTax, amount:amt });
+      row.patchValue({ productId:val.productId, quantity:val.quantity, rateWithTax:val.rateWithTax, gstRate:val.gstRate||0, ...line });
     } else {
       if (this.invproducts.controls.some(p => p.get('productId')?.value===val.productId)) { this.alert.warning('Product already in invoice!','Validation'); return; }
       const newRow = this.Generaterow();
-      newRow.patchValue({ productId:val.productId, quantity:val.quantity, rateWithTax:val.rateWithTax, amount:amt });
+      newRow.patchValue({ productId:val.productId, quantity:val.quantity, rateWithTax:val.rateWithTax, gstRate:val.gstRate||0, ...line });
       this.invproducts.push(newRow); this.rowProductSearch.push('');
     }
     this.summarycalculation(); this.closeMobileItemEntry();
@@ -484,14 +610,15 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
   onMobileProductSelected(): void {
     const pid = this.mobileItemForm.get('productId')?.value;
     if (!pid) return;
-    this.service.GetProductbycode(pid).subscribe({ next: (res: any) => { if (res?.rateWithTax!=null) this.mobileItemForm.get('rateWithTax')?.setValue(res.rateWithTax); }, error: () => {} });
+    const companyId = this.invoiceform.get('companyId')?.value || this.getEffectiveCompanyId();
+    this.service.GetProductbycode(pid, companyId).subscribe({ next: (res: any) => { if (res) { this.mobileItemForm.patchValue({ rateWithTax: this.selectProductRate(res), gstRate: res.totalGstRate ?? 0, cgstRate: res.cgstRate ?? 0, sgstRate: res.scgstRate ?? 0 }, { emitEvent: false }); this.recalcMobileAmount(); } }, error: () => {} });
   }
 
   incrementMobileQty(): void { const c=+(this.mobileItemForm.get('quantity')?.value||0); this.mobileItemForm.get('quantity')?.setValue(+(c+1).toFixed(3)); }
   decrementMobileQty(): void { const c=+(this.mobileItemForm.get('quantity')?.value||1); this.mobileItemForm.get('quantity')?.setValue(+Math.max(0.001,c-1).toFixed(3)); }
 
   get mobileItemTotal(): number {
-    return Math.round((+(this.mobileItemForm?.get('quantity')?.value||0))*(+(this.mobileItemForm?.get('rateWithTax')?.value||0))*100)/100;
+    return Math.round(this.calculateGrossAmount(+(this.mobileItemForm?.get('quantity')?.value||0), +(this.mobileItemForm?.get('rateWithTax')?.value||0), +(this.mobileItemForm?.get('gstRate')?.value||0))*100)/100;
   }
 
   getProductName(productId: string): string {
@@ -515,3 +642,17 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
   get displayOutstandingAmount(): number { return this.outstandingAmount; }
   get displayTotalToPayAmount():  number { return this.outstandingAmount + this.totalAmountValue; }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

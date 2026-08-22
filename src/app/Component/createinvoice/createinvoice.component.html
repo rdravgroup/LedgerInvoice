@@ -71,7 +71,6 @@
           <mat-label>Remarks</mat-label>
           <input matInput formControlName="remark" />
         </mat-form-field>
-
         <div class="inv-optional-toggle">
           <mat-checkbox [formControl]="showOptionalFieldsControl" color="primary">Additional shipping details</mat-checkbox>
         </div>
@@ -153,7 +152,9 @@
                   <th class="inv-th s1">#</th>
                   <th class="inv-th s2">Product</th>
                   <th class="inv-th s3">Qty</th>
-                  <th class="inv-th s4">Rate (incl. tax)</th>
+                  <th class="inv-th s4">{{ rateColumnLabel }}</th>
+                  <th class="inv-th s7">Taxable</th>
+                  <th class="inv-th s8">GST</th>
                   <th class="inv-th s5">Total</th>
                   <th class="inv-th s6"></th>
                 </tr>
@@ -190,6 +191,11 @@
                       <input matInput type="number" step="0.01" min="0" formControlName="rateWithTax" (change)="Itemcalculation(i)" required />
                     </mat-form-field>
                   </td>
+                  <td class="inv-td t7"><span class="inv-taxable">₹{{ item.get('taxableAmount')?.value | number:'1.2-2' }}</span></td>
+                  <td class="inv-td t8">
+                    <span class="inv-tax-chip" *ngIf="item.get('igstAmount')?.value <= 0">CGST ₹{{ item.get('cgstAmount')?.value | number:'1.2-2' }} + SGST ₹{{ item.get('sgstAmount')?.value | number:'1.2-2' }}</span>
+                    <span class="inv-tax-chip inv-tax-chip--igst" *ngIf="item.get('igstAmount')?.value > 0">IGST ₹{{ item.get('igstAmount')?.value | number:'1.2-2' }}</span>
+                  </td>
                   <td class="inv-td t5"><span class="inv-row-total">₹{{ item.get('amount')?.value | number:'1.2-2' }}</span></td>
                   <td class="inv-td t6">
                     <button mat-icon-button color="warn" type="button" (click)="Removeproduct(i)"><mat-icon>delete_outline</mat-icon></button>
@@ -198,7 +204,7 @@
               </tbody>
               <tfoot>
                 <tr class="inv-total-row">
-                  <td colspan="4" class="inv-total-lbl">Invoice Total</td>
+                  <td colspan="6" class="inv-total-lbl">Invoice Total</td>
                   <td class="inv-total-val" aria-live="polite">₹{{ totalAmountValue | number:'1.2-2' }}</td>
                   <td></td>
                 </tr>
@@ -217,7 +223,9 @@
             </div>
             <div class="inv-mob-r2">
               <span>Qty: {{ item.get('quantity')?.value }}</span>
-              <span>Rate: ₹{{ item.get('rateWithTax')?.value | number:'1.2-2' }}</span>
+              <span>{{ rateColumnLabel }}: ₹{{ item.get('rateWithTax')?.value | number:'1.2-2' }}</span>
+              <span>GST: {{ item.get('gstRate')?.value | number:'1.0-2' }}%</span>
+              <span>Taxable: ₹{{ item.get('taxableAmount')?.value | number:'1.2-2' }}</span>
             </div>
             <div class="inv-mob-r3">
               <button mat-stroked-button color="primary" type="button" (click)="openMobileItemEntry(i)" class="inv-mob-edit">
@@ -326,14 +334,14 @@
       </div>
       <!-- Rate -->
       <mat-form-field appearance="outline" class="mob-field" subscriptSizing="dynamic">
-        <mat-label>Rate (incl. tax) ₹</mat-label>
+        <mat-label>{{ rateColumnLabel }} ₹</mat-label>
         <input matInput type="number" step="0.01" min="0" formControlName="rateWithTax" inputmode="decimal" required />
         <mat-icon matPrefix>currency_rupee</mat-icon>
         <mat-error>Rate is required</mat-error>
       </mat-form-field>
       <!-- Preview -->
       <div class="mob-preview">
-        <span>Subtotal</span>
+        <span>{{ isGstExclusive ? 'Total with GST' : 'Subtotal' }}</span>
         <strong>₹{{ mobileItemTotal | number:'1.2-2' }}</strong>
       </div>
     </form>
@@ -345,3 +353,6 @@
     </div>
   </div>
 </ng-template>
+
+
+

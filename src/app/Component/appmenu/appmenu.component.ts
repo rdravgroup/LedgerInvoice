@@ -372,12 +372,13 @@ export class AppmenuComponent implements OnInit, OnDestroy {
 
   openAiChatDialog(): void {
     this.dialog.open(AiChatComponent, {
-      width: '420px',
-      height: '560px',
+      width: '440px',
+      height: '600px',
       maxWidth: 'calc(100vw - 24px)',
       panelClass: ['ai-chat-dialog-panel', 'anchored'],
       autoFocus: false,
       restoreFocus: false,
+      hasBackdrop: false,
       disableClose: true,
       position: { right: '24px', bottom: '88px' }
     });
@@ -387,6 +388,8 @@ export class AppmenuComponent implements OnInit, OnDestroy {
   closeDrawerOnItemClick(): void { if (this.drawer.mode === 'over') this.drawer.close(); }
   onMenuClick(item: MenuNode): void { /* kept for template compatibility */ }
 }
+
+
 
 
 

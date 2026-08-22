@@ -268,7 +268,7 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
         if (res.body && res.body.size > 0) {
           const url = window.URL.createObjectURL(res.body as Blob);
           const a = document.createElement('a');
-          a.download = `Invoice_${invoiceno.replace('/', '_')}.pdf`;
+          a.download = this.getPdfFileName(res.headers.get('Content-Disposition'), invoiceno, '');
           a.href = url;
           document.body.appendChild(a);
           a.click();
@@ -281,6 +281,23 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
         this.alert.error(`Failed to download invoice ${invoiceno}`, 'Error');
       }
     });
+  }
+
+  private getPdfFileName(contentDisposition: string | null, invoiceno: string, prefix: string): string {
+    const utf8Match = contentDisposition?.match(/filename\*=UTF-8''([^;]+)/i);
+    const standardMatch = contentDisposition?.match(/filename="?([^";]+)"?/i);
+    const fileName = utf8Match?.[1] || standardMatch?.[1];
+
+    if (fileName) {
+      try {
+        return decodeURIComponent(fileName);
+      } catch {
+        return fileName;
+      }
+    }
+
+    const safeInvoiceNo = invoiceno.replace(/[\\/:*?"<>|]/g, '_');
+    return `${prefix ? `${prefix}_` : ''}${safeInvoiceNo}.pdf`;
   }
 
   PreviewInvoice(invoiceno: string): void {
@@ -311,7 +328,7 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
         if (res.body && res.body.size > 0) {
           const url = window.URL.createObjectURL(res.body as Blob);
           const a = document.createElement('a');
-          a.download = `Statement_${invoiceno.replace('/', '_')}.pdf`;
+          a.download = this.getPdfFileName(res.headers.get('Content-Disposition'), invoiceno, 'stsmnt');
           a.href = url;
           document.body.appendChild(a);
           a.click();

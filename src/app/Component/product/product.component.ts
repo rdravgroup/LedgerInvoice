@@ -39,7 +39,7 @@ import { takeUntil } from 'rxjs/operators';
               <div class="list-card-avatar">{{ (element.productName || '').charAt(0) }}</div>
               <div class="list-card-info">
                 <div class="list-card-name">{{ element.productName }}</div>
-                <div class="list-card-sub">{{ element.categoryCode }} • {{ element.rateWithTax | currency:'INR' }}</div>
+                <div class="list-card-sub">{{ element.categoryCode }} • {{ (element.rateWithTax) | currency:'INR' }}</div>
               </div>
             </div>
             <div class="list-card-company">
@@ -71,7 +71,7 @@ import { takeUntil } from 'rxjs/operators';
 
         <ng-container matColumnDef="price">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Price</th>
-          <td mat-cell *matCellDef="let element">{{ element.rateWithTax | currency:'INR' }}</td>
+          <td mat-cell *matCellDef="let element">{{ (element.rateWithTax) | currency:'INR' }}</td>
         </ng-container>
 
         <ng-container matColumnDef="purchaseRate">
@@ -245,7 +245,7 @@ export class ProductComponent implements OnInit, OnDestroy {
       cgstRate: [0, [Validators.required, Validators.min(0)]],
       scgstRate: [0, [Validators.required, Validators.min(0)]],
       totalGstRate: [0, [Validators.required, Validators.min(0)]],
-      rateWithoutTax: [0, Validators.min(0)],
+      rateWithoutTax: [0, [Validators.required, Validators.min(0)]],
       rateWithTax: [0, [Validators.required, Validators.min(0)]],
       // Purchase fields
       purchaseRate: [null, [Validators.min(0)]],
@@ -269,7 +269,6 @@ export class ProductComponent implements OnInit, OnDestroy {
       'cgstRate',
       'scgstRate',
       'totalGstRate',
-      'rateWithoutTax',
       'stockQty',
       'minStockQty',
       'maxStockQty',
@@ -344,6 +343,7 @@ export class ProductComponent implements OnInit, OnDestroy {
     const payload = {
       uniqueKeyId: this.isEditMode ? this.editProductCode : null,
       ...formValue,
+      rateWithTax: formValue.rateWithTax || 0,
       rateWithoutTax: formValue.rateWithoutTax || 0
     };
 
@@ -420,9 +420,12 @@ export class ProductComponent implements OnInit, OnDestroy {
     this.isEditMode = false;
     this.editProductCode = '';
     this.showExtraFields = false;
-    this.productForm.reset({ isActive: true, rateWithTax: 0, purchaseRate: null, purchaseRateDate: null, stockQty: 0, minStockQty: 0, maxStockQty: 0, reorderLevel: 0, lastPurchaseRate: 0, lastPurchaseDate: null });
-    this.productForm.patchValue({ cgstRate: 0, scgstRate: 0, totalGstRate: 0, rateWithoutTax: 0 });
+    this.productForm.reset({ isActive: true, rateWithoutTax: 0, rateWithTax: 0, purchaseRate: null, purchaseRateDate: null, stockQty: 0, minStockQty: 0, maxStockQty: 0, reorderLevel: 0, lastPurchaseRate: 0, lastPurchaseDate: null });
+    this.productForm.patchValue({ cgstRate: 0, scgstRate: 0, totalGstRate: 0 });
     // Keep hidden extra fields disabled until user expands them
     this.setExtraFieldsState(this.showExtraFields);
   }
 }
+
+
+
