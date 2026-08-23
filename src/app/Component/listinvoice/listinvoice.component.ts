@@ -250,9 +250,8 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
     this.service.GenerateInvoicePDF(invoiceno).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res) => {
         if (res.body && res.body.size > 0) {
-          const url = window.URL.createObjectURL(res.body as Blob);
-          window.open(url, '_blank');
-          setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+          const fileName = this.getPdfFileName(res.headers.get('Content-Disposition'), invoiceno, '');
+          this.openOrSharePdf(res.body as Blob, fileName, `Invoice ${invoiceno}`);
         } else { this.alert.error('PDF file is empty', 'Error'); }
       },
       error: (err) => {
@@ -264,16 +263,10 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
 
   DownloadInvoice(invoiceno: string): void {
     this.service.GenerateInvoicePDF(invoiceno).pipe(takeUntil(this.destroy$)).subscribe({
-      next: (res) => {
+      next: async (res) => {
         if (res.body && res.body.size > 0) {
-          const url = window.URL.createObjectURL(res.body as Blob);
-          const a = document.createElement('a');
-          a.download = this.getPdfFileName(res.headers.get('Content-Disposition'), invoiceno, '');
-          a.href = url;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          window.URL.revokeObjectURL(url);
+          const fileName = this.getPdfFileName(res.headers.get('Content-Disposition'), invoiceno, '');
+          await this.savePdf(res.body as Blob, fileName, `Invoice ${invoiceno}`);
         } else { this.alert.error('PDF file is empty', 'Error'); }
       },
       error: (err) => {
@@ -281,6 +274,54 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
         this.alert.error(`Failed to download invoice ${invoiceno}`, 'Error');
       }
     });
+  }
+  private isAndroidWebView(): boolean {
+    const ua = navigator.userAgent || '';
+    return /Android/i.test(ua) && (/wv\)/i.test(ua) || /Version\/\d+\.\d+/i.test(ua));
+  }
+
+  private async savePdf(blob: Blob, fileName: string, title: string): Promise<void> {
+    const pdfBlob = blob.type === 'application/pdf' ? blob : new Blob([blob], { type: 'application/pdf' });
+    const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+    const nav = navigator as Navigator & { canShare?: (data?: ShareData) => boolean };
+
+    if (this.isAndroidWebView() && navigator.share && (!nav.canShare || nav.canShare({ files: [file] }))) {
+      try {
+        await navigator.share({ title, text: title, files: [file] });
+        this.alert.success(`${fileName} ready to save/share`, 'PDF');
+        return;
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+      }
+    }
+
+    this.downloadBlob(pdfBlob, fileName);
+  }
+
+  private openOrSharePdf(blob: Blob, fileName: string, title: string): void {
+    if (this.isAndroidWebView()) {
+      void this.savePdf(blob, fileName, title);
+      return;
+    }
+
+    const url = window.URL.createObjectURL(blob);
+    const opened = window.open(url, '_blank');
+    if (!opened) {
+      this.downloadBlob(blob, fileName);
+    }
+    setTimeout(() => window.URL.revokeObjectURL(url), 30000);
+  }
+
+  private downloadBlob(blob: Blob, fileName: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.download = fileName;
+    a.href = url;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => window.URL.revokeObjectURL(url), 1000);
   }
 
   private getPdfFileName(contentDisposition: string | null, invoiceno: string, prefix: string): string {
@@ -464,4 +505,5 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
     this.router.navigate(['/sales-reports']);
   }
 }
+
 
