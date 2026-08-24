@@ -10,6 +10,8 @@ import { LoginResponse, LoginWithPasswordRequest } from '../../_model/user.model
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
+import { MatDialog } from '@angular/material/dialog';
+import { AuthPinDialogComponent } from '../auth-pin-dialog/auth-pin-dialog.component';
 
 @Component({
   selector: 'app-login',
@@ -41,14 +43,15 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     private logger: LoggerService,
     private toastr: ToastrService,
     private router: Router,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
     // Ensure AuthService cleans up stale auth state so other components
     // do not perform protected API calls with inconsistent localStorage.
     // Use AuthService.logout() instead of manipulating localStorage directly.
-    this.authService.logout();
+    this.authService.logout(false);
     
     // TODO: Refactor menu list management if needed. No _menulist property on UserService.
 
@@ -236,7 +239,8 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     this.isLoading = true;
     const payload: LoginWithPasswordRequest = {
       identifier: this._loginForm.value.username as string,
-      password: this._loginForm.value.password as string
+      password: this._loginForm.value.password as string,
+      rememberMe: !!this._loginForm.value.rememberMe
     };
     this.logger.info('LOGIN_COMPONENT', 'Attempting password-based login', { identifier: payload.identifier });
     this.service.loginWithPassword(payload).subscribe({
@@ -253,7 +257,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
           if (usernameFromResponse) {
             console.log('LOGIN_COMPONENT: Using username from response:', usernameFromResponse);
             this.authService.login(this._response, usernameFromResponse);
-            this.proceedWithMenuLoad(usernameFromResponse, response.userRole);
+            this.continueAfterPinSetup(this._response, usernameFromResponse, response.userRole);
           } else {
             // Login immediately so token is available for any subsequent protected requests
             this.authService.login(this._response, payload.identifier);
@@ -265,11 +269,11 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
                 const actualUsername = user?.username || payload.identifier;
                 console.log('LOGIN_COMPONENT: Got username from GetBycode:', actualUsername);
                 localStorage.setItem('username', actualUsername);
-                this.proceedWithMenuLoad(actualUsername, response.userRole);
+                this.continueAfterPinSetup(this._response, actualUsername, response.userRole);
               },
               error: (err) => {
                 console.warn('LOGIN_COMPONENT: Failed to fetch user details, using identifier:', err);
-                this.proceedWithMenuLoad(payload.identifier, response.userRole);
+                this.continueAfterPinSetup(this._response, payload.identifier, response.userRole);
               }
             });
           }
@@ -355,6 +359,37 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     input.value = input.value.replace(/[^0-9]/g, '');
     this._otpLoginForm.get('otp')?.setValue(input.value, { emitEvent: false });
   }
+  private continueAfterPinSetup(response: LoginResponse, username?: string | null, userRole?: string | null): void {
+    if (!response?.requiresPinSetup) {
+      this.proceedWithMenuLoad(username, userRole);
+      return;
+    }
+
+    const dialogRef = this.dialog.open(AuthPinDialogComponent, {
+      disableClose: true,
+      panelClass: 'auth-pin-dialog-panel',
+      data: { mode: 'setup', username }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (!result?.pin) {
+        this.proceedWithMenuLoad(username, userRole);
+        return;
+      }
+
+      this.authService.setupPin(result.pin, result.confirmPin).subscribe({
+        next: () => {
+          this.toastr.success('Access PIN saved for this account', 'PIN Setup');
+          this.proceedWithMenuLoad(username, userRole);
+        },
+        error: (error) => {
+          this.toastr.error(error?.error?.errorMessage || 'Could not save PIN. Please try again from profile later.', 'PIN Setup');
+          this.proceedWithMenuLoad(username, userRole);
+        }
+      });
+    });
+  }
+
 
   /**
    * Helper method to load menu and redirect after successful login
@@ -379,3 +414,6 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showPassword = !this.showPassword;
   }
 }
+
+
+

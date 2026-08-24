@@ -130,6 +130,9 @@ export interface LoginResponse {
   message?: string;
   errorMessage?: string;
   result?: string;
+  requiresPinSetup?: boolean;
+  rememberMeEnabled?: boolean;
+  email?: string;
 }
 
 export interface ApiResponse { result: string; message?: string; errorMessage?: string; data?: any; }
@@ -180,8 +183,19 @@ export interface ResetPasswordRequest {
   confirmnewpassword?: string;
 }
 
-export interface LoginWithPasswordRequest { identifier: string; password: string; username?: string; }
+export interface LoginWithPasswordRequest { identifier: string; password: string; username?: string; rememberMe?: boolean; }
+
+export interface RememberSessionResponse {
+  result: string;
+  rememberedSession: boolean;
+  pinRequired: boolean;
+  pinSetupRequired: boolean;
+  username?: string;
+  userRole?: string;
+  message?: string;
+}
 
 // Convenience types used by UI components
 export interface UpdateUser { username: string; role?: string; status?: boolean; }
 export interface UpdatePassword { username?: string; oldPassword?: string; newPassword?: string; confirmNewPassword?: string; }
+

@@ -111,7 +111,7 @@ export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
             });
             // Don't logout if this is a refresh request itself (avoid double logout)
             if (!req.url.includes('GenerateRefreshToken')) {
-              authService.logout();
+              authService.logout(false);
             }
             // Rethrow original HttpErrorResponse so caller can read status
             return throwError(() => error);
@@ -172,3 +172,4 @@ function shouldSkipTokenInsertion(request: any): boolean {
 
   return publicEndpoints.some(endpoint => request.url.includes(endpoint));
 }
+

@@ -55,7 +55,7 @@ export class UserService {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     const url = `${this.baseUrl}User/loginwithpassword`;
     this.logger.logApiRequest('POST', url, data);
-    return this.http.post<LoginResponse>(url, data, { headers }).pipe(
+    return this.http.post<LoginResponse>(url, data, { headers, withCredentials: true }).pipe(
       tap(response => this.logger.logApiResponse('POST', url, 200, response)),
       catchError(err => {
         this.logger.logApiError('POST', url, err?.status || 500, err);
@@ -79,7 +79,7 @@ export class UserService {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     const url = `${this.baseUrl}User/confirmregisteration`;
     this.logger.logApiRequest('POST', url, data);
-    return this.http.post<LoginResponse>(url, data, { headers }).pipe(
+    return this.http.post<LoginResponse>(url, data, { headers, withCredentials: true }).pipe(
       tap(response => this.logger.logApiResponse('POST', url, 200, response)),
       catchError(err => {
         this.logger.logApiError('POST', url, err?.status || 500, err);
@@ -103,7 +103,7 @@ export class UserService {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     const url = `${this.baseUrl}User/verifyloginotp`;
     this.logger.logApiRequest('POST', url, data);
-    return this.http.post<LoginResponse>(url, data, { headers }).pipe(
+    return this.http.post<LoginResponse>(url, data, { headers, withCredentials: true }).pipe(
       tap(response => this.logger.logApiResponse('POST', url, 200, response)),
       catchError(err => {
         this.logger.logApiError('POST', url, err?.status || 500, err);
@@ -115,7 +115,7 @@ export class UserService {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     const url = `${this.baseUrl}Authorize/GenerateToken`;
     this.logger.logApiRequest('POST', url, data);
-    return this.http.post<LoginResponse>(url, data, { headers }).pipe(
+    return this.http.post<LoginResponse>(url, data, { headers, withCredentials: true }).pipe(
       tap(response => this.logger.logApiResponse('POST', url, 200, response)),
       catchError(err => {
         this.logger.logApiError('POST', url, err?.status || 500, err);
@@ -380,3 +380,4 @@ export class UserService {
     return this.http.get<MenuNode[]>(this.baseUrl + 'UserRole/GetFullMenuTree');
   }
 }
+

@@ -4,7 +4,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { LoginResponse, UserCredentials, VerifyLoginOtp, CreatePassword, UserDetailed } from '../_model/user.model';
+import { LoginResponse, UserCredentials, VerifyLoginOtp, CreatePassword, UserDetailed, RememberSessionResponse } from '../_model/user.model';
 import { UserService } from './user.service';
 import { LoggerService } from './logger.service';
 // CHANGE: inject SelectedCompanyService so logout can clear stored company
@@ -84,7 +84,7 @@ export class AuthService {
     }
     if (this.isTokenExpired(token)) {
       console.warn('AUTH_SERVICE: Token is expired, clearing auth');
-      this.logout();
+      this.clearLocalSession();
       this.isAuthenticated.set(false);
       return;
     }
@@ -126,7 +126,7 @@ export class AuthService {
 
     localStorage.setItem('token', response.token);
     // Ensure we never pass undefined to localStorage
-    localStorage.setItem('refreshToken', response.refreshToken || '');
+    localStorage.removeItem('refreshToken');
     localStorage.setItem('username', username || '');
 
     // Determine role: prefer explicit response.userRole, otherwise decode from JWT
@@ -152,8 +152,45 @@ export class AuthService {
     this.isAuthenticated.set(true);
 
     // Set up automatic token refresh and inactivity tracking
-    this.scheduleTokenRefresh();
+    if (response.refreshToken) {
+      this.scheduleTokenRefresh();
+    }
     this.startInactivityTimer();
+  }
+
+
+  clearLocalSession(resetCompany = true): void {
+    if (resetCompany) {
+      this.selectedCompanyService.clear();
+    }
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('username');
+    localStorage.removeItem('userrole');
+    localStorage.removeItem('companyid');
+    this.isAuthenticated.set(false);
+    this.userEmail.next('');
+    this.userRoleSubject.next(null);
+    this.companyIdSubject.next(null);
+    this.sessionExpiryWarning.next(null);
+  }
+
+  checkRememberedSession(): Observable<RememberSessionResponse> {
+    return this.http.get<RememberSessionResponse>(`${this.baseUrl}Authorize/remembered-session`, { withCredentials: true });
+  }
+
+  validateRememberedPin(pin: string): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${this.baseUrl}Authorize/pin/validate`, { pin }, { withCredentials: true }).pipe(
+      tap(response => {
+        if (response?.token) {
+          this.login(response, response.username || '');
+        }
+      })
+    );
+  }
+
+  setupPin(pin: string, confirmPin: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}Authorize/pin/setup`, { pin, confirmPin });
   }
 
   /**
@@ -247,8 +284,12 @@ export class AuthService {
    * This prevents the selected company from persisting to the next user session on the same browser.
    * All other logout logic is unchanged.
    */
-  logout(): void {
+  logout(revokeServerSession = true): void {
     console.log('AUTH_SERVICE: Logging out user...');
+
+    if (revokeServerSession) {
+      this.http.post(`${this.baseUrl}Authorize/logout`, {}, { withCredentials: true }).subscribe({ error: () => {} });
+    }
 
     // CHANGE: clear company selection so next login starts fresh
     this.selectedCompanyService.clear();
@@ -297,13 +338,13 @@ export class AuthService {
 
     if (!refreshToken) {
       console.error('AUTH_SERVICE: No refresh token available in localStorage');
-      this.logout();
+      this.clearLocalSession(false);
       return throwError(() => new Error('No refresh token available'));
     }
 
     if (!username) {
       console.error('AUTH_SERVICE: No username available');
-      this.logout();
+      this.logout(false);
       return throwError(() => new Error('No username available'));
     }
 
@@ -329,13 +370,13 @@ export class AuthService {
                   subscriber.next(response2);
                   subscriber.complete();
                 } else {
-                  this.logout();
+                  this.logout(false);
                   subscriber.error(new Error('Token refresh failed after 2 attempts'));
                 }
               },
               error: (err2) => {
                 lastError = err2;
-                if (err2?.status === 400 || err2?.status === 401) { this.logout(); }
+                if (err2?.status === 400 || err2?.status === 401) { this.logout(false); }
                 subscriber.error(err2);
               }
             });
@@ -349,11 +390,11 @@ export class AuthService {
             return;
           }
           if (err?.status === 400 || err?.status === 401) {
-            this.logout();
+            this.logout(false);
             subscriber.error(err);
             return;
           }
-          this.logout();
+          this.logout(false);
           subscriber.error(err);
         }
       });
@@ -366,9 +407,9 @@ export class AuthService {
       this.refreshToken().subscribe({
         next: () => { this.resetInactivityTimer(); this.scheduleTokenRefresh(); },
         error: (err) => {
-          if (err?.status === 400 || err?.status === 401) { this.logout(); }
+          if (err?.status === 400 || err?.status === 401) { this.logout(false); }
           else if (err?.status === 0 || !err?.status) { setTimeout(() => this.scheduleTokenRefresh(), 30000); }
-          else { this.logout(); }
+          else { this.logout(false); }
         }
       });
     }, this.TOKEN_REFRESH_INTERVAL);
@@ -381,7 +422,7 @@ export class AuthService {
     this.inactivityTimer = setTimeout(() => {
       if (this.isAuthenticated()) {
         console.warn('AUTH_SERVICE: Inactivity timeout — logging out');
-        this.logout();
+        this.logout(false);
       }
     }, this.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000);
   }
@@ -391,3 +432,8 @@ export class AuthService {
   isTokenValid(): boolean { return !!localStorage.getItem('token'); }
   getToken(): string | null { return localStorage.getItem('token'); }
 }
+
+
+
+
+

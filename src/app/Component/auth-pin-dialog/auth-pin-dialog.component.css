@@ -1,0 +1,79 @@
+.pin-dialog-shell {
+  width: min(92vw, 380px);
+  padding: 22px;
+  background: #ffffff;
+}
+
+.pin-dialog-header {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.pin-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: #eef2ff;
+  color: #4f46e5;
+  flex: 0 0 auto;
+}
+
+.pin-icon mat-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+h2 {
+  margin: 0 0 5px;
+  font-size: 20px;
+  font-weight: 750;
+  color: #111827;
+  letter-spacing: 0;
+}
+
+p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.pin-form {
+  display: grid;
+  gap: 12px;
+}
+
+.pin-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.pin-actions button[mat-flat-button] {
+  min-width: 118px;
+}
+
+.pin-actions mat-icon {
+  margin-right: 6px;
+}
+
+@media (max-width: 480px) {
+  .pin-dialog-shell {
+    width: calc(100vw - 28px);
+    padding: 18px;
+  }
+
+  .pin-actions {
+    flex-direction: column-reverse;
+  }
+
+  .pin-actions button {
+    width: 100%;
+  }
+}
