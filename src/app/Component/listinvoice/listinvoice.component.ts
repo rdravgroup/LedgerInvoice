@@ -84,6 +84,7 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
   }
 
   private destroy$ = new Subject<void>();
+  activeActionInvoiceNumber: string | null = null;
 
   constructor(
     private service: MasterService,
@@ -173,6 +174,7 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
               });
               data = this.sortInvoicesByCreateDate(data);
               this.dataSource.data = data;
+              this.closeActionPanel();
               this.attachTableControls();
             } else {
               this.alert.error('Invalid response format', 'Error');
@@ -187,6 +189,17 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
         });
     };
     performLoad();
+  }
+  toggleActionPanel(row: Invoice): void {
+    this.activeActionInvoiceNumber = this.activeActionInvoiceNumber === row.invoiceNumber ? null : row.invoiceNumber;
+  }
+
+  closeActionPanel(): void {
+    this.activeActionInvoiceNumber = null;
+  }
+
+  isActionPanelOpen(row: Invoice): boolean {
+    return this.activeActionInvoiceNumber === row.invoiceNumber;
   }
 
   applyFilter(event: Event): void {
@@ -505,5 +518,6 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
     this.router.navigate(['/sales-reports']);
   }
 }
+
 
 

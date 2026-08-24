@@ -21,7 +21,7 @@ import { SelectedCompanyService } from '../../_service/selected-company.service'
 import { MatDrawer } from '@angular/material/sidenav';
 import { MatSelect } from '@angular/material/select';
 import { ToastrService } from 'ngx-toastr';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { AiChatComponent } from '../ai-chat/ai-chat.component';
 
 function resolveRole(raw: string): 'super_duper_admin' | 'super_admin' | 'other' {
@@ -59,6 +59,7 @@ export class AppmenuComponent implements OnInit, OnDestroy {
 
   private loadedActiveCompanies = false;
   private destroy$ = new Subject<void>();
+  private aiChatDialogRef?: MatDialogRef<AiChatComponent>;
 
   isHandset$: Observable<boolean>;
 
@@ -369,18 +370,29 @@ export class AppmenuComponent implements OnInit, OnDestroy {
     const publicRoutes = ['/register','/login','/resetpassword','/forgetpassword'];
     this.showmenu = publicRoutes.includes(url) ? false : this.authService.getAuthStatus();
   }
-
   openAiChatDialog(): void {
-    this.dialog.open(AiChatComponent, {
-      width: '440px',
-      height: '600px',
-      maxWidth: 'calc(100vw - 24px)',
+    if (this.aiChatDialogRef) {
+      this.aiChatDialogRef.close();
+      this.aiChatDialogRef = undefined;
+      return;
+    }
+
+    const mobile = window.innerWidth <= 600;
+    this.aiChatDialogRef = this.dialog.open(AiChatComponent, {
+      width: mobile ? '100vw' : '440px',
+      height: mobile ? 'calc(100vh - 74px)' : '600px',
+      maxWidth: mobile ? '100vw' : 'calc(100vw - 24px)',
+      maxHeight: mobile ? 'calc(100vh - 74px)' : 'calc(100vh - 96px)',
       panelClass: ['ai-chat-dialog-panel', 'anchored'],
       autoFocus: false,
       restoreFocus: false,
       hasBackdrop: false,
       disableClose: true,
-      position: { right: '24px', bottom: '88px' }
+      position: mobile ? { left: '0', bottom: '0' } : { right: '24px', bottom: '88px' }
+    });
+
+    this.aiChatDialogRef.afterClosed().pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.aiChatDialogRef = undefined;
     });
   }
 
@@ -388,6 +400,7 @@ export class AppmenuComponent implements OnInit, OnDestroy {
   closeDrawerOnItemClick(): void { if (this.drawer.mode === 'over') this.drawer.close(); }
   onMenuClick(item: MenuNode): void { /* kept for template compatibility */ }
 }
+
 
 
 

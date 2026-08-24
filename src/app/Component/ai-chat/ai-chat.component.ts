@@ -358,14 +358,25 @@ export class AiChatComponent implements AfterViewChecked, OnDestroy {
   trackMessage(_: number, message: ChatMessage): string {
     return message.id;
   }
-
   toggleMaximize(): void {
     if (!this.dialogRef) return;
 
+    const mobile = window.innerWidth <= 600;
     this.isMaximized = !this.isMaximized;
     if (this.isMaximized) {
-      this.dialogRef.updateSize('min(980px, calc(100vw - 32px))', 'min(780px, calc(100vh - 32px))');
-      this.dialogRef.updatePosition({ right: '24px', bottom: '24px' });
+      if (mobile) {
+        this.dialogRef.updateSize('100vw', 'calc(100vh - 24px)');
+        this.dialogRef.updatePosition({ left: '0', bottom: '0' });
+      } else {
+        this.dialogRef.updateSize('min(980px, calc(100vw - 32px))', 'min(780px, calc(100vh - 32px))');
+        this.dialogRef.updatePosition({ right: '24px', bottom: '24px' });
+      }
+      return;
+    }
+
+    if (mobile) {
+      this.dialogRef.updateSize('100vw', 'calc(100vh - 74px)');
+      this.dialogRef.updatePosition({ left: '0', bottom: '0' });
       return;
     }
 
@@ -383,6 +394,7 @@ export class AiChatComponent implements AfterViewChecked, OnDestroy {
     element.scrollTop = element.scrollHeight;
   }
 }
+
 
 
 

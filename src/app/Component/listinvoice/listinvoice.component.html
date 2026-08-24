@@ -220,76 +220,91 @@
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef scope="col"></th>
           <td mat-cell *matCellDef="let row" class="actions-cell">
-            <button mat-icon-button color="primary"
-                    (click)="Editinvoice(row.invoiceNumber)"
-                    [disabled]="row.isLocked || isSuperDuper"
-                    matTooltip="{{ row.isLocked ? 'Invoice is locked' : 'Edit invoice' }}">
-              <mat-icon aria-hidden="true">edit</mat-icon>
-            </button>
-            <button mat-icon-button color="primary"
-                    (click)="PreviewInvoice(row.invoiceNumber)"
-                    matTooltip="Preview invoice">
-              <mat-icon aria-hidden="true">visibility</mat-icon>
-            </button>
-            <button mat-icon-button color="primary"
-                    (click)="DownloadInvoice(row.invoiceNumber)"
-                    matTooltip="Download PDF">
-              <mat-icon aria-hidden="true">picture_as_pdf</mat-icon>
-            </button>
-            <button mat-icon-button color="accent"
-                    (click)="DownloadStatementPDF(row.invoiceNumber)"
-                    matTooltip="Invoice Statement">
-              <mat-icon aria-hidden="true">description</mat-icon>
-            </button>
-
-            <!-- NEW: Approve button (only for canApprove role, only if not yet approved) -->
-            @if (canApprove) {
-              <button mat-icon-button
-                      [color]="row.isApproved ? 'primary' : 'default'"
-                      (click)="approveInvoice(row)"
-                      [matTooltip]="row.isApproved ? ('Approved by ' + (row.approvedBy || '')) : 'Approve invoice'"
-                      [disabled]="row.isApproved">
-                <mat-icon aria-hidden="true">{{ row.isApproved ? 'verified' : 'verified_user' }}</mat-icon>
+            <div class="action-group-wrap">
+              <button mat-stroked-button type="button" class="action-group-trigger"
+                      (click)="toggleActionPanel(row)"
+                      [attr.aria-expanded]="isActionPanelOpen(row)"
+                      matTooltip="Show invoice actions">
+                <mat-icon aria-hidden="true">more_horiz</mat-icon>
+                Actions
               </button>
-            }
 
-            <!-- NEW: Lock button -->
-            @if (canApprove) {
-              <button mat-icon-button
-                      [color]="row.isLocked ? 'warn' : 'default'"
-                      (click)="lockInvoice(row)"
-                      [matTooltip]="row.isLocked ? 'Invoice is locked' : 'Lock invoice'"
-                      [disabled]="row.isLocked">
-                <mat-icon aria-hidden="true">{{ row.isLocked ? 'lock' : 'lock_open' }}</mat-icon>
-              </button>
-            }
+              @if (isActionPanelOpen(row)) {
+                <div class="action-popover" (click)="$event.stopPropagation()">
+                  <div class="action-popover-head">
+                    <span>{{ row.invNum || row.invoiceNumber }}</span>
+                    <button mat-icon-button type="button" (click)="closeActionPanel()" aria-label="Close actions">
+                      <mat-icon>close</mat-icon>
+                    </button>
+                  </div>
 
-            <!-- NEW: Unlock button -->
-            @if (canApprove && row.isLocked) {
-              <button mat-icon-button
-                      color="warn"
-                      (click)="unlockInvoice(row)"
-                      [matTooltip]="'Locked: ' + (row.lockReason || 'no reason given') + ' — click to unlock'">
-                <mat-icon aria-hidden="true">lock_open</mat-icon>
-              </button>
-            }
+                  <div class="action-popover-grid">
+                    <button mat-stroked-button type="button"
+                            (click)="Editinvoice(row.invoiceNumber)"
+                            [disabled]="row.isLocked || isSuperDuper"
+                            matTooltip="{{ row.isLocked ? 'Invoice is locked' : 'Edit invoice' }}">
+                      <mat-icon aria-hidden="true">edit</mat-icon>
+                      Edit
+                    </button>
+                    <button mat-stroked-button type="button" (click)="PreviewInvoice(row.invoiceNumber)">
+                      <mat-icon aria-hidden="true">visibility</mat-icon>
+                      Preview
+                    </button>
+                    <button mat-stroked-button type="button" (click)="DownloadInvoice(row.invoiceNumber)">
+                      <mat-icon aria-hidden="true">picture_as_pdf</mat-icon>
+                      PDF
+                    </button>
+                    <button mat-stroked-button type="button" (click)="DownloadStatementPDF(row.invoiceNumber)">
+                      <mat-icon aria-hidden="true">description</mat-icon>
+                      Statement
+                    </button>
 
-            <!-- NEW: Sales Return button -->
-            @if (canReturn) {
-              <button mat-icon-button color="accent"
-                      (click)="openReturn(row)"
-                      [disabled]="row.isLocked"
-                      [matTooltip]="row.isLocked ? 'Invoice locked — returns not allowed' : 'Create sales return'">
-                <mat-icon aria-hidden="true">assignment_return</mat-icon>
-              </button>
-            }
-
-            <button mat-icon-button color="warn"
-                    (click)="invoiceremove(row.invoiceNumber, row.coName)"
-                    [disabled]="isSuperDuper || row.isLocked"
-                    matTooltip="{{ row.isLocked ? 'Invoice locked — cannot delete' : 'Delete invoice' }}">
-              <mat-icon aria-hidden="true">delete</mat-icon>
-            </button>
+                    @if (canApprove) {
+                      <button mat-stroked-button type="button"
+                              (click)="approveInvoice(row)"
+                              [disabled]="row.isApproved"
+                              [matTooltip]="row.isApproved ? ('Approved by ' + (row.approvedBy || '')) : 'Approve invoice'">
+                        <mat-icon aria-hidden="true">{{ row.isApproved ? 'verified' : 'verified_user' }}</mat-icon>
+                        {{ row.isApproved ? 'Approved' : 'Approve' }}
+                      </button>
+                    }
+                    @if (canApprove) {
+                      <button mat-stroked-button type="button"
+                              (click)="lockInvoice(row)"
+                              [disabled]="row.isLocked"
+                              [matTooltip]="row.isLocked ? 'Invoice is locked' : 'Lock invoice'">
+                        <mat-icon aria-hidden="true">{{ row.isLocked ? 'lock' : 'lock_open' }}</mat-icon>
+                        Lock
+                      </button>
+                    }
+                    @if (canApprove && row.isLocked) {
+                      <button mat-stroked-button color="warn" type="button"
+                              (click)="unlockInvoice(row)"
+                              [matTooltip]="'Locked: ' + (row.lockReason || 'no reason given') + ' — click to unlock'">
+                        <mat-icon aria-hidden="true">lock_open</mat-icon>
+                        Unlock
+                      </button>
+                    }
+                    @if (canReturn) {
+                      <button mat-stroked-button color="accent" type="button"
+                              (click)="openReturn(row)"
+                              [disabled]="row.isLocked"
+                              [matTooltip]="row.isLocked ? 'Invoice locked — returns not allowed' : 'Create sales return'">
+                        <mat-icon aria-hidden="true">assignment_return</mat-icon>
+                        Return
+                      </button>
+                    }
+                    <button mat-stroked-button color="warn" type="button"
+                            (click)="invoiceremove(row.invoiceNumber, row.coName)"
+                            [disabled]="isSuperDuper || row.isLocked"
+                            matTooltip="{{ row.isLocked ? 'Invoice locked — cannot delete' : 'Delete invoice' }}">
+                      <mat-icon aria-hidden="true">delete</mat-icon>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
           </td>
         </ng-container>
 
@@ -304,3 +319,4 @@
   }
 
 </div>
+

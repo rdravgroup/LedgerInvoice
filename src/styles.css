@@ -446,3 +446,33 @@ mat-hint.strength-strong { color: var(--md-sys-color-success) !important; }
     max-width: 100vw !important;
   }
 }
+
+/* AI Chat mobile fit + single-widget toggle support - Codex */
+@media (max-width: 600px) {
+  .ai-chat-dialog-panel.anchored .mdc-dialog__container {
+    padding: 0 !important;
+    justify-content: center !important;
+    align-items: flex-end !important;
+  }
+
+  .ai-chat-dialog-panel.anchored .mdc-dialog__surface,
+  .ai-chat-dialog-panel.anchored .mat-mdc-dialog-surface {
+    width: 100vw !important;
+    min-width: 100vw !important;
+    max-width: 100vw !important;
+    height: calc(100vh - 74px) !important;
+    min-height: min(560px, calc(100vh - 74px)) !important;
+    max-height: calc(100vh - 74px) !important;
+    border-radius: 18px 18px 0 0 !important;
+    resize: none !important;
+    transform: none !important;
+  }
+
+  .cdk-overlay-pane.ai-chat-dialog-panel.anchored {
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    max-width: 100vw !important;
+    width: 100vw !important;
+  }
+}
