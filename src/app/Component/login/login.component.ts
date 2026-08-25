@@ -227,7 +227,21 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
   directAccessWithPin(targetRoute: string = '/'): void {
-    this.authService.clearLocalSession(false);
+    if (this.authService.getAuthStatus() && this.authService.getToken()) {
+      this.openPinDialog(this.authService.getUsername() || '', pin => {
+        this.authService.validateCurrentPin(pin).subscribe({
+          next: () => {
+            this.toastr.success('PIN verified', 'Direct Access');
+            this.router.navigateByUrl(targetRoute);
+          },
+          error: error => {
+            this.toastr.error(error?.error?.errorMessage || 'Invalid PIN', 'Access PIN');
+          }
+        });
+      });
+      return;
+    }
+
     this.isLoading = true;
     this.authService.checkRememberedSession().subscribe({
       next: session => {
@@ -237,18 +251,8 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
           return;
         }
 
-        const dialogRef = this.dialog.open(AuthPinDialogComponent, {
-          disableClose: true,
-          panelClass: 'auth-pin-dialog-panel',
-          data: { mode: 'validate', username: session.username }
-        });
-
-        dialogRef.afterClosed().subscribe(result => {
-          if (!result?.pin) {
-            return;
-          }
-
-          this.authService.validateRememberedPin(result.pin).subscribe({
+        this.openPinDialog(session.username || '', pin => {
+          this.authService.validateRememberedPin(pin).subscribe({
             next: () => {
               this.toastr.success('Session restored', 'Welcome back');
               this.router.navigateByUrl(targetRoute);
@@ -262,6 +266,20 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       error: () => {
         this.isLoading = false;
         this.toastr.info('No remembered login found. Please login with ID and password.', 'Direct Access');
+      }
+    });
+  }
+
+  private openPinDialog(username: string, onPin: (pin: string) => void): void {
+    const dialogRef = this.dialog.open(AuthPinDialogComponent, {
+      disableClose: true,
+      panelClass: 'auth-pin-dialog-panel',
+      data: { mode: 'validate', username }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.pin) {
+        onPin(result.pin);
       }
     });
   }
@@ -449,6 +467,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showPassword = !this.showPassword;
   }
 }
+
 
 
 

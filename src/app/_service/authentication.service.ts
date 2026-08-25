@@ -188,6 +188,10 @@ export class AuthService {
       })
     );
   }
+  validateCurrentPin(pin: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}Authorize/pin/validate-current`, { pin });
+  }
+
 
   setupPin(pin: string, confirmPin: string): Observable<any> {
     return this.http.post(`${this.baseUrl}Authorize/pin/setup`, { pin, confirmPin });
@@ -436,6 +440,7 @@ export class AuthService {
   isTokenValid(): boolean { return !!localStorage.getItem('token'); }
   getToken(): string | null { return localStorage.getItem('token'); }
 }
+
 
 
 
