@@ -227,11 +227,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
   directAccessWithPin(targetRoute: string = '/'): void {
-    if (this.authService.getAuthStatus()) {
-      this.router.navigateByUrl(targetRoute);
-      return;
-    }
-
+    this.authService.clearLocalSession(false);
     this.isLoading = true;
     this.authService.checkRememberedSession().subscribe({
       next: session => {
@@ -453,6 +449,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showPassword = !this.showPassword;
   }
 }
+
 
 
 
