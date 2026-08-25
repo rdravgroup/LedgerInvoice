@@ -41,17 +41,6 @@ export class AppComponent implements OnInit {
       'whatsapp',
       this.domSanitizer.bypassSecurityTrustResourceUrl('assets/svg/whatsapp.svg')
     );
-
-    // If the initial route is a login/auth route, clear any stale auth state
-    // immediately so child components do not make protected API calls with
-    // invalid tokens and produce 401 popups during app startup.
-    try {
-      const current = this.router.url || '';
-      const authRoutes = ['/login', '/oauth-login', '/confirmotp', '/register', '/resetpassword', '/forgetpassword'];
-      if (authRoutes.some(r => current.startsWith(r))) {
-        this.authService.logout(false);
-      }
-    } catch { /* ignore during server-side rendering or early bootstrap */ }
   }
   ngOnInit(): void {
     this.tryRememberedLogin();
@@ -97,4 +86,5 @@ export class AppComponent implements OnInit {
     });
   }
 }
+
 

@@ -48,12 +48,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Ensure AuthService cleans up stale auth state so other components
-    // do not perform protected API calls with inconsistent localStorage.
-    // Use AuthService.logout() instead of manipulating localStorage directly.
-    this.authService.logout(false);
-    
-    // TODO: Refactor menu list management if needed. No _menulist property on UserService.
+// TODO: Refactor menu list management if needed. No _menulist property on UserService.
 
     // Initialize password login form
     this._loginForm = this.builder.group({
@@ -231,6 +226,50 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     });
   }
+  directAccessWithPin(targetRoute: string = '/'): void {
+    if (this.authService.getAuthStatus()) {
+      this.router.navigateByUrl(targetRoute);
+      return;
+    }
+
+    this.isLoading = true;
+    this.authService.checkRememberedSession().subscribe({
+      next: session => {
+        this.isLoading = false;
+        if (!session?.rememberedSession || !session.pinRequired) {
+          this.toastr.info('No remembered login found. Please login with ID and password.', 'Direct Access');
+          return;
+        }
+
+        const dialogRef = this.dialog.open(AuthPinDialogComponent, {
+          disableClose: true,
+          panelClass: 'auth-pin-dialog-panel',
+          data: { mode: 'validate', username: session.username }
+        });
+
+        dialogRef.afterClosed().subscribe(result => {
+          if (!result?.pin) {
+            return;
+          }
+
+          this.authService.validateRememberedPin(result.pin).subscribe({
+            next: () => {
+              this.toastr.success('Session restored', 'Welcome back');
+              this.router.navigateByUrl(targetRoute);
+            },
+            error: error => {
+              this.toastr.error(error?.error?.errorMessage || 'PIN validation failed. Please login with password.', 'Access PIN');
+            }
+          });
+        });
+      },
+      error: () => {
+        this.isLoading = false;
+        this.toastr.info('No remembered login found. Please login with ID and password.', 'Direct Access');
+      }
+    });
+  }
+
   proceedLogin(): void {
     if (this._loginForm.invalid) {
       this.toastr.error('Please fill in all required fields', 'Validation Error');
@@ -414,6 +453,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showPassword = !this.showPassword;
   }
 }
+
 
 
 

@@ -1,15 +1,26 @@
 <div class="pin-dialog-shell">
   <div class="pin-dialog-header">
-    <div class="pin-icon"><mat-icon>{{ isSetup ? 'password' : 'lock_open' }}</mat-icon></div>
+    <div class="pin-icon"><mat-icon>{{ isChange ? 'published_with_changes' : (isSetup ? 'password' : 'lock_open') }}</mat-icon></div>
     <div>
-      <h2>{{ isSetup ? 'Create Access PIN' : 'Enter Access PIN' }}</h2>
-      <p>{{ isSetup ? 'Set a 4 to 8 digit PIN for remembered login on this device.' : 'Confirm this remembered device before opening your ERP session.' }}</p>
+      <h2>{{ title() }}</h2>
+      <p>{{ subtitle() }}</p>
     </div>
   </div>
 
   <form [formGroup]="form" (ngSubmit)="submit()" class="pin-form">
+    @if (isChange) {
+      <mat-form-field appearance="outline">
+        <mat-label>Current PIN</mat-label>
+        <input matInput formControlName="currentPin" [type]="hideCurrentPin ? 'password' : 'text'" inputmode="numeric" maxlength="8" autocomplete="one-time-code" />
+        <button mat-icon-button matSuffix type="button" (click)="hideCurrentPin = !hideCurrentPin" [attr.aria-label]="hideCurrentPin ? 'Show current PIN' : 'Hide current PIN'">
+          <mat-icon>{{ hideCurrentPin ? 'visibility' : 'visibility_off' }}</mat-icon>
+        </button>
+        <mat-error>Current PIN must be 4 to 8 digits</mat-error>
+      </mat-form-field>
+    }
+
     <mat-form-field appearance="outline">
-      <mat-label>{{ isSetup ? 'New PIN' : 'Access PIN' }}</mat-label>
+      <mat-label>{{ isChange ? 'New PIN' : (isSetup ? 'New PIN' : 'Access PIN') }}</mat-label>
       <input matInput formControlName="pin" [type]="hidePin ? 'password' : 'text'" inputmode="numeric" maxlength="8" autocomplete="one-time-code" />
       <button mat-icon-button matSuffix type="button" (click)="hidePin = !hidePin" [attr.aria-label]="hidePin ? 'Show PIN' : 'Hide PIN'">
         <mat-icon>{{ hidePin ? 'visibility' : 'visibility_off' }}</mat-icon>
@@ -17,7 +28,7 @@
       <mat-error>PIN must be 4 to 8 digits</mat-error>
     </mat-form-field>
 
-    @if (isSetup) {
+    @if (isSetup || isChange) {
       <mat-form-field appearance="outline">
         <mat-label>Confirm PIN</mat-label>
         <input matInput formControlName="confirmPin" [type]="hideConfirmPin ? 'password' : 'text'" inputmode="numeric" maxlength="8" autocomplete="one-time-code" />
@@ -29,12 +40,10 @@
     }
 
     <div class="pin-actions">
-      @if (!isSetup) {
-        <button mat-button type="button" (click)="cancel()">Use password</button>
-      }
+      <button mat-button type="button" (click)="cancel()">{{ isValidate ? 'Use password' : 'Cancel' }}</button>
       <button mat-flat-button color="primary" type="submit">
-        <mat-icon>{{ isSetup ? 'check_circle' : 'login' }}</mat-icon>
-        {{ isSetup ? 'Save PIN' : 'Unlock' }}
+        <mat-icon>{{ isChange ? 'save' : (isSetup ? 'check_circle' : 'login') }}</mat-icon>
+        {{ isChange ? 'Change PIN' : (isSetup ? 'Save PIN' : 'Unlock') }}
       </button>
     </div>
   </form>

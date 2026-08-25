@@ -193,6 +193,10 @@ export class AuthService {
     return this.http.post(`${this.baseUrl}Authorize/pin/setup`, { pin, confirmPin });
   }
 
+  changePin(currentPin: string, newPin: string, confirmPin: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}Authorize/pin/change`, { currentPin, newPin, confirmPin });
+  }
+
   /**
    * Refresh user details from server and update local storage and subjects.
    * Returns observable of the detailed user object.
@@ -432,6 +436,7 @@ export class AuthService {
   isTokenValid(): boolean { return !!localStorage.getItem('token'); }
   getToken(): string | null { return localStorage.getItem('token'); }
 }
+
 
 
 

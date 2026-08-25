@@ -1,6 +1,6 @@
 <div class="auth-layout">
   <!-- Left panel — brand (desktop only) -->
-  <div class="auth-brand" aria-hidden="true">
+  <div class="auth-brand">
     <div class="brand-content">
       <img src="assets/logo/logo.png" alt="CodeXClear" class="brand-logo" />
       <h1 class="brand-title">CodeXClear</h1>
@@ -11,7 +11,15 @@
         <span class="pill">💰 Ledger</span>
         <span class="pill">👥 Customers</span>
       </div>
-    </div>
+      <div class="direct-access-panel">
+        <button type="button" class="direct-access-btn" (click)="directAccessWithPin('/')">
+          <mat-icon aria-hidden="true">fingerprint</mat-icon>
+          <span>Direct access with PIN</span>
+        </button>
+        <button type="button" class="direct-access-link" (click)="directAccessWithPin('/listinvoice')">
+          Open invoice list
+        </button>
+      </div>    </div>
   </div>
 
   <!-- Right panel — form -->
@@ -29,7 +37,10 @@
 
       <h2 class="form-title">Welcome back</h2>
       <p class="form-subtitle"> Sign in to your account</p>
-
+      <button type="button" class="mobile-direct-access" (click)="directAccessWithPin('/')">
+        <mat-icon aria-hidden="true">fingerprint</mat-icon>
+        Continue with PIN
+      </button>
       <!-- Registration success banner -->
       @if (registrationMessage) {
         <div class="info-banner" role="alert">
@@ -233,3 +244,5 @@
     </div>
   </div>
 </div>
+
+
