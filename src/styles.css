@@ -476,3 +476,32 @@ mat-hint.strength-strong { color: var(--md-sys-color-success) !important; }
     width: 100vw !important;
   }
 }
+
+/* Auth PIN dialog mobile polish - Codex */
+.auth-pin-dialog-panel {
+  max-width: min(420px, calc(100vw - 24px)) !important;
+  width: min(420px, calc(100vw - 24px)) !important;
+}
+
+.auth-pin-dialog-panel .mat-mdc-dialog-container,
+.auth-pin-dialog-panel .mdc-dialog__surface {
+  border-radius: 14px !important;
+  overflow: hidden !important;
+}
+
+.auth-pin-dialog-panel .mat-mdc-dialog-content,
+.auth-pin-dialog-panel .mat-mdc-dialog-surface {
+  max-height: calc(100dvh - 32px) !important;
+}
+
+@media (max-width: 480px) {
+  .cdk-overlay-pane.auth-pin-dialog-panel {
+    width: calc(100vw - 18px) !important;
+    max-width: calc(100vw - 18px) !important;
+  }
+
+  .auth-pin-dialog-panel .mat-mdc-dialog-container,
+  .auth-pin-dialog-panel .mdc-dialog__surface {
+    border-radius: 12px !important;
+  }
+}

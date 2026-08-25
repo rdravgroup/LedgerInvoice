@@ -13,6 +13,7 @@ import { LoggerService } from './logger.service';
 export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const logger = inject(LoggerService);
+  const isPinEndpoint = isPinAuthEndpoint(req.url);
   
   // Allow callers to explicitly skip adding Authorization header by setting
   // a custom header `X-Skip-Auth: true` on the request. This is useful when
@@ -110,7 +111,7 @@ export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
               endpoint: req.url
             });
             // Don't logout if this is a refresh request itself (avoid double logout)
-            if (!req.url.includes('GenerateRefreshToken')) {
+            if (!req.url.includes('GenerateRefreshToken') && !isPinEndpoint) {
               authService.logout(false);
             }
             // Rethrow original HttpErrorResponse so caller can read status
@@ -152,6 +153,13 @@ export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
  * Determine if token should be skipped for this request
  * Public endpoints don't require authentication
  */
+function isPinAuthEndpoint(url: string): boolean {
+  return url.includes('Authorize/pin/validate-current')
+    || url.includes('Authorize/pin/validate')
+    || url.includes('Authorize/pin/change')
+    || url.includes('Authorize/pin/setup');
+}
+
 function shouldSkipTokenInsertion(request: any): boolean {
   const publicEndpoints = [
     'GenerateToken',                    // Password login (legacy)
@@ -172,4 +180,5 @@ function shouldSkipTokenInsertion(request: any): boolean {
 
   return publicEndpoints.some(endpoint => request.url.includes(endpoint));
 }
+
 
