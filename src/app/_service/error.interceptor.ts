@@ -9,34 +9,27 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const toastr = inject(ToastrService);
   const logger = inject(LoggerService);
-
-  // Note: determine current route at error time below so we respect navigation
-  // that may happen between request dispatch and error handling.
+  const isPinEndpoint = isPinAuthEndpoint(req.url);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
-      // Re-evaluate current URL at error time to correctly detect auth routes
       const currentUrl = router.url || '';
       const authRoutes = ['/login', '/oauth-login', '/confirmotp', '/register', '/resetpassword', '/forgetpassword'];
       const onAuthRoute = authRoutes.some(r => currentUrl.startsWith(r));
 
       let errorMessage = 'An unexpected error occurred';
 
-      // Log the API error
       logger.logApiError(req.method, req.url, error.status, error);
 
       if (error.error instanceof ErrorEvent) {
-        // Client-side error
         errorMessage = error.error.message;
         logger.error('ERROR_INTERCEPTOR', 'Client-side error', {
           message: errorMessage,
           event: error.error
         });
       } else {
-        // Server-side error or network error
         switch (error.status) {
           case 0:
-            // Network error (CORS, connection refused, etc.)
             errorMessage = 'Network error: Unable to connect to the server. Please check if the API is running and accessible.';
             logger.error('ERROR_INTERCEPTOR', 'Network error', {
               url: req.url,
@@ -44,7 +37,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             });
             break;
           case 400:
-            errorMessage = error.error?.message || 'Bad request. Please check your input.';
+            errorMessage = error.error?.message || error.error?.errorMessage || 'Bad request. Please check your input.';
             logger.warn('ERROR_INTERCEPTOR', 'Bad request (400)', {
               url: req.url,
               message: errorMessage,
@@ -52,13 +45,16 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             });
             break;
           case 401:
+            if (isPinEndpoint) {
+              logger.warn('ERROR_INTERCEPTOR', 'PIN validation failed (401)', { url: req.url });
+              return throwError(() => error);
+            }
+
             errorMessage = 'Unauthorized. Please login again.';
             logger.warn('ERROR_INTERCEPTOR', 'Unauthorized (401)', { url: req.url });
-            // Clear authentication data (always clear to avoid stuck tokens)
             localStorage.removeItem('token');
             localStorage.removeItem('username');
             localStorage.removeItem('userrole');
-            // If we're not already on an auth/login related route, navigate to login.
             if (!onAuthRoute) {
               router.navigateByUrl('/login');
             }
@@ -71,15 +67,12 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             });
             break;
           case 403:
-            // Check for subscription-expired style responses and preserve them
-            // so components can open activation flows. Example body: { status: 'error', message: 'Subscription expired' }
             {
               const body = error.error;
               const msg = typeof body === 'string' ? body : (body?.message || body?.errorMessage || '');
               const isSubscription = typeof msg === 'string' && msg.toLowerCase().includes('subscription');
               if (isSubscription) {
                 logger.warn('ERROR_INTERCEPTOR', 'Forbidden (403) - Subscription expired', { url: req.url });
-                // Preserve original HttpErrorResponse so callers can inspect status and error payload
                 return throwError(() => error);
               }
             }
@@ -119,14 +112,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         }
       }
 
-      // Show user-friendly toast. Suppress 401 toast when already on auth/login routes.
-      // For 402 Payment Required, let the component handle the prompt without an interceptor toast.
-      if (!(error?.status === 401 && onAuthRoute) && error?.status !== 402) {
+      if (!isPinEndpoint && !(error?.status === 401 && onAuthRoute) && error?.status !== 402) {
         toastr.error(errorMessage);
       }
 
-      // Preserve original HttpErrorResponse for statuses the app needs to inspect
-      // (e.g. 402 Payment Required so UI can open payment dialog)
       if (error?.status === 402) {
         return throwError(() => error);
       }
@@ -135,3 +124,10 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
     })
   );
 };
+
+function isPinAuthEndpoint(url: string): boolean {
+  return url.includes('Authorize/pin/validate-current')
+    || url.includes('Authorize/pin/validate')
+    || url.includes('Authorize/pin/change')
+    || url.includes('Authorize/pin/setup');
+}
