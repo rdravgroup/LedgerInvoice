@@ -119,6 +119,26 @@ export class MasterService {
     );
   }
 
+  SendInvoiceByEmail(invoiceno: string, toEmail?: string, subject?: string) {
+    const encodedInvoiceNo = encodeURIComponent(invoiceno);
+    const payload: any = {
+      subject: subject || `Invoice ${invoiceno}`
+    };
+    if (toEmail && toEmail.trim()) payload.toEmail = toEmail.trim();
+
+    return this.http.post(`${this.baseUrl}InvoiceDelivery/${encodedInvoiceNo}/send-email`, payload)
+      .pipe(catchError(err => this.handleError(err, 'Send invoice email')));
+  }
+
+  BuildInvoiceWhatsAppLink(invoiceno: string, phoneNumber?: string) {
+    const encodedInvoiceNo = encodeURIComponent(invoiceno);
+    const payload: any = {};
+    if (phoneNumber && phoneNumber.trim()) payload.phoneNumber = phoneNumber.trim();
+
+    return this.http.post(`${this.baseUrl}InvoiceDelivery/${encodedInvoiceNo}/send-whatsapp`, payload)
+      .pipe(catchError(err => this.handleError(err, 'Build invoice WhatsApp link')));
+  }
+
   // Get subscription status for the current company (server will use token's CompanyId if none provided)
   GetSubscriptionStatus(companyId?: string) {
     let url = this.baseUrl + 'Subscription/Status';

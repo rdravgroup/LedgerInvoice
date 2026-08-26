@@ -398,6 +398,55 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
     });
   }
 
+  SendInvoiceByEmail(invoiceno: string): void {
+    this.service.SendInvoiceByEmail(invoiceno).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        const message = res?.message || 'Invoice sent successfully by email.';
+        this.alert.success(message, 'Email');
+      },
+      error: (err) => {
+        if (this.handleSubscriptionExpired(err, () => this.SendInvoiceByEmail(invoiceno))) return;
+        this.alert.error('Failed to send invoice via email. Customer email not found.', 'Email');
+      }
+    });
+  }
+
+  SendInvoiceToWhatsApp(invoiceno: string): void {
+    const popup = window.open('about:blank', '_blank', 'noopener,noreferrer');
+
+    this.service.BuildInvoiceWhatsAppLink(invoiceno).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res: any) => {
+        const link = res?.shareUrl || res?.whatsappUrl || res?.fallbackShareUrl;
+        if (!link) {
+          if (popup) popup.close();
+          this.alert.error('Could not generate WhatsApp link for this invoice. Customer mobile not found.', 'WhatsApp');
+          return;
+        }
+
+        if (popup) {
+          popup.opener = null;
+          popup.location.href = link;
+        } else {
+          const linkAnchor = document.createElement('a');
+          linkAnchor.href = link;
+          linkAnchor.target = '_blank';
+          linkAnchor.rel = 'noopener noreferrer';
+          linkAnchor.style.display = 'none';
+          document.body.appendChild(linkAnchor);
+          linkAnchor.click();
+          document.body.removeChild(linkAnchor);
+        }
+
+        this.alert.success('Invoice prepared for WhatsApp.', 'WhatsApp');
+      },
+      error: (err) => {
+        if (popup) popup.close();
+        if (this.handleSubscriptionExpired(err, () => this.SendInvoiceToWhatsApp(invoiceno))) return;
+        this.alert.error('Failed to prepare invoice for WhatsApp. Customer mobile not found.', 'WhatsApp');
+      }
+    });
+  }
+
   private handleSubscriptionExpired(err: any, onActivated?: () => void): boolean {
     try {
       const isForbidden = err?.status === 403;

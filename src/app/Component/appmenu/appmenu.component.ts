@@ -264,6 +264,7 @@ export class AppmenuComponent implements OnInit, OnDestroy {
     try {
       let code = String(menuCode || '');
       if (code.includes('/')) return `/${code.replace(/^\//, '')}`;
+      if (['loginlog', 'login_log', 'loginhistory', 'login-history'].includes(code.toLowerCase())) return '/login-log';
       if (code.startsWith('purchase')) {
         const normalized = code.replace(/^purchase[._-]?/, 'purchase/');
         return `/${normalized}`;

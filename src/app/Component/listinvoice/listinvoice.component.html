@@ -254,6 +254,14 @@
                       <mat-icon aria-hidden="true">picture_as_pdf</mat-icon>
                       PDF
                     </button>
+                    <button mat-stroked-button type="button" (click)="SendInvoiceByEmail(row.invoiceNumber)">
+                      <mat-icon aria-hidden="true">email</mat-icon>
+                      Email
+                    </button>
+                    <button mat-stroked-button type="button" (click)="SendInvoiceToWhatsApp(row.invoiceNumber)">
+                      <mat-icon aria-hidden="true">whatsapp</mat-icon>
+                      WhatsApp
+                    </button>
                     <button mat-stroked-button type="button" (click)="DownloadStatementPDF(row.invoiceNumber)">
                       <mat-icon aria-hidden="true">description</mat-icon>
                       Statement

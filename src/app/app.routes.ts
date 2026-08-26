@@ -41,6 +41,7 @@ export const routes: Routes = [
   { path: 'confirmotp',      component: ConfirmotpComponent },
   { path: 'forgetpassword',  component: ForgetpasswordComponent },
   { path: 'profile',         component: ProfileComponent,         canActivate: [authGuard] },
+  { path: 'login-log',       loadComponent: () => import('./Component/login-log/login-log.component').then(m => m.LoginLogComponent), canActivate: [authGuard] },
   { path: 'updatepassword',  component: UpdatepasswordComponent,  canActivate: [authGuard] },
   { path: 'customer',        component: CustomerComponent,        canActivate: [authGuard] },
   { path: 'customer/add',    component: AddcustomerComponent,     canActivate: [authGuard] },

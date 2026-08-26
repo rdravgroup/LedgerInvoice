@@ -1,0 +1,61 @@
+<main class="login-log-page">
+  <header class="page-header">
+    <div>
+      <p class="eyebrow">Security & access</p>
+      <h1>Login activity</h1>
+      <p class="subtitle">Review sign-ins, sessions, devices, and access methods.</p>
+    </div>
+    <div class="toolbar">
+      <mat-form-field appearance="outline" class="range-field">
+        <mat-label>Time range</mat-label>
+        <mat-select [(value)]="days" (selectionChange)="load()">
+          <mat-option [value]="7">Last 7 days</mat-option>
+          <mat-option [value]="30">Last 30 days</mat-option>
+          <mat-option [value]="90">Last 90 days</mat-option>
+          <mat-option [value]="365">Last year</mat-option>
+        </mat-select>
+      </mat-form-field>
+      <button mat-stroked-button type="button" (click)="refresh()" [disabled]="loading">
+        <mat-icon>refresh</mat-icon> Refresh
+      </button>
+    </div>
+  </header>
+
+  <div class="error-banner" *ngIf="error"><mat-icon>error_outline</mat-icon>{{ error }}</div>
+  <div class="loading" *ngIf="loading"><mat-spinner diameter="36"></mat-spinner></div>
+
+  <section class="stats-grid" *ngIf="!loading && stats">
+    <article class="stat-card accent-blue"><span>Total logins</span><strong>{{ stats.totalLogins }}</strong><small>Selected period</small></article>
+    <article class="stat-card accent-green"><span>Unique users</span><strong>{{ stats.uniqueUsers }}</strong><small>Distinct accounts</small></article>
+    <article class="stat-card accent-amber"><span>Active sessions</span><strong>{{ stats.activeSessions }}</strong><small>Currently open</small></article>
+    <article class="stat-card accent-red"><span>Average session</span><strong>{{ formatDuration(stats.averageSessionDuration * 60) }}</strong><small>Completed sessions</small></article>
+  </section>
+
+  <section class="table-panel" *ngIf="!loading">
+    <div class="panel-header">
+      <div><h2>{{ isAdmin ? 'Company login history' : 'My login history' }}</h2><span>{{ filteredLogs.length }} records</span></div>
+      <div class="filters">
+        <mat-form-field appearance="outline"><mat-label>Status</mat-label><mat-select [(value)]="statusFilter"><mat-option value="All">All statuses</mat-option><mat-option value="Active">Active</mat-option><mat-option value="LoggedOut">Logged out</mat-option><mat-option value="Expired">Expired</mat-option></mat-select></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Method</mat-label><mat-select [(value)]="authFilter"><mat-option value="All">All methods</mat-option><mat-option *ngFor="let method of authMethods" [value]="method">{{ method }}</mat-option></mat-select></mat-form-field>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table mat-table [dataSource]="filteredLogs" class="activity-table">
+        <ng-container matColumnDef="user"><th mat-header-cell *matHeaderCellDef>User</th><td mat-cell *matCellDef="let log"><strong>{{ log.email }}</strong><small>{{ log.userRole || 'User' }}</small></td></ng-container>
+        <ng-container matColumnDef="login"><th mat-header-cell *matHeaderCellDef>Signed in</th><td mat-cell *matCellDef="let log">{{ log.loginTime | date:'dd MMM yyyy, hh:mm a' }}</td></ng-container>
+        <ng-container matColumnDef="method"><th mat-header-cell *matHeaderCellDef>Method</th><td mat-cell *matCellDef="let log"><span class="method-pill">{{ log.authMethod }}</span></td></ng-container>
+        <ng-container matColumnDef="device"><th mat-header-cell *matHeaderCellDef>Device / IP</th><td mat-cell *matCellDef="let log"><strong>{{ log.deviceInfo || 'Unknown device' }}</strong><small>{{ log.loginIpAddress }}</small></td></ng-container>
+        <ng-container matColumnDef="duration"><th mat-header-cell *matHeaderCellDef>Duration</th><td mat-cell *matCellDef="let log">{{ formatDuration(log.sessionDuration) }}</td></ng-container>
+        <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let log"><span class="status" [class.active]="log.status === 'Active'" [class.closed]="log.status !== 'Active'">{{ log.status }}</span></td></ng-container>
+        <tr mat-header-row *matHeaderRowDef="['user','login','method','device','duration','status']"></tr>
+        <tr mat-row *matRowDef="let row; columns: ['user','login','method','device','duration','status'];"></tr>
+      </table>
+      <div class="empty" *ngIf="!filteredLogs.length"><mat-icon>history_toggle_off</mat-icon><p>No login activity in this period.</p></div>
+    </div>
+  </section>
+
+  <section class="table-panel active-panel" *ngIf="!loading && isSuperAdmin">
+    <div class="panel-header"><div><h2>Active sessions</h2><span>{{ activeSessions.length }} open sessions</span></div></div>
+    <div class="session-list"><div class="session-row" *ngFor="let session of activeSessions"><mat-icon>devices</mat-icon><div><strong>{{ session.email }}</strong><small>{{ session.deviceInfo || 'Unknown device' }} · {{ session.loginIpAddress }}</small></div><time>{{ session.loginTime | date:'dd MMM, hh:mm a' }}</time></div><p class="empty" *ngIf="!activeSessions.length">No active sessions.</p></div>
+  </section>
+</main>
