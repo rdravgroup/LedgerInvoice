@@ -217,6 +217,26 @@
   margin-bottom: 6px;
 }
 
+.info-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+  background-color: #e3f2fd;
+  border-radius: 4px;
+  color: #0d47a1;
+  font-size: 12px;
+  margin-top: 16px;
+}
+
+.info-note mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
 .warning-text {
   display: flex;
   align-items: flex-start;

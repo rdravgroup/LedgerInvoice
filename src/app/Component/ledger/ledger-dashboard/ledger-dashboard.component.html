@@ -22,6 +22,15 @@
     <p>Loading ledger data...</p>
   </div>
 
+  <mat-card class="info-banner" *ngIf="!loading">
+    <mat-card-content>
+      <div class="info-banner-content">
+        <mat-icon>info</mat-icon>
+        <span>Live balances exclude cancelled/reversed invoices, while the original ledger history is kept for audit and reporting.</span>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
   <!-- Summary Cards -->
   <div *ngIf="!loading && companySummary" class="summary-section">
     <h2>A/R Summary</h2>

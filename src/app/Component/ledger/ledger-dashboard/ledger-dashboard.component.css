@@ -48,6 +48,19 @@
 }
 
 /* ── Summary section ────────────────────────────────────────── */
+.info-banner {
+  margin-bottom: var(--space-4);
+  border-left: 4px solid var(--md-sys-color-primary);
+  background: var(--md-sys-color-primary-container) !important;
+}
+.info-banner-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--md-sys-color-on-primary-container);
+  font-weight: var(--md-sys-typescale-weight-medium);
+}
+
 .summary-section { margin-bottom: var(--space-6); }
 .summary-section h2 {
   font-size: var(--md-sys-typescale-title-medium-size);
