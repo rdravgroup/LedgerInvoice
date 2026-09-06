@@ -67,6 +67,10 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
   isSuperDuper = false;   // NEW: read-only role
   canApprove   = false;   // NEW: can approve/lock
   canReturn    = false;   // NEW: can create return
+  actionConfig = {
+    preview: true, pdf: true, posPrint: true, posPreview: true,
+    email: true, whatsapp: true, statement: true
+  };
 
   private paginator?: MatPaginator;
   private sort?: MatSort;
@@ -118,6 +122,28 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
     });
   }
 
+  private loadActionConfiguration(): void {
+    const companyId = this.selectedCompanyService.getSelectedCompanyId() || this.auth.getCompanyId();
+    if (!companyId) return;
+    this.companySvc.getCompanyById(companyId).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (company: any) => {
+        const value = (name: string, legacy: string): boolean => {
+          const result = company?.[name] ?? company?.[legacy];
+          return result === undefined || result === null ? true : !!result;
+        };
+        this.actionConfig = {
+          preview: value('showActionPreview', 'ShowActionPreview'),
+          pdf: value('showActionPdf', 'ShowActionPdf'),
+          posPrint: value('showActionPosPrint', 'ShowActionPosPrint'),
+          posPreview: value('showActionPosPreview', 'ShowActionPosPreview'),
+          email: value('showActionEmail', 'ShowActionEmail'),
+          whatsapp: value('showActionWhatsApp', 'ShowActionWhatsApp'),
+          statement: value('showActionStatement', 'ShowActionStatement')
+        };
+      }
+    });
+  }
+
 
   ngOnDestroy(): void {
     this.destroy$.next();
@@ -151,6 +177,7 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
     this.loading = true;
     const performLoad = () => {
       const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.auth.getCompanyId();
+      this.loadActionConfiguration();
       this.service.GetAllInvoice(effectiveCompanyId ?? undefined)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
@@ -288,6 +315,41 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
       }
     });
   }
+
+  PosPrintInvoice(invoiceno: string): void {
+    this.service.GeneratePosReceipt(invoiceno).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res) => {
+        if (res.body && res.body.size > 0) {
+          const fileName = `pos_${invoiceno.replace(/[\\/:*?"<>|]/g, '_')}.bin`;
+          this.downloadBlob(res.body as Blob, fileName);
+          this.alert.success('ESC/POS receipt data downloaded for the Wepsol Hook printer.', 'POS Print');
+        } else {
+          this.alert.error('POS receipt data is empty', 'POS Print');
+        }
+      },
+      error: (err) => {
+        if (this.handleSubscriptionExpired(err, () => this.PosPrintInvoice(invoiceno))) return;
+        this.alert.error(`Failed to prepare POS receipt ${invoiceno}`, 'POS Print');
+      }
+    });
+  }
+
+  PosPreviewInvoice(invoiceno: string): void {
+    this.service.GeneratePosReceiptPreview(invoiceno).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (res) => {
+        if (res.body && res.body.size > 0) {
+          const fileName = this.getPdfFileName(res.headers.get('Content-Disposition'), invoiceno, 'pos_preview');
+          this.openOrSharePdf(res.body as Blob, fileName, `POS receipt preview ${invoiceno}`);
+        } else {
+          this.alert.error('POS preview PDF is empty', 'POS Preview');
+        }
+      },
+      error: (err) => {
+        if (this.handleSubscriptionExpired(err, () => this.PosPreviewInvoice(invoiceno))) return;
+        this.alert.error(`Failed to preview POS receipt ${invoiceno}`, 'POS Preview');
+      }
+    });
+  }
   private isAndroidWebView(): boolean {
     const ua = navigator.userAgent || '';
     return /Android/i.test(ua) && (/wv\)/i.test(ua) || /Version\/\d+\.\d+/i.test(ua));
@@ -406,7 +468,8 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         if (this.handleSubscriptionExpired(err, () => this.SendInvoiceByEmail(invoiceno))) return;
-        this.alert.error('Failed to send invoice via email. Customer email not found.', 'Email');
+        const message = err?.error?.message || err?.error?.errorMessage || err?.message || 'Failed to send invoice via email.';
+        this.alert.error(message, 'Email');
       }
     });
   }
@@ -442,7 +505,8 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
       error: (err) => {
         if (popup) popup.close();
         if (this.handleSubscriptionExpired(err, () => this.SendInvoiceToWhatsApp(invoiceno))) return;
-        this.alert.error('Failed to prepare invoice for WhatsApp. Customer mobile not found.', 'WhatsApp');
+        const message = err?.error?.message || err?.error?.errorMessage || err?.message || 'Failed to prepare invoice for WhatsApp.';
+        this.alert.error(message, 'WhatsApp');
       }
     });
   }

@@ -61,7 +61,8 @@
         <!-- Invoice number -->
         <mat-form-field appearance="outline" class="inv-field" subscriptSizing="dynamic">
           <mat-label>Invoice No</mat-label>
-          <input matInput formControlName="invoiceNumber" required autocomplete="off" />
+          <input matInput formControlName="invoiceNumber" autocomplete="off" />
+          <mat-hint *ngIf="invoiceDisplayNumberMode === 'auto'">Generated automatically when the invoice is saved.</mat-hint>
           <mat-icon matPrefix>tag</mat-icon>
           <mat-error *ngIf="invoiceform.get('invoiceNumber')?.hasError('required')">Required</mat-error>
         </mat-form-field>

@@ -124,6 +124,43 @@
             </mat-select>
             <mat-icon matPrefix>calculate</mat-icon>
           </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Default Product Category Code</mat-label>
+            <input matInput formControlName="defaultProductCategoryCode" placeholder="Example: GROCERY" />
+            <mat-icon matPrefix>category</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Invoice Number Mode</mat-label>
+            <mat-select formControlName="invoiceDisplayNumberMode">
+              <mat-option value="manual">Manual entry</mat-option>
+              <mat-option value="auto">Auto generate</mat-option>
+            </mat-select>
+            <mat-icon matPrefix>numbers</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Invoice Number Prefix</mat-label>
+            <input matInput formControlName="invoiceDisplayNumberPrefix" maxlength="10" placeholder="Example: COMP1" />
+            <mat-icon matPrefix>short_text</mat-icon>
+          </mat-form-field>
+        </div>
+      </section>
+
+      <section class="cfd-section">
+        <div class="cfd-section-title">
+          <mat-icon>touch_app</mat-icon>
+          <div><h3>Invoice Actions</h3><p>Choose which actions appear in the invoice list.</p></div>
+        </div>
+        <div class="cfd-grid">
+          <mat-checkbox formControlName="showActionPreview">Preview</mat-checkbox>
+          <mat-checkbox formControlName="showActionPdf">PDF</mat-checkbox>
+          <mat-checkbox formControlName="showActionPosPrint">POS Print</mat-checkbox>
+          <mat-checkbox formControlName="showActionPosPreview">POS Preview</mat-checkbox>
+          <mat-checkbox formControlName="showActionEmail">Email</mat-checkbox>
+          <mat-checkbox formControlName="showActionWhatsApp">WhatsApp</mat-checkbox>
+          <mat-checkbox formControlName="showActionStatement">Statement</mat-checkbox>
         </div>
       </section>
 

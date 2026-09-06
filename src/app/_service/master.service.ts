@@ -119,6 +119,32 @@ export class MasterService {
     );
   }
 
+  GeneratePosReceipt(invoiceno: string) {
+    const encodedInvoiceNo = encodeURIComponent(invoiceno);
+    return this.http.get(`${this.baseUrl}InvoiceDelivery/${encodedInvoiceNo}/pos-print`, {
+      observe: 'response',
+      responseType: 'blob',
+    }).pipe(
+      catchError((error) => {
+        console.error(`Error fetching POS receipt for ${invoiceno}:`, error);
+        return throwError(() => error);
+      })
+    );
+  }
+
+  GeneratePosReceiptPreview(invoiceno: string) {
+    const encodedInvoiceNo = encodeURIComponent(invoiceno);
+    return this.http.get(`${this.baseUrl}InvoiceDelivery/${encodedInvoiceNo}/pos-preview-pdf`, {
+      observe: 'response',
+      responseType: 'blob',
+    }).pipe(
+      catchError((error) => {
+        console.error(`Error fetching POS preview for ${invoiceno}:`, error);
+        return throwError(() => error);
+      })
+    );
+  }
+
   SendInvoiceByEmail(invoiceno: string, toEmail?: string, subject?: string) {
     const encodedInvoiceNo = encodeURIComponent(invoiceno);
     const payload: any = {

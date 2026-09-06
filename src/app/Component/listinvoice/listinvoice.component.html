@@ -102,11 +102,19 @@
               <button mat-stroked-button (click)="Editinvoice(row.invoiceNumber)" [disabled]="row.isLocked">
                 <mat-icon aria-hidden="true">edit</mat-icon> Edit
               </button>
-              <button mat-stroked-button (click)="PreviewInvoice(row.invoiceNumber)">
+              <button *ngIf="actionConfig.preview" mat-stroked-button (click)="PreviewInvoice(row.invoiceNumber)">
                 <mat-icon aria-hidden="true">visibility</mat-icon> Preview
               </button>
-              <button mat-stroked-button (click)="DownloadInvoice(row.invoiceNumber)">
+              <button *ngIf="actionConfig.pdf" mat-stroked-button (click)="DownloadInvoice(row.invoiceNumber)">
                 <mat-icon aria-hidden="true">download</mat-icon> PDF
+              </button>
+              <button *ngIf="actionConfig.posPrint" mat-stroked-button (click)="PosPrintInvoice(row.invoiceNumber)"
+                      matTooltip="Prepare 80mm ESC/POS receipt for Wepsol Hook">
+                <mat-icon aria-hidden="true">print</mat-icon> POS Print
+              </button>
+              <button *ngIf="actionConfig.posPreview" mat-stroked-button (click)="PosPreviewInvoice(row.invoiceNumber)"
+                      matTooltip="Preview or save the 80mm POS receipt as PDF">
+                <mat-icon aria-hidden="true">preview</mat-icon> POS Preview
               </button>
               <!-- NEW: Approve / Lock / Return on mobile card -->
               @if (canApprove && !row.isApproved) {
@@ -246,23 +254,33 @@
                       <mat-icon aria-hidden="true">edit</mat-icon>
                       Edit
                     </button>
-                    <button mat-stroked-button type="button" (click)="PreviewInvoice(row.invoiceNumber)">
+                    <button *ngIf="actionConfig.preview" mat-stroked-button type="button" (click)="PreviewInvoice(row.invoiceNumber)">
                       <mat-icon aria-hidden="true">visibility</mat-icon>
                       Preview
                     </button>
-                    <button mat-stroked-button type="button" (click)="DownloadInvoice(row.invoiceNumber)">
+                    <button *ngIf="actionConfig.pdf" mat-stroked-button type="button" (click)="DownloadInvoice(row.invoiceNumber)">
                       <mat-icon aria-hidden="true">picture_as_pdf</mat-icon>
                       PDF
                     </button>
-                    <button mat-stroked-button type="button" (click)="SendInvoiceByEmail(row.invoiceNumber)">
+                    <button *ngIf="actionConfig.posPrint" mat-stroked-button type="button" (click)="PosPrintInvoice(row.invoiceNumber)"
+                            matTooltip="Prepare 80mm ESC/POS receipt for Wepsol Hook">
+                      <mat-icon aria-hidden="true">print</mat-icon>
+                      POS Print
+                    </button>
+                    <button *ngIf="actionConfig.posPreview" mat-stroked-button type="button" (click)="PosPreviewInvoice(row.invoiceNumber)"
+                            matTooltip="Preview or save the 80mm POS receipt as PDF">
+                      <mat-icon aria-hidden="true">preview</mat-icon>
+                      POS Preview
+                    </button>
+                    <button *ngIf="actionConfig.email" mat-stroked-button type="button" (click)="SendInvoiceByEmail(row.invoiceNumber)">
                       <mat-icon aria-hidden="true">email</mat-icon>
                       Email
                     </button>
-                    <button mat-stroked-button type="button" (click)="SendInvoiceToWhatsApp(row.invoiceNumber)">
+                    <button *ngIf="actionConfig.whatsapp" mat-stroked-button type="button" (click)="SendInvoiceToWhatsApp(row.invoiceNumber)">
                       <mat-icon aria-hidden="true">whatsapp</mat-icon>
                       WhatsApp
                     </button>
-                    <button mat-stroked-button type="button" (click)="DownloadStatementPDF(row.invoiceNumber)">
+                    <button *ngIf="actionConfig.statement" mat-stroked-button type="button" (click)="DownloadStatementPDF(row.invoiceNumber)">
                       <mat-icon aria-hidden="true">description</mat-icon>
                       Statement
                     </button>

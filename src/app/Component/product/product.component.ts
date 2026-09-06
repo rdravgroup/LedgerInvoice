@@ -6,6 +6,7 @@ import { MasterService } from '../../_service/master.service';
 import { ToastrService } from 'ngx-toastr';
 import { SelectedCompanyService } from '../../_service/selected-company.service';
 import { AuthService } from '../../_service/authentication.service';
+import { CompanyService } from '../../_service/company.service';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
@@ -209,6 +210,7 @@ export class ProductComponent implements OnInit, OnDestroy {
   totalProducts = 0;
   activeProducts = 0;
   showExtraFields = false;
+  defaultCategoryCode = '';
 
   constructor(
     private fb: FormBuilder,
@@ -217,6 +219,7 @@ export class ProductComponent implements OnInit, OnDestroy {
     private dialog: MatDialog
     , private selectedCompanyService: SelectedCompanyService
     , private authService: AuthService
+    , private companyService: CompanyService
   ) {}
 
   ngOnInit(): void {
@@ -224,10 +227,12 @@ export class ProductComponent implements OnInit, OnDestroy {
     this.loadProducts();
     this.loadCategories();
     this.loadMeasurements();
+    this.loadCompanyConfiguration();
 
     // Reload products when selected company changes
     this.selectedCompanyService.selectedCompanyId$.pipe(takeUntil(this.destroy$)).subscribe(() => {
       this.loadProducts();
+      this.loadCompanyConfiguration();
     });
   }
 
@@ -310,6 +315,19 @@ export class ProductComponent implements OnInit, OnDestroy {
     this.service.GetCategories().subscribe({
       next: (res: any) => this.categoryList = res || [],
       error: () => this.toastr.error('Failed to load categories', 'Error')
+    });
+  }
+
+  private loadCompanyConfiguration(): void {
+    const companyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+    if (!companyId) return;
+    this.companyService.getCompanyById(companyId).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (company: any) => {
+        this.defaultCategoryCode = company?.defaultProductCategoryCode || company?.DefaultProductCategoryCode || '';
+        if (!this.isEditMode && this.defaultCategoryCode && this.productForm?.get('categoryCode')?.value === '') {
+          this.productForm.patchValue({ categoryCode: this.defaultCategoryCode }, { emitEvent: false });
+        }
+      }
     });
   }
 
@@ -420,7 +438,7 @@ export class ProductComponent implements OnInit, OnDestroy {
     this.isEditMode = false;
     this.editProductCode = '';
     this.showExtraFields = false;
-    this.productForm.reset({ isActive: true, rateWithoutTax: 0, rateWithTax: 0, purchaseRate: null, purchaseRateDate: null, stockQty: 0, minStockQty: 0, maxStockQty: 0, reorderLevel: 0, lastPurchaseRate: 0, lastPurchaseDate: null });
+    this.productForm.reset({ isActive: true, categoryCode: this.defaultCategoryCode, rateWithoutTax: 0, rateWithTax: 0, purchaseRate: null, purchaseRateDate: null, stockQty: 0, minStockQty: 0, maxStockQty: 0, reorderLevel: 0, lastPurchaseRate: 0, lastPurchaseDate: null });
     this.productForm.patchValue({ cgstRate: 0, scgstRate: 0, totalGstRate: 0 });
     // Keep hidden extra fields disabled until user expands them
     this.setExtraFieldsState(this.showExtraFields);

@@ -18,6 +18,16 @@ export interface Company {
   ifsc?: string;
   accountAddress?: string;
   salesInvoiceRateMode?: 'with_tax' | 'without_tax' | string;
+  defaultProductCategoryCode?: string;
+  invoiceDisplayNumberMode?: 'auto' | 'manual' | string;
+  invoiceDisplayNumberPrefix?: string;
+  showActionPreview?: boolean;
+  showActionPdf?: boolean;
+  showActionPosPrint?: boolean;
+  showActionPosPreview?: boolean;
+  showActionEmail?: boolean;
+  showActionWhatsApp?: boolean;
+  showActionStatement?: boolean;
   createdDate?: string;
   updatedDate?: string;
   uniqueKeyID?: string;

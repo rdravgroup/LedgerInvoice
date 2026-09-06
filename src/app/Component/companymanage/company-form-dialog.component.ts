@@ -53,6 +53,16 @@ export class CompanyFormDialogComponent implements OnInit {
       ifsc: [''],
       accountAddress: [''],
       salesInvoiceRateMode: ['without_tax', Validators.required]
+      ,defaultProductCategoryCode: ['']
+      ,invoiceDisplayNumberMode: ['manual', Validators.required]
+      ,invoiceDisplayNumberPrefix: ['']
+      ,showActionPreview: [true]
+      ,showActionPdf: [true]
+      ,showActionPosPrint: [true]
+      ,showActionPosPreview: [true]
+      ,showActionEmail: [true]
+      ,showActionWhatsApp: [true]
+      ,showActionStatement: [true]
     });
 
     if (data && data.company) {
@@ -91,10 +101,27 @@ export class CompanyFormDialogComponent implements OnInit {
       ifsc: this.pick(company, 'ifsc', 'Ifsc', 'IFSC'),
       accountAddress: this.pick(company, 'accountAddress', 'AccountAddress', 'accAddr', 'AccAddr'),
       salesInvoiceRateMode: this.normalizeRateMode(this.pick(company, 'salesInvoiceRateMode', 'SalesInvoiceRateMode'))
+      ,defaultProductCategoryCode: this.pick(company, 'defaultProductCategoryCode', 'DefaultProductCategoryCode')
+      ,invoiceDisplayNumberMode: this.normalizeNumberMode(this.pick(company, 'invoiceDisplayNumberMode', 'InvoiceDisplayNumberMode'))
+      ,invoiceDisplayNumberPrefix: this.pick(company, 'invoiceDisplayNumberPrefix', 'InvoiceDisplayNumberPrefix')
+      ,showActionPreview: this.pickBoolean(company, 'showActionPreview', 'ShowActionPreview')
+      ,showActionPdf: this.pickBoolean(company, 'showActionPdf', 'ShowActionPdf')
+      ,showActionPosPrint: this.pickBoolean(company, 'showActionPosPrint', 'ShowActionPosPrint')
+      ,showActionPosPreview: this.pickBoolean(company, 'showActionPosPreview', 'ShowActionPosPreview')
+      ,showActionEmail: this.pickBoolean(company, 'showActionEmail', 'ShowActionEmail')
+      ,showActionWhatsApp: this.pickBoolean(company, 'showActionWhatsApp', 'ShowActionWhatsApp')
+      ,showActionStatement: this.pickBoolean(company, 'showActionStatement', 'ShowActionStatement')
     };
   }
   private normalizeRateMode(value: any): 'with_tax' | 'without_tax' {
     return String(value || '').toLowerCase() === 'with_tax' ? 'with_tax' : 'without_tax';
+  }
+  private normalizeNumberMode(value: any): 'auto' | 'manual' {
+    return String(value || '').toLowerCase() === 'auto' ? 'auto' : 'manual';
+  }
+  private pickBoolean(source: any, ...keys: string[]): boolean {
+    const value = this.pick(source, ...keys);
+    return value === '' ? true : !!value;
   }
 
   private buildCompanyPayload(raw: any): any {
@@ -116,6 +143,16 @@ export class CompanyFormDialogComponent implements OnInit {
       ifsc: normalized.ifsc || null,
       accountAddress: normalized.accountAddress || null,
       salesInvoiceRateMode: this.normalizeRateMode(normalized.salesInvoiceRateMode)
+      ,defaultProductCategoryCode: normalized.defaultProductCategoryCode || null
+      ,invoiceDisplayNumberMode: this.normalizeNumberMode(normalized.invoiceDisplayNumberMode)
+      ,invoiceDisplayNumberPrefix: normalized.invoiceDisplayNumberPrefix || null
+      ,showActionPreview: normalized.showActionPreview
+      ,showActionPdf: normalized.showActionPdf
+      ,showActionPosPrint: normalized.showActionPosPrint
+      ,showActionPosPreview: normalized.showActionPosPreview
+      ,showActionEmail: normalized.showActionEmail
+      ,showActionWhatsApp: normalized.showActionWhatsApp
+      ,showActionStatement: normalized.showActionStatement
     };
 
     Object.keys(payload).forEach(key => {
