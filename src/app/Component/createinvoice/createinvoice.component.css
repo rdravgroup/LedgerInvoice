@@ -34,6 +34,33 @@
 .inv-dd-search { display:flex;align-items:center;gap:6px;padding:6px 12px;border-bottom:1px solid #e2e8f0;position:sticky;top:0;background:#fff;z-index:1; }
 .inv-dd-search mat-icon { font-size:16px!important;color:#94a3b8;flex-shrink:0; }
 .inv-dd-input { flex:1;border:none;outline:none;font-size:13px;color:#0f172a;background:transparent;font-family:inherit; }
+.inv-customer-picker { position:relative;min-width:0; }
+.inv-customer-picker > .inv-field { width:100%; }
+.inv-customer-panel { position:absolute;top:calc(100% - 8px);left:0;right:0;z-index:1000;height:330px;background:#fff;border:1px solid #dbe4ef;border-radius:0 0 10px 10px;box-shadow:0 10px 28px rgba(15,23,42,.18);overflow:hidden; }
+.inv-customer-panel .inv-dd-search { position:absolute;top:0;left:0;right:0;height:42px;box-sizing:border-box;border-bottom:1px solid #e2e8f0;padding:8px 12px;background:#fff; }
+.inv-customer-list { position:absolute;top:42px;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden; }
+.inv-customer-panel .inv-customer-option { width:100%;height:48px;border:0;background:#fff;display:flex;align-items:center;justify-content:flex-start;gap:8px;padding:6px 12px;text-align:left;cursor:pointer;font:inherit; }
+.inv-customer-panel .inv-customer-option:hover { background:#eef2ff; }
+.inv-customer-panel .inv-customer-option .inv-customer-copy { text-align:left; }
+.inv-customer-new-fixed { position:absolute;top:calc(100% - 8px + 274px);left:0;right:0;z-index:1001;width:100%;height:56px;border:1px solid #e2e8f0;border-radius:0 0 10px 10px;background:#fff;color:#4f83ee;display:flex;align-items:center;justify-content:flex-start;gap:12px;padding:8px 12px;cursor:pointer;font:600 15px inherit;text-align:left;box-shadow:0 10px 28px rgba(15,23,42,.18); }
+.inv-customer-panel .inv-customer-new-option:hover { background:#f5f7ff; }
+.inv-add-product-option { border-top:1px solid #e2e8f0!important;color:#4f83ee!important;font-weight:600; }
+.inv-add-product-option .mat-icon { margin-right:8px;vertical-align:middle;color:#4f83ee!important; }
+:host ::ng-deep .mat-mdc-select-panel.inv-product-select-panel { max-height:330px!important;overflow-y:auto!important;padding-bottom:56px!important; }
+:host ::ng-deep .mat-mdc-select-panel.inv-product-select-panel .mat-mdc-option.inv-add-product-option { position:sticky!important;bottom:0!important;z-index:20!important;height:56px!important;min-height:56px!important;background:#fff!important;box-shadow:0 -1px 0 #e2e8f0; }
+:host ::ng-deep .inv-customer-picker .mat-mdc-form-field-subscript-wrapper { min-height:0; }
+:host ::ng-deep .mat-mdc-option.inv-customer-option { height:52px!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:8px;padding:6px 0!important;text-align:left!important; }
+:host ::ng-deep .mat-mdc-option.inv-customer-option .mdc-list-item__primary-text { display:flex;align-items:center;justify-content:flex-start!important;gap:8px;width:100%;margin:0!important;padding:0!important;text-align:left!important; }
+.inv-customer-copy { min-width:0;display:flex;flex-direction:column;gap:3px;flex:1;line-height:1.15; }
+.inv-customer-copy strong { color:#334155;font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.inv-customer-copy small { color:#94a3b8;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.inv-customer-check { color:#4f83ee!important;font-size:20px!important;width:20px!important;height:20px!important;opacity:0; }
+:host ::ng-deep .mat-mdc-option.mdc-list-item--selected .inv-customer-check { opacity:1; }
+:host ::ng-deep .mat-mdc-option.inv-customer-new-option { height:58px!important;border-top:1px solid #e2e8f0;color:#4f83ee!important;font-size:15px!important;font-weight:600;text-align:left!important;justify-content:flex-start!important;padding-left:0!important; }
+:host ::ng-deep .mat-mdc-option.inv-customer-new-option .mdc-list-item__primary-text { display:flex;align-items:center;justify-content:flex-start!important;gap:12px;text-align:left!important;margin:0!important;padding:0!important; }
+:host ::ng-deep .inv-customer-new-option mat-icon { color:#4f83ee!important; }
+:host ::ng-deep .mat-mdc-select-panel.inv-customer-select-panel { max-height:420px!important;overflow-y:auto!important; }
+:host ::ng-deep .mat-mdc-select-panel.inv-customer-select-panel .inv-customer-new-option { position:sticky!important;bottom:0!important;z-index:10;background:#fff!important;box-shadow:0 -1px 0 #e2e8f0; }
 
 /* Customer actions */
 .inv-ca-section { margin:10px 0; }
@@ -80,6 +107,15 @@
 :host ::ng-deep .inv-cell-f .mdc-floating-label { font-size:12px!important; }
 :host ::ng-deep .inv-cell-f .mat-mdc-form-field-subscript-wrapper { display:none; }
 .inv-cf-prod { min-width:150px;width:100%; }
+.inv-product-picker { position:relative;min-width:150px;z-index:25; }
+.inv-product-picker > .inv-cell-f { width:100%; }
+.inv-product-panel { position:absolute;top:calc(100% - 4px);left:0;right:0;z-index:1100;height:300px;background:#fff;border:1px solid #dbe4ef;border-radius:0 0 8px 8px;box-shadow:0 10px 24px rgba(15,23,42,.18);overflow:hidden; }
+.inv-product-panel .inv-dd-search { position:absolute;top:0;left:0;right:0;height:42px;box-sizing:border-box;padding:8px 10px;background:#fff;border-bottom:1px solid #e2e8f0; }
+.inv-product-list { position:absolute;top:42px;left:0;right:0;bottom:52px;overflow-y:auto;overflow-x:hidden; }
+.inv-product-option { width:100%;min-height:44px;border:0;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:8px 10px;text-align:left;cursor:pointer;font:inherit;color:#334155; }
+.inv-product-option:hover { background:#eef2ff; }
+.inv-product-option mat-icon { color:#4f83ee!important;font-size:18px!important;width:18px!important;height:18px!important; }
+.inv-product-panel .inv-add-product-option { position:absolute;left:0;right:0;bottom:0;width:100%;height:52px;border:0;border-top:1px solid #e2e8f0;background:#fff;color:#4f83ee;display:flex;align-items:center;justify-content:flex-start;gap:8px;padding:8px 10px;cursor:pointer;font:600 13px inherit;box-shadow:0 -1px 0 #e2e8f0; }
 .inv-cf-num  { max-width:100px;width:100%; }
 .inv-row-total { font-size:13px;font-weight:700;color:#4f46e5;font-family:monospace;white-space:nowrap; }
 .inv-total-row { background:#e0e7ff; }

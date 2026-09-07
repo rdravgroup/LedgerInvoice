@@ -313,7 +313,18 @@ export class ProductComponent implements OnInit, OnDestroy {
 
   loadCategories() {
     this.service.GetCategories().subscribe({
-      next: (res: any) => this.categoryList = res || [],
+      next: (res: any) => {
+        const categories = Array.isArray(res)
+          ? res
+          : res?.data || res?.Data || res?.items || res?.Items || [];
+        this.categoryList = categories
+          .map((category: any) => ({
+            code: category.uniqueKeyId || category.UniqueKeyId || category.uniqueKeyID || category.UniqueKeyID || category.code || category.Code,
+            name: category.name || category.Name || '',
+            isActive: category.isActive ?? category.IsActive ?? true
+          }))
+          .filter((category: any) => category.isActive && category.code);
+      },
       error: () => this.toastr.error('Failed to load categories', 'Error')
     });
   }
@@ -329,6 +340,13 @@ export class ProductComponent implements OnInit, OnDestroy {
         }
       }
     });
+  }
+
+  private resolveCategoryCode(value: any): string {
+    const rawValue = String(value ?? '');
+    const category = this.categoryList.find(item =>
+      item.code === rawValue || item.name === rawValue);
+    return category?.code || rawValue;
   }
 
   loadMeasurements() {
@@ -398,7 +416,7 @@ export class ProductComponent implements OnInit, OnDestroy {
       productName: product.productName,
       measurement: product.measurement,
       hsnSacNumber: product.hsnSacNumber,
-      categoryCode: product.categoryCode,
+      categoryCode: this.resolveCategoryCode(product.categoryCode),
       cgstRate: product.cgstRate,
       scgstRate: product.scgstRate,
       totalGstRate: product.totalGstRate,

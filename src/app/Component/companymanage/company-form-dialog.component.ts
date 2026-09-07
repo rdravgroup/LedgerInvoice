@@ -25,6 +25,7 @@ export class CompanyFormDialogComponent implements OnInit {
   isEdit = false;
   countryList: Country[] = [];
   stateList: State[] = [];
+  categoryList: any[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -55,7 +56,7 @@ export class CompanyFormDialogComponent implements OnInit {
       salesInvoiceRateMode: ['without_tax', Validators.required]
       ,defaultProductCategoryCode: ['']
       ,invoiceDisplayNumberMode: ['manual', Validators.required]
-      ,invoiceDisplayNumberPrefix: ['']
+      ,invoiceDisplayNumberPrefix: [{ value: '', disabled: true }]
       ,showActionPreview: [true]
       ,showActionPdf: [true]
       ,showActionPosPrint: [true]
@@ -73,6 +74,7 @@ export class CompanyFormDialogComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadCountries();
+    this.loadCategories();
   }
 
   private pick(source: any, ...keys: string[]): any {
@@ -165,6 +167,21 @@ export class CompanyFormDialogComponent implements OnInit {
   private unwrapList<T>(response: any): T[] {
     if (Array.isArray(response)) return response;
     return response?.data || response?.Data || response?.items || response?.Items || [];
+  }
+
+  private loadCategories(): void {
+    this.masterService.GetCategories().subscribe({
+      next: (response: any) => {
+        this.categoryList = this.unwrapList<any>(response)
+          .map(category => ({
+            code: this.pick(category, 'uniqueKeyId', 'UniqueKeyId', 'uniqueKeyID', 'UniqueKeyID', 'code', 'Code'),
+            name: this.pick(category, 'name', 'Name'),
+            isActive: category.isActive ?? category.IsActive ?? true
+          }))
+          .filter(category => category.isActive && category.code);
+      },
+      error: () => this.toastr.error('Failed to load categories', 'Error')
+    });
   }
 
   loadCountries(): void {

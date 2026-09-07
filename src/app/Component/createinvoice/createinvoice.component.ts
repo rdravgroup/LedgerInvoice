@@ -1,6 +1,6 @@
 import {
-  Component, OnInit, ChangeDetectorRef, OnDestroy,
-  ViewChild, TemplateRef
+  Component, OnInit, AfterViewInit, ChangeDetectorRef, OnDestroy, HostListener,
+  ViewChild, ViewChildren, TemplateRef, QueryList, ElementRef
 } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { MaterialModule } from '../../material.module';
@@ -35,6 +35,8 @@ import { APP_CONSTANTS } from '../../_model/app-constants';
 import { PaymentDialogComponent } from '../ledger/payment-dialog/payment-dialog.component';
 import { PaymentDetailsDialogComponent } from '../ledger/payment-details-dialog/payment-details-dialog.component';
 import { CustomerDetailsDialogComponent } from '../ledger/customer-details-dialog/customer-details-dialog.component';
+import { QuickCustomerDialogComponent } from './quick-customer-dialog.component';
+import { QuickProductDialogComponent } from './quick-product-dialog.component';
 
 @Component({
   selector: 'app-createinvoice',
@@ -48,9 +50,12 @@ import { CustomerDetailsDialogComponent } from '../ledger/customer-details-dialo
   templateUrl: './createinvoice.component.html',
   styleUrl: './createinvoice.component.css',
 })
-export class CreateinvoiceComponent implements OnInit, OnDestroy {
+export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy {
 
   @ViewChild('mobileItemSheet') mobileItemSheetTpl!: TemplateRef<any>;
+  @ViewChild('customerTrigger') customerTrigger!: ElementRef<HTMLInputElement>;
+  @ViewChildren('productTrigger') productTriggers!: QueryList<ElementRef<HTMLInputElement>>;
+  @ViewChildren('quantityInput') quantityInputs!: QueryList<ElementRef<HTMLInputElement>>;
 
   invoiceFormShowHide = new FormGroup({
     showOptionalFields: new FormControl<boolean>(false),
@@ -63,16 +68,88 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
 
   /** Search terms — PUBLIC, bound directly in template via [(ngModel)] */
   customerSearchTerm = '';
+  customerDropdownOpen = false;
+  productDropdownRow: number | null = null;
   productSearchTerm  = '';
   rowProductSearch: string[] = [];
 
   get filteredCustomers(): any[] {
     const q = this.customerSearchTerm.toLowerCase();
-    return q ? this.mastercustomer.filter((c: any) => (c.name || '').toLowerCase().includes(q)) : this.mastercustomer;
+    return q ? this.mastercustomer.filter((c: any) => this.getCustomerSearchText(c).includes(q)) : this.mastercustomer;
+  }
+
+  get selectedCustomerCompany(): string {
+    const id = this.invoiceform?.get('customerId')?.value;
+    return this.mastercustomer.find(customer => customer.uniqueKeyID === id)?.customer_company || '';
+  }
+
+  toggleCustomerDropdown(): void {
+    if (!this.isedit) {
+      this.customerDropdownOpen = !this.customerDropdownOpen;
+      if (this.customerDropdownOpen) this.customerSearchTerm = '';
+    }
+  }
+
+  selectCustomerFromDropdown(customerId: string): void {
+    this.invoiceform.get('customerId')?.setValue(customerId);
+    this.customerchange(customerId);
+    this.customerDropdownOpen = false;
+    this.customerSearchTerm = '';
+  }
+
+  @HostListener('document:click')
+  closeCustomerDropdown(): void {
+    this.customerDropdownOpen = false;
+    this.productDropdownRow = null;
+  }
+
+  private getCustomerSearchText(customer: any): string {
+    return [customer?.customer_company]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+  }
+
+  openNewCustomer(event: Event): void {
+    event.stopPropagation();
+    this.customerDropdownOpen = false;
+    const companyId = this.invoiceform.get('companyId')?.value || this.getEffectiveCompanyId();
+    const dialogRef = this.dialog.open(QuickCustomerDialogComponent, {
+      width: '640px',
+      maxWidth: '96vw',
+      autoFocus: false,
+      data: { companyId }
+    });
+    dialogRef.afterClosed().pipe(takeUntil(this.destroy$)).subscribe((newCustomer: any) => {
+      if (!newCustomer) return;
+      this.GetCustomers(newCustomer);
+    });
   }
   getFilteredProducts(term: string): any[] {
     const q = (term || '').toLowerCase();
     return q ? this.masterproduct.filter((p: any) => (p.productName || '').toLowerCase().includes(q)) : this.masterproduct;
+  }
+
+  toggleProductDropdown(rowIndex: number): void {
+    this.productDropdownRow = this.productDropdownRow === rowIndex ? null : rowIndex;
+    if (this.productDropdownRow === rowIndex) this.rowProductSearch[rowIndex] = '';
+  }
+
+  selectProductFromDropdown(productId: string, rowIndex: number): void {
+    this.invproducts.at(rowIndex)?.get('productId')?.setValue(productId);
+    this.productDropdownRow = null;
+    this.rowProductSearch[rowIndex] = '';
+    this.productchange(rowIndex);
+  }
+
+  openNewProduct(event: Event, rowIndex: number): void {
+    event.stopPropagation();
+    this.productDropdownRow = null;
+    const companyId = this.invoiceform.get('companyId')?.value || this.getEffectiveCompanyId();
+    this.dialog.open(QuickProductDialogComponent, { width: '640px', maxWidth: '96vw', autoFocus: false, data: { companyId } })
+      .afterClosed().pipe(takeUntil(this.destroy$)).subscribe((newProduct: any) => {
+        if (newProduct) this.GetProducts(newProduct, rowIndex);
+      });
   }
 
   invoiceYear = APP_CONSTANTS.INVOICE_YEAR;
@@ -168,6 +245,15 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); this.openSheetRef?.dismiss(); }
+
+  ngAfterViewInit(): void {
+    setTimeout(() => {
+      if (!this.isedit) {
+        this.customerTrigger?.nativeElement.focus();
+        this.customerDropdownOpen = true;
+      }
+    }, 300);
+  }
 
   initializeForm() {
     this.totalAmountSubject.next(0);
@@ -342,6 +428,12 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
     }
     this.invoicedetail.push(this.Generaterow());
     this.rowProductSearch.push('');
+    setTimeout(() => {
+      const rowIndex = this.invproducts.length - 1;
+      this.productDropdownRow = rowIndex;
+      this.cdr.detectChanges();
+      this.productTriggers?.get(rowIndex)?.nativeElement.focus();
+    });
   }
 
   get invproducts() { return this.invoiceform.get('sales_product_info') as FormArray; }
@@ -368,13 +460,29 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
     this.invoicedetail  = this.invoiceform.get('sales_product_info') as FormArray;
     this.invoiceproduct = this.invoicedetail.at(index) as FormGroup;
     const code = this.invoiceproduct.get('productId')?.value;
+    if (!code) return;
     if (this.invoicedetail.controls.some((p, i) => p.get('productId')?.value === code && i !== index)) {
       this.alert.warning('Product already in invoice!','Validation'); this.invoiceproduct.get('productId')?.setValue(''); return;
     }
     const companyId = this.invoiceform.get('companyId')?.value || this.getEffectiveCompanyId();
     this.service.GetProductbycode(code, companyId).subscribe({
-      next: (res) => { const p = res as any; if (p) { this.invoiceproduct.patchValue({ rateWithTax: this.selectProductRate(p), gstRate: p.totalGstRate ?? 0, cgstRate: p.cgstRate ?? 0, sgstRate: p.scgstRate ?? 0 }, { emitEvent: false }); this.Itemcalculation(index); } },
+      next: (res) => {
+        const p = res as any;
+        if (p) {
+          this.invoiceproduct.patchValue({ rateWithTax: this.selectProductRate(p), gstRate: p.totalGstRate ?? 0, cgstRate: p.cgstRate ?? 0, sgstRate: p.scgstRate ?? 0 }, { emitEvent: false });
+          this.Itemcalculation(index);
+          this.focusQuantity(index);
+        }
+      },
       error: () => { this.alert.error('Failed to fetch product details.','Error'); }
+    });
+  }
+
+  private focusQuantity(index: number): void {
+    setTimeout(() => {
+      const quantityInput = this.quantityInputs?.get(index)?.nativeElement;
+      quantityInput?.focus();
+      quantityInput?.select();
     });
   }
 
@@ -512,18 +620,63 @@ export class CreateinvoiceComponent implements OnInit, OnDestroy {
   }
 
 
-  GetCustomers() {
+  GetCustomers(selectCustomer?: any) {
     const companyId = this.invoiceform.get('companyId')?.value || this.getEffectiveCompanyId();
     this.service.GetCustomer(companyId).subscribe({
-      next: (res: any) => { this.mastercustomer = Array.isArray(res) ? res : []; },
+      next: (res: any) => {
+        const customers = Array.isArray(res) ? res : res?.data || res?.Data || res?.items || res?.Items || [];
+        this.mastercustomer = customers.map((customer: any) => ({
+          ...customer,
+          uniqueKeyID: this.getCustomerId(customer)
+        }));
+        if (!this.isedit && !this.invoiceform.get('customerId')?.value) {
+          this.customerDropdownOpen = false;
+          setTimeout(() => {
+            this.customerDropdownOpen = true;
+            this.cdr.detectChanges();
+            this.customerTrigger?.nativeElement.focus();
+          });
+        }
+        if (selectCustomer) {
+          const requestedId = typeof selectCustomer === 'object'
+            ? this.getCustomerId(selectCustomer)
+            : String(selectCustomer);
+          let selected = this.mastercustomer.find((customer: any) => String(customer.uniqueKeyID) === requestedId);
+          if (!selected && requestedId) {
+            selected = { ...selectCustomer, uniqueKeyID: requestedId };
+            this.mastercustomer = [selected, ...this.mastercustomer];
+          }
+          const customerId = selected?.uniqueKeyID;
+          if (customerId) {
+            this.invoiceform.get('customerId')?.setValue(customerId);
+            this.customerchange(customerId);
+          }
+        }
+      },
       error: () => { this.alert.error('Failed to load customers','Error'); }
     });
   }
 
-  GetProducts() {
+  private getCustomerId(customer: any): string {
+    return String(customer?.uniqueKeyID ?? customer?.uniqueKeyId ?? customer?.UniqueKeyID ?? customer?.UniqueKeyId ?? '');
+  }
+
+  GetProducts(selectProduct?: any, rowIndex?: number) {
     const companyId = this.invoiceform.get('companyId')?.value || this.getEffectiveCompanyId();
     this.service.GetProducts(companyId).subscribe({
-      next: (res: any) => { this.masterproduct = Array.isArray(res) ? res : []; },
+      next: (res: any) => {
+        const products = Array.isArray(res) ? res : res?.data || res?.Data || res?.items || res?.Items || [];
+        this.masterproduct = products;
+        if (selectProduct && rowIndex !== undefined) {
+          const productId = String(selectProduct?.uniqueKeyID || selectProduct?.UniqueKeyID || selectProduct?.uniqueKeyId || selectProduct?.UniqueKeyId || '');
+          let selected = this.masterproduct.find((product: any) => String(product.uniqueKeyID || product.UniqueKeyID || product.uniqueKeyId || product.UniqueKeyId) === productId);
+          if (!selected && productId) { selected = { ...selectProduct, uniqueKeyID: productId }; this.masterproduct = [selected, ...this.masterproduct]; }
+          if (selected?.uniqueKeyID) {
+            this.invproducts.at(rowIndex)?.get('productId')?.setValue(selected.uniqueKeyID);
+            this.productchange(rowIndex);
+          }
+        }
+      },
       error: () => { this.alert.error('Failed to load products','Error'); }
     });
   }

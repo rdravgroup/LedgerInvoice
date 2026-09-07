@@ -31,23 +31,32 @@
       <div class="inv-fields-grid">
 
         <!-- Customer with search -->
-        <mat-form-field appearance="outline" class="inv-field" subscriptSizing="dynamic">
-          <mat-label>Customer</mat-label>
-          <mat-select formControlName="customerId" (selectionChange)="customerchange($event.value)" [disabled]="isedit" required>
-            <mat-option>
-              <div class="inv-dd-search" (click)="$event.stopPropagation()">
-                <mat-icon>search</mat-icon>
-                <input [(ngModel)]="customerSearchTerm" [ngModelOptions]="{standalone:true}"
-                       placeholder="Search customer…" class="inv-dd-input"
-                       (keydown)="$event.stopPropagation()" />
-              </div>
-            </mat-option>
-            <mat-option *ngFor="let item of filteredCustomers" [value]="item.uniqueKeyID">{{ item.name }}</mat-option>
-          </mat-select>
-          <mat-icon matSuffix>person</mat-icon>
+        <div class="inv-customer-picker" (click)="$event.stopPropagation()">
+          <mat-form-field appearance="outline" class="inv-field" subscriptSizing="dynamic">
+            <mat-label>Customer</mat-label>
+            <input #customerTrigger matInput readonly [value]="selectedCustomerCompany" (click)="toggleCustomerDropdown()" placeholder="Select customer" [disabled]="isedit" required />
+            <button mat-icon-button matSuffix type="button" (click)="toggleCustomerDropdown()" [disabled]="isedit" aria-label="Open customer list">
+              <mat-icon>{{ customerDropdownOpen ? 'expand_less' : 'search' }}</mat-icon>
+            </button>
+          </mat-form-field>
+          <div class="inv-customer-panel" *ngIf="customerDropdownOpen">
+            <div class="inv-dd-search">
+              <mat-icon>search</mat-icon>
+              <input [(ngModel)]="customerSearchTerm" [ngModelOptions]="{standalone:true}" placeholder="Search customer…" class="inv-dd-input" />
+            </div>
+            <div class="inv-customer-list">
+              <button type="button" class="inv-customer-option" *ngFor="let item of filteredCustomers" (click)="selectCustomerFromDropdown(item.uniqueKeyID)">
+                <span class="inv-customer-copy"><strong>{{ item.customer_company || 'Unnamed company' }}</strong></span>
+                <mat-icon class="inv-customer-check" *ngIf="invoiceform.get('customerId')?.value === item.uniqueKeyID">check</mat-icon>
+              </button>
+            </div>
+          </div>
+          <button *ngIf="customerDropdownOpen" type="button" class="inv-customer-new-option inv-customer-new-fixed" (click)="openNewCustomer($event)">
+            <mat-icon>add_circle</mat-icon><span>New Customer</span>
+          </button>
           <mat-error *ngIf="invoiceform.get('customerId')?.hasError('required')">Customer is required</mat-error>
           <mat-hint *ngIf="isedit">Locked in edit mode</mat-hint>
-        </mat-form-field>
+        </div>
 
         <!-- Invoice date -->
         <mat-form-field appearance="outline" class="inv-field" subscriptSizing="dynamic">
@@ -164,27 +173,34 @@
                 <tr *ngFor="let item of invproducts.controls; let i = index" [formGroupName]="i" class="inv-grid-row">
                   <td class="inv-td t1">{{ i + 1 }}</td>
                   <td class="inv-td t2">
-                    <mat-form-field appearance="outline" class="inv-cell-f inv-cf-prod" subscriptSizing="dynamic">
-                      <mat-select formControlName="productId" (selectionChange)="productchange(i)" required>
-                        <mat-option>
-                          <div class="inv-dd-search" (click)="$event.stopPropagation()">
-                            <mat-icon>search</mat-icon>
-                            <input [(ngModel)]="rowProductSearch[i]" [ngModelOptions]="{standalone:true}"
-                                   placeholder="Search…" class="inv-dd-input"
-                                   (keydown)="$event.stopPropagation()" />
-                          </div>
-                        </mat-option>
-                        <mat-option value="" disabled>Select…</mat-option>
-                        <mat-option *ngFor="let prod of getFilteredProducts(rowProductSearch[i])" [value]="prod.uniqueKeyID">
-                          {{ prod.productName }}
-                        </mat-option>
-                      </mat-select>
-                      <mat-error>Required</mat-error>
-                    </mat-form-field>
+                    <div class="inv-product-picker" (click)="$event.stopPropagation()">
+                      <mat-form-field appearance="outline" class="inv-cell-f inv-cf-prod" subscriptSizing="dynamic">
+                        <input #productTrigger matInput readonly [value]="getProductName(item.get('productId')?.value)" (click)="toggleProductDropdown(i)" placeholder="Select…" required />
+                        <button mat-icon-button matSuffix type="button" (click)="toggleProductDropdown(i)" aria-label="Open product list">
+                          <mat-icon>{{ productDropdownRow === i ? 'expand_less' : 'search' }}</mat-icon>
+                        </button>
+                      </mat-form-field>
+                      <div class="inv-product-panel" *ngIf="productDropdownRow === i">
+                        <div class="inv-dd-search">
+                          <mat-icon>search</mat-icon>
+                          <input [(ngModel)]="rowProductSearch[i]" [ngModelOptions]="{standalone:true}" placeholder="Search…" class="inv-dd-input" />
+                        </div>
+                        <div class="inv-product-list">
+                          <button type="button" class="inv-product-option" *ngFor="let prod of getFilteredProducts(rowProductSearch[i])" (click)="selectProductFromDropdown(prod.uniqueKeyID, i)">
+                            <span>{{ prod.productName }}</span>
+                            <mat-icon *ngIf="item.get('productId')?.value === prod.uniqueKeyID">check</mat-icon>
+                          </button>
+                        </div>
+                        <button type="button" class="inv-add-product-option" (click)="openNewProduct($event, i)">
+                          <mat-icon>add_circle</mat-icon><span>Add New Product</span>
+                        </button>
+                      </div>
+                      <mat-error *ngIf="item.get('productId')?.hasError('required')">Required</mat-error>
+                    </div>
                   </td>
                   <td class="inv-td t3">
                     <mat-form-field appearance="outline" class="inv-cell-f inv-cf-num" subscriptSizing="dynamic">
-                      <input matInput type="number" step="0.001" min="0" formControlName="quantity" (change)="Itemcalculation(i)" required />
+                      <input #quantityInput matInput type="number" step="0.001" min="0" formControlName="quantity" (change)="Itemcalculation(i)" required />
                     </mat-form-field>
                   </td>
                   <td class="inv-td t4">

@@ -51,8 +51,8 @@
         <mat-form-field appearance="outline">
           <mat-label>Category</mat-label>
           <mat-select formControlName="categoryCode">
-            <mat-option *ngFor="let cat of categoryList" [value]="cat.name">
-              {{ cat.name }}
+            <mat-option *ngFor="let cat of categoryList" [value]="cat.code">
+              {{ cat.name }} ({{ cat.code }})
             </mat-option>
           </mat-select>
           <mat-icon matPrefix>category</mat-icon>
