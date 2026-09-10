@@ -28,6 +28,12 @@ export class MasterService {
       .pipe(catchError(err => this.handleError(err, 'Get customers')));
   }
 
+  EnsureCashCustomer(companyId: string) {
+    const url = this.baseUrl + 'Customer/EnsureCashCustomer?companyId=' + encodeURIComponent(companyId);
+    return this.http.post(url, {})
+      .pipe(catchError(err => this.handleError(err, 'Ensure cash customer')));
+  }
+
   GetCustomerbycode(code: any, companyId?: string) {
     let url = this.baseUrl + 'Customer/GetByUniqueKeyID?Code=' + encodeURIComponent(code);
     if (companyId) url += '&companyId=' + encodeURIComponent(companyId);
@@ -87,6 +93,13 @@ export class MasterService {
     if (companyId) url += '?companyId=' + encodeURIComponent(companyId);
     return this.http.post(url, invoicedata)
       .pipe(catchError(err => this.handleError(err, 'Save invoice')));
+  }
+
+  GenerateDisplayInvoiceNumber(companyId: string, invoiceDate: Date) {
+    const date = invoiceDate.toISOString().slice(0, 10);
+    const url = `${this.baseUrl}Invoice/GenerateDisplayInvoiceNumber?companyId=${encodeURIComponent(companyId)}&invoiceDate=${encodeURIComponent(date)}`;
+    return this.http.get<{ result?: string; Result?: string; displayInvNumber?: string }>(url)
+      .pipe(catchError(err => this.handleError(err, 'Generate invoice number')));
   }
 
   GenerateInvoicePDF(invoiceno: string) {

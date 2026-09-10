@@ -32,13 +32,18 @@
 
         <!-- Customer with search -->
         <div class="inv-customer-picker" (click)="$event.stopPropagation()">
-          <mat-form-field appearance="outline" class="inv-field" subscriptSizing="dynamic">
-            <mat-label>Customer</mat-label>
-            <input #customerTrigger matInput readonly [value]="selectedCustomerCompany" (click)="toggleCustomerDropdown()" placeholder="Select customer" [disabled]="isedit" required />
-            <button mat-icon-button matSuffix type="button" (click)="toggleCustomerDropdown()" [disabled]="isedit" aria-label="Open customer list">
-              <mat-icon>{{ customerDropdownOpen ? 'expand_less' : 'search' }}</mat-icon>
+          <div class="inv-customer-control">
+            <mat-form-field appearance="outline" class="inv-field inv-customer-field" subscriptSizing="dynamic">
+              <mat-label>Customer</mat-label>
+              <input #customerTrigger matInput readonly [value]="selectedCustomerCompany" (click)="toggleCustomerDropdown()" placeholder="Select customer" [disabled]="isedit" required />
+              <button matSuffix type="button" class="btn btn-sm btn-light rounded-circle inv-customer-toggle-btn" (click)="toggleCustomerDropdown()" [disabled]="isedit" aria-label="Open customer list">
+                <mat-icon>{{ customerDropdownOpen ? 'expand_less' : 'search' }}</mat-icon>
+              </button>
+            </mat-form-field>
+            <button *ngIf="!isedit" type="button" class="btn btn-sm btn-outline-primary rounded-circle inv-customer-add-btn" (click)="openNewCustomer($event)" aria-label="Add new customer" matTooltip="New customer">
+              <mat-icon>add</mat-icon>
             </button>
-          </mat-form-field>
+          </div>
           <div class="inv-customer-panel" *ngIf="customerDropdownOpen">
             <div class="inv-dd-search">
               <mat-icon>search</mat-icon>
@@ -76,11 +81,6 @@
           <mat-error *ngIf="invoiceform.get('invoiceNumber')?.hasError('required')">Required</mat-error>
         </mat-form-field>
 
-        <!-- Remarks -->
-        <mat-form-field appearance="outline" class="inv-field" subscriptSizing="dynamic">
-          <mat-label>Remarks</mat-label>
-          <input matInput formControlName="remark" />
-        </mat-form-field>
         <div class="inv-optional-toggle">
           <mat-checkbox [formControl]="showOptionalFieldsControl" color="primary">Additional shipping details</mat-checkbox>
         </div>
@@ -88,7 +88,7 @@
 
       <!-- Optional fields -->
       <div class="inv-optional-fields" *ngIf="showOptionalFieldsControl.value">
-        <div class="inv-fields-grid inv-2col">
+        <div class="inv-fields-grid inv-3col">
           <mat-form-field appearance="outline" class="inv-field" subscriptSizing="dynamic">
             <mat-label>Dispatched Through</mat-label>
             <input matInput formControlName="dispatchedThrough" />
@@ -98,6 +98,10 @@
             <mat-label>Delivery Note</mat-label>
             <input matInput formControlName="deliveryNote" />
             <mat-icon matPrefix>assignment</mat-icon>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="inv-field" subscriptSizing="dynamic">
+            <mat-label>Remarks</mat-label>
+            <input matInput formControlName="remark" />
           </mat-form-field>
         </div>
       </div>

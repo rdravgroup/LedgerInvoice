@@ -154,7 +154,7 @@
   @if (!loading && dataSource.data.length > 0) {
     <mat-card class="table-card" [class.hidden]="isMobile">
       <div class="table-wrap">
-        <table mat-table [dataSource]="dataSource" matSort #sort="matSort" class="full-table" role="grid">
+        <table mat-table [dataSource]="dataSource" matSort matSortActive="invDate" matSortDirection="desc" #sort="matSort" class="full-table" role="grid">
 
         <!-- Invoice Number -->
         <ng-container matColumnDef="invoiceNumber">
@@ -229,15 +229,23 @@
           <th mat-header-cell *matHeaderCellDef scope="col"></th>
           <td mat-cell *matCellDef="let row" class="actions-cell">
             <div class="action-group-wrap">
-              <button mat-stroked-button type="button" class="action-group-trigger"
+              <button #actionOrigin="cdkOverlayOrigin" cdkOverlayOrigin
+                      mat-icon-button type="button" class="action-group-trigger"
                       (click)="toggleActionPanel(row)"
                       [attr.aria-expanded]="isActionPanelOpen(row)"
-                      matTooltip="Show invoice actions">
+                      matTooltip="Actions" aria-label="Invoice actions">
                 <mat-icon aria-hidden="true">more_horiz</mat-icon>
-                Actions
               </button>
 
-              @if (isActionPanelOpen(row)) {
+              <ng-template
+                  cdkConnectedOverlay
+                  [cdkConnectedOverlayOrigin]="actionOrigin"
+                  [cdkConnectedOverlayOpen]="isActionPanelOpen(row)"
+                  [cdkConnectedOverlayPositions]="actionPopoverPositions"
+                  cdkConnectedOverlayHasBackdrop
+                  cdkConnectedOverlayBackdropClass="action-popover-backdrop"
+                  (backdropClick)="closeActionPanel()"
+                  (detach)="closeActionPanel()">
                 <div class="action-popover" (click)="$event.stopPropagation()">
                   <div class="action-popover-head">
                     <span>{{ row.invNum || row.invoiceNumber }}</span>
@@ -329,7 +337,7 @@
                     </button>
                   </div>
                 </div>
-              }
+              </ng-template>
             </div>
           </td>
         </ng-container>

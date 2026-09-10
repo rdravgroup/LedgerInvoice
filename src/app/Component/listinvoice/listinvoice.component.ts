@@ -1,5 +1,6 @@
 import { Component, OnInit, ViewChild, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { OverlayModule, ConnectedPosition } from '@angular/cdk/overlay';
 import { MaterialModule } from '../../material.module';
 import { ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -49,6 +50,7 @@ interface Invoice {
   imports: [
     CommonModule,
     MaterialModule,
+    OverlayModule,
     ReactiveFormsModule,
     RouterLink,
     // CHANGE: New shared components
@@ -89,6 +91,18 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
   activeActionInvoiceNumber: string | null = null;
+
+  // FIX: Actions popover rendered via CDK Overlay (attached to <body>) instead of an
+  // absolutely-positioned child of the table cell. This stops the panel from being
+  // clipped by the table card's `overflow: hidden` when there are few rows, and lets
+  // it automatically flip above the trigger when there isn't room below (short lists,
+  // small screens). Positions are tried in order until one fits the viewport.
+  readonly actionPopoverPositions: ConnectedPosition[] = [
+    { originX: 'end',   originY: 'bottom', overlayX: 'end',   overlayY: 'top',    offsetY: 8 },
+    { originX: 'end',   originY: 'top',    overlayX: 'end',   overlayY: 'bottom', offsetY: -8 },
+    { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top',    offsetY: 8 },
+    { originX: 'start', originY: 'top',    overlayX: 'start', overlayY: 'bottom', offsetY: -8 },
+  ];
 
   constructor(
     private service: MasterService,
@@ -159,8 +173,6 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
     if (this.paginator) this.dataSource.paginator = this.paginator;
     if (this.sort) {
       this.dataSource.sort = this.sort;
-      this.sort.active = 'invDate';
-      this.sort.direction = 'desc';
     }
   }
 
