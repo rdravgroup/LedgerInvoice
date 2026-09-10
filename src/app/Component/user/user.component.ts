@@ -1,5 +1,6 @@
 import { Component, OnInit, AfterViewInit, ViewChild, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { MaterialModule } from '../../material.module';
 import { UserDetailed } from '../../_model/user.model';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -19,6 +20,7 @@ import { LoggerService } from '../../_service/logger.service';
   standalone: true,
   imports: [
     CommonModule,
+    FormsModule,
     MaterialModule,
     MatTableModule,
     MatPaginatorModule,
@@ -32,6 +34,7 @@ export class UserComponent implements OnInit, AfterViewInit {
   userlist: UserDetailed[] = [];
   displayedColumns: string[] = [
     'name',
+    'loginId',
     'companyname',
     'status',
     'role',
@@ -43,6 +46,7 @@ export class UserComponent implements OnInit, AfterViewInit {
   @ViewChild(MatSort) sort!: MatSort;
 
   isMobile = false;
+  filterValue = '';
 
   constructor(
     private service: UserService,
@@ -84,6 +88,12 @@ export class UserComponent implements OnInit, AfterViewInit {
       next: (users: UserDetailed[]) => {
         this.userlist = users || [];
         this.datasource = new MatTableDataSource<UserDetailed>(this.userlist);
+        this.datasource.filterPredicate = (user, filter) => this.matchesFilter(user, filter);
+        this.datasource.sortingDataAccessor = (user, property) => {
+          if (property === 'loginId') return this.getLoginId(user).toLowerCase();
+          if (property === 'companyname') return (user.company?.companyName || '').toLowerCase();
+          return String((user as any)[property] ?? '').toLowerCase();
+        };
         this.datasource.paginator = this.paginator;
         this.datasource.sort = this.sort;
         this.logger.info('UserComponent', `Loaded ${this.userlist.length} users`);
@@ -95,6 +105,34 @@ export class UserComponent implements OnInit, AfterViewInit {
         this.toastr.error('Failed to load users', 'Error');
       }
     });
+  }
+
+  get filteredUsers(): UserDetailed[] {
+    const filter = this.filterValue.trim().toLowerCase();
+    return filter ? this.userlist.filter(user => this.matchesFilter(user, filter)) : this.userlist;
+  }
+
+  applyFilter(event: Event): void {
+    this.filterValue = (event.target as HTMLInputElement).value;
+    this.datasource.filter = this.filterValue.trim().toLowerCase();
+    if (this.datasource.paginator) this.datasource.paginator.firstPage();
+  }
+
+  getLoginId(user: UserDetailed): string {
+    return user.username || user.email || 'N/A';
+  }
+
+  private matchesFilter(user: UserDetailed, filter: string): boolean {
+    const values = [
+      user.name,
+      user.username,
+      user.email,
+      user.company?.companyName,
+      user.companyId,
+      user.role,
+      user.isactive ? 'active' : 'inactive'
+    ];
+    return values.some(value => String(value || '').toLowerCase().includes(filter));
   }
 
   updaterole(username: string) {

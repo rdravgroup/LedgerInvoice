@@ -50,7 +50,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
               return throwError(() => error);
             }
 
-            errorMessage = 'Unauthorized. Please login again.';
+            errorMessage = error.error?.code === 'SINGLE_DEVICE_SESSION_REPLACED'
+              ? 'You were logged out because this account was opened on another device.'
+              : 'Unauthorized. Please login again.';
             logger.warn('ERROR_INTERCEPTOR', 'Unauthorized (401)', { url: req.url });
             localStorage.removeItem('token');
             localStorage.removeItem('username');

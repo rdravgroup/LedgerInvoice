@@ -4,11 +4,24 @@
   </mat-card-header>
 
   <mat-card-content>
+    <div class="user-filter-bar">
+      <mat-form-field appearance="outline" class="user-filter-field">
+        <mat-label>Filter users</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput type="search" placeholder="Name, login ID, email, company, role..." (input)="applyFilter($event)" />
+        <button *ngIf="filterValue" mat-icon-button matSuffix type="button" aria-label="Clear user filter" (click)="filterValue=''; datasource.filter='';">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-form-field>
+      <span class="user-filter-count">{{ filteredUsers.length }} users</span>
+    </div>
+
     <!-- Mobile view -->
     <div *ngIf="isMobile" class="mobile-list">
-      <div *ngFor="let element of userlist" class="mobile-card mat-elevation-z2">
+      <div *ngFor="let element of filteredUsers" class="mobile-card mat-elevation-z2">
         <div class="mobile-card-content">
           <div class="mobile-name">{{ element.name || element.username }}</div>
+          <div class="mobile-sub">Login ID: {{ getLoginId(element) }}</div>
           <div class="mobile-sub">{{ element.company?.companyName || 'No Company' }} • {{ element.role }}</div>
           <div class="mobile-sub">
             <span class="status-badge" [ngClass]="element.isactive ? 'status-active' : 'status-inactive'">
@@ -45,6 +58,12 @@
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
           <td mat-cell *matCellDef="let element">{{ element.name }}</td>
+        </ng-container>
+
+        <!-- Company Name -->
+        <ng-container matColumnDef="loginId">
+          <th mat-header-cell *matHeaderCellDef mat-sort-header>Login ID</th>
+          <td mat-cell *matCellDef="let element">{{ getLoginId(element) }}</td>
         </ng-container>
 
         <!-- Company Name -->

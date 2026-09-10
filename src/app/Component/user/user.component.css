@@ -14,6 +14,23 @@ background-color: blue;
 color: white;
 }
 
+.user-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 8px 0 16px;
+}
+
+.user-filter-field {
+    width: min(560px, 100%);
+}
+
+.user-filter-count {
+    color: #64748b;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
 /* Responsive table wrapper to allow horizontal scroll on small screens */
 .table-wrapper { overflow: auto; padding-bottom: 80px; }
 
@@ -114,6 +131,8 @@ mat-paginator .mat-mdc-select { min-width: 56px; }
 @media (max-width: 480px) {
     mat-card { margin: 4px; width: calc(100% - 8px); }
     .mobile-sub { font-size: 11px; }
+    .user-filter-bar { align-items: stretch; flex-direction: column; gap: 2px; }
+    .user-filter-field { width: 100%; }
 }
 
 @media (min-width: 768px) {
