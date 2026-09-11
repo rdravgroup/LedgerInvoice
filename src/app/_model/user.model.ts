@@ -65,6 +65,8 @@ export interface Roles {
   code:   string;
   name:   string;
   status: boolean;
+  displayName?: string;
+  roleLevel?: number;
 }
 
 export interface Menus {
@@ -94,6 +96,7 @@ export interface UserDetailed {
   role:          string;
   isactive:      boolean;
   islocked:      boolean;
+  mustChangePassword?: boolean;
   failattempt:   number;
   address?:      string;
   authProvider?: string;
@@ -133,6 +136,25 @@ export interface LoginResponse {
   requiresPinSetup?: boolean;
   rememberMeEnabled?: boolean;
   email?: string;
+  requiresPasswordChange?: boolean;
+}
+
+export interface CreateManagedUserRequest {
+  name: string;
+  email: string;
+  phone?: string;
+  companyId?: string;
+  role: string;
+}
+
+export interface UpdateManagedUserRequest {
+  username: string;
+  name: string;
+  newUsername?: string;
+  phone?: string;
+  companyId?: string;
+  role: string;
+  isActive: boolean;
 }
 
 export interface ApiResponse { result: string; message?: string; errorMessage?: string; data?: any; }

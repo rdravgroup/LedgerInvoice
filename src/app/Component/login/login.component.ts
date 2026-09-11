@@ -12,6 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { CommonModule } from '@angular/common';
 import { MatDialog } from '@angular/material/dialog';
 import { AuthPinDialogComponent } from '../auth-pin-dialog/auth-pin-dialog.component';
+import { ForcePasswordChangeDialogComponent } from './force-password-change-dialog.component';
 
 @Component({
   selector: 'app-login',
@@ -413,6 +414,18 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     this._otpLoginForm.get('otp')?.setValue(input.value, { emitEvent: false });
   }
   private continueAfterPinSetup(response: LoginResponse, username?: string | null, userRole?: string | null): void {
+    if (response?.requiresPasswordChange) {
+      const dialogRef = this.dialog.open(ForcePasswordChangeDialogComponent, {
+        disableClose: true,
+        width: '480px',
+        maxWidth: '94vw',
+        data: { username }
+      });
+      dialogRef.afterClosed().subscribe(changed => {
+        if (changed) this.continueAfterPinSetup({ ...response, requiresPasswordChange: false }, username, userRole);
+      });
+      return;
+    }
     if (!response?.requiresPinSetup) {
       this.proceedWithMenuLoad(username, userRole);
       return;

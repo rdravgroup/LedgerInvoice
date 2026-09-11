@@ -138,3 +138,5 @@ mat-paginator .mat-mdc-select { min-width: 56px; }
 @media (min-width: 768px) {
     .mobile-list { display: none; }
 }
+.add-user-button { margin-left:auto; }
+mat-card-header { display:flex; align-items:center; gap:12px; }

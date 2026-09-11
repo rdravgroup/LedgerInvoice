@@ -27,6 +27,7 @@ import {
   ApiResponse,
   LoginWithPasswordRequest
 } from '../_model/user.model';
+import { CreateManagedUserRequest } from '../_model/user.model';
 import { Company } from '../_model/company.model';
 import { LoggerService } from './logger.service';
 import { environment } from '../../environments/environment';
@@ -237,6 +238,21 @@ export class UserService {
         return [];
       })
     );
+  }
+
+  createManagedUser(data: CreateManagedUserRequest): Observable<ApiResponse> {
+    const url = `${this.baseUrl}User/create-managed-user`;
+    return this.http.post<ApiResponse>(url, data).pipe(
+      catchError(err => this.handleError(err))
+    );
+  }
+
+  getAssignableRoles(): Observable<Roles[]> {
+    return this.http.get<Roles[]>(`${this.baseUrl}User/GetAssignableRoles`);
+  }
+
+  updateManagedUser(data: import('../_model/user.model').UpdateManagedUserRequest): Observable<ApiResponse> {
+    return this.http.put<ApiResponse>(`${this.baseUrl}User/update-managed-user`, data);
   }
 
   /**

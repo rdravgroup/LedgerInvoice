@@ -14,6 +14,7 @@ import { UserupdateComponent } from '../userupdate/userupdate.component';
 import { MapCompanyComponent } from './map-company.component';
 import { UserDetailsDialogComponent } from './user-details-dialog.component';
 import { LoggerService } from '../../_service/logger.service';
+import { CreateManagedUserDialogComponent } from './create-managed-user-dialog.component';
 
 @Component({
   selector: 'app-user',
@@ -195,5 +196,35 @@ export class UserComponent implements OnInit, AfterViewInit {
     };
 
     this.dialog.open(UserDetailsDialogComponent, cfg);
+  }
+
+  addUser(): void {
+    const ref = this.dialog.open(CreateManagedUserDialogComponent, {
+      width: this.isMobile ? '100%' : '620px',
+      maxWidth: '96vw',
+      data: { companyId: this.authService.getCompanyId() },
+      autoFocus: false
+    });
+    ref.afterClosed().subscribe(result => {
+      if (result?.result === 'pass' || result?.Result === 'pass') {
+        this.toastr.success('User created and credentials emailed.', 'User');
+        this.loadUsers();
+      }
+    });
+  }
+
+  editUser(user: UserDetailed): void {
+    const ref = this.dialog.open(CreateManagedUserDialogComponent, {
+      width: this.isMobile ? '100%' : '620px',
+      maxWidth: '96vw',
+      data: { user },
+      autoFocus: false
+    });
+    ref.afterClosed().subscribe(result => {
+      if (result?.result === 'pass' || result?.Result === 'pass') {
+        this.toastr.success('User updated successfully.', 'User');
+        this.loadUsers();
+      }
+    });
   }
 }

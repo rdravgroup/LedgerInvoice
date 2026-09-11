@@ -1,6 +1,9 @@
 <mat-card>
   <mat-card-header>
     <h1>User Listing</h1>
+    <button mat-flat-button color="primary" type="button" class="add-user-button" (click)="addUser()">
+      <mat-icon>person_add</mat-icon> Add User
+    </button>
   </mat-card-header>
 
   <mat-card-content>
@@ -38,6 +41,9 @@
           <ng-container *ngIf="canShowActions(element.role)">
             <button mat-mini-fab color="primary" (click)="updaterole(element.username)" matTooltip="Update Role">
               <mat-icon>manage_accounts</mat-icon>
+            </button>
+            <button mat-mini-fab color="primary" (click)="editUser(element)" matTooltip="Edit User">
+              <mat-icon>edit</mat-icon>
             </button>
             <button mat-mini-fab color="primary" (click)="updatestatus(element.username)" matTooltip="Update Status">
               <mat-icon>toggle_on</mat-icon>
@@ -97,6 +103,9 @@
             <!-- View Details Button (always visible) -->
             <button (click)="viewUserDetails(element.username)" mat-icon-button color="primary" matTooltip="View Full Details">
               <mat-icon>info</mat-icon>
+            </button>
+            <button (click)="editUser(element)" mat-icon-button color="primary" matTooltip="Edit User">
+              <mat-icon>edit</mat-icon>
             </button>
 
             <!-- Admin Action Buttons (super_admin only) -->
