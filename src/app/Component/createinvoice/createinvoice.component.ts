@@ -21,7 +21,7 @@ import { switchMap, takeUntil } from 'rxjs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-import { MatNativeDateModule } from '@angular/material/core';
+import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE, MatNativeDateModule, NativeDateAdapter } from '@angular/material/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatBottomSheet, MatBottomSheetModule } from '@angular/material/bottom-sheet';
 import { MatInputModule } from '@angular/material/input';
@@ -38,6 +38,35 @@ import { CustomerDetailsDialogComponent } from '../ledger/customer-details-dialo
 import { QuickCustomerDialogComponent } from './quick-customer-dialog.component';
 import { QuickProductDialogComponent } from './quick-product-dialog.component';
 
+const INVOICE_DATE_FORMATS = {
+  parse: { dateInput: { day: '2-digit', month: '2-digit', year: 'numeric' } },
+  display: {
+    dateInput: { day: '2-digit', month: '2-digit', year: 'numeric' },
+    monthYearLabel: { month: 'short', year: 'numeric' },
+    dateA11yLabel: { day: 'numeric', month: 'long', year: 'numeric' },
+    monthYearA11yLabel: { month: 'long', year: 'numeric' }
+  }
+};
+
+class InvoiceDateAdapter extends NativeDateAdapter {
+  override format(date: Date, _displayFormat: unknown): string {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    return `${day}/${month}/${date.getFullYear()}`;
+  }
+
+  override parse(value: unknown): Date | null {
+    if (typeof value !== 'string') return super.parse(value, '');
+    const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!match) return super.parse(value, '');
+    const day = Number(match[1]);
+    const month = Number(match[2]) - 1;
+    const year = Number(match[3]);
+    const date = new Date(year, month, day);
+    return date.getFullYear() === year && date.getMonth() === month && date.getDate() === day ? date : null;
+  }
+}
+
 @Component({
   selector: 'app-createinvoice',
   standalone: true,
@@ -49,6 +78,11 @@ import { QuickProductDialogComponent } from './quick-product-dialog.component';
   ],
   templateUrl: './createinvoice.component.html',
   styleUrl: './createinvoice.component.css',
+  providers: [
+    { provide: MAT_DATE_LOCALE, useValue: 'en-GB' },
+    { provide: DateAdapter, useClass: InvoiceDateAdapter },
+    { provide: MAT_DATE_FORMATS, useValue: INVOICE_DATE_FORMATS }
+  ]
 })
 export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy {
 
