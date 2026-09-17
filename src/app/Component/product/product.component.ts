@@ -211,6 +211,24 @@ export class ProductComponent implements OnInit, OnDestroy {
   activeProducts = 0;
   showExtraFields = false;
   defaultCategoryCode = '';
+  private readonly decimalMax = 999999999999999;
+
+  private numberValidator(maxValue: number, decimals: number, minValue = 0) {
+    return (control: any) => {
+      const value = control?.value;
+      if (value === null || value === undefined || value === '') return null;
+      const numericValue = Number(value);
+      if (Number.isNaN(numericValue)) return { invalidNumber: true };
+      if (numericValue < minValue) return { min: true };
+      if (numericValue > maxValue) return { max: true };
+      const rounded = Number(numericValue.toFixed(decimals));
+      if (Number(value) !== rounded && String(value).includes('.')) {
+        const decimalsValue = String(value).split('.')[1]?.length ?? 0;
+        if (decimalsValue > decimals) return { precision: true };
+      }
+      return null;
+    };
+  }
 
   constructor(
     private fb: FormBuilder,
@@ -243,26 +261,24 @@ export class ProductComponent implements OnInit, OnDestroy {
 
   initForm() {
     this.productForm = this.fb.group({
-      productName: ['', Validators.required],
-      measurement: ['', Validators.required],
-      hsnSacNumber: [''],
-      categoryCode: ['', Validators.required],
-      cgstRate: [0, [Validators.required, Validators.min(0)]],
-      scgstRate: [0, [Validators.required, Validators.min(0)]],
-      totalGstRate: [0, [Validators.required, Validators.min(0)]],
-      rateWithoutTax: [0, [Validators.required, Validators.min(0)]],
-      rateWithTax: [0, [Validators.required, Validators.min(0)]],
-      // Purchase fields
-      purchaseRate: [null, [Validators.min(0)]],
+      productName: ['', [Validators.required, Validators.maxLength(200)]],
+      measurement: ['', [Validators.required, Validators.maxLength(10)]],
+      hsnSacNumber: ['', Validators.maxLength(20)],
+      categoryCode: ['', [Validators.required, Validators.maxLength(20)]],
+      cgstRate: [0, [Validators.required, Validators.min(0), Validators.max(100), this.numberValidator(100, 2)]],
+      scgstRate: [0, [Validators.required, Validators.min(0), Validators.max(100), this.numberValidator(100, 2)]],
+      totalGstRate: [0, [Validators.required, Validators.min(0), Validators.max(100), this.numberValidator(100, 2)]],
+      rateWithoutTax: [0, [Validators.required, Validators.min(0), this.numberValidator(this.decimalMax, 3)]],
+      rateWithTax: [0, [Validators.required, Validators.min(0), this.numberValidator(this.decimalMax, 3)]],
+      purchaseRate: [null, [Validators.min(0), this.numberValidator(this.decimalMax, 3)]],
       purchaseRateDate: [null],
-      // Stock fields
-      stockQty: [0, [Validators.min(0)]],
-      minStockQty: [0, [Validators.min(0)]],
-      maxStockQty: [0, [Validators.min(0)]],
-      reorderLevel: [0, [Validators.min(0)]],
-      lastPurchaseRate: [0, [Validators.min(0)]],
+      stockQty: [0, [Validators.min(0), this.numberValidator(this.decimalMax, 3)]],
+      minStockQty: [0, [Validators.min(0), this.numberValidator(this.decimalMax, 3)]],
+      maxStockQty: [0, [Validators.min(0), this.numberValidator(this.decimalMax, 3)]],
+      reorderLevel: [0, [Validators.min(0), this.numberValidator(this.decimalMax, 3)]],
+      lastPurchaseRate: [0, [Validators.min(0), this.numberValidator(this.decimalMax, 4)]],
       lastPurchaseDate: [null],
-      remark: [''],
+      remark: ['', Validators.maxLength(200)],
       isActive: [true]
     });
     // Ensure form controls match initial showExtraFields state

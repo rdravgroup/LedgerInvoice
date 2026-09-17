@@ -128,23 +128,33 @@ export class CompanyManageComponent implements OnInit, AfterViewInit {
   }
 
   openEdit(item: Company): void {
-    // Admins are allowed a single update. If already updated, prevent opening the dialog.
-    if (this.isAdmin && item.updatedDate) {
-      this.toastr.info('Admin can update company details only once. Request super_admin for further changes.', 'Info');
-      return;
-    }
-
-    // Fetch full company details before opening the edit dialog so address and other fields are present
+    // Identity popup keeps protected fields like company name, GST, and address.
     this.companyService.getCompanyById(item.companyId).subscribe({
       next: (company) => {
-        const cfg: any = { width: this.isMobile ? '100%' : '920px', maxWidth: this.isMobile ? '100vw' : '96vw', data: { company } };
+        const cfg: any = { width: this.isMobile ? '100%' : '920px', maxWidth: this.isMobile ? '100vw' : '96vw', data: { company, mode: 'identity' } };
         this.dialog.open(CompanyFormDialogComponent, cfg).afterClosed().subscribe((res) => {
           this.handleDialogResult(res);
         });
       },
       error: () => {
-        // Fallback to opening with list item if detailed fetch fails
-        const cfg: any = { width: this.isMobile ? '100%' : '920px', maxWidth: this.isMobile ? '100vw' : '96vw', data: { company: item } };
+        const cfg: any = { width: this.isMobile ? '100%' : '920px', maxWidth: this.isMobile ? '100vw' : '96vw', data: { company: item, mode: 'identity' } };
+        this.dialog.open(CompanyFormDialogComponent, cfg).afterClosed().subscribe((res) => {
+          this.handleDialogResult(res);
+        });
+      }
+    });
+  }
+
+  openSettings(item: Company): void {
+    this.companyService.getCompanyById(item.companyId).subscribe({
+      next: (company) => {
+        const cfg: any = { width: this.isMobile ? '100%' : '900px', maxWidth: this.isMobile ? '100vw' : '96vw', data: { company, mode: 'settings' } };
+        this.dialog.open(CompanyFormDialogComponent, cfg).afterClosed().subscribe((res) => {
+          this.handleDialogResult(res);
+        });
+      },
+      error: () => {
+        const cfg: any = { width: this.isMobile ? '100%' : '900px', maxWidth: this.isMobile ? '100vw' : '96vw', data: { company: item, mode: 'settings' } };
         this.dialog.open(CompanyFormDialogComponent, cfg).afterClosed().subscribe((res) => {
           this.handleDialogResult(res);
         });

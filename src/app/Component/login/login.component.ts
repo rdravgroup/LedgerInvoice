@@ -53,14 +53,14 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
 
     // Initialize password login form
     this._loginForm = this.builder.group({
-      username: ['', [Validators.required]],
-      password: ['', Validators.required],
+      username: ['', [Validators.required, Validators.maxLength(100)]],
+      password: ['', [Validators.required, Validators.maxLength(255)]],
       rememberMe: [false]
     });
 
     // Initialize OTP login form
     this._otpLoginForm = this.builder.group({
-      email: ['', [Validators.required, Validators.email]],
+      email: ['', [Validators.required, Validators.email, Validators.maxLength(100)]],
       otp: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(6)]]
     });
 

@@ -1,12 +1,12 @@
 <div class="cfd-wrap">
   <div class="cfd-header">
     <div class="cfd-header-icon">
-      <mat-icon>{{ isEdit ? 'edit_note' : 'add_business' }}</mat-icon>
+      <mat-icon>{{ isEdit ? (isSettingsMode ? 'settings' : 'edit_note') : 'add_business' }}</mat-icon>
     </div>
     <div class="cfd-heading">
       <p class="cfd-eyebrow">Company profile</p>
-      <h2 class="cfd-title">{{ isEdit ? 'Edit Company' : 'Create Company' }}</h2>
-      <p class="cfd-sub">{{ isEdit ? 'Update registered contact, address, tax, and bank details.' : 'Add company details used across invoices, reports, and billing documents.' }}</p>
+      <h2 class="cfd-title">{{ isSettingsMode ? 'Company Settings' : (isEdit ? 'Edit Company' : 'Create Company') }}</h2>
+      <p class="cfd-sub">{{ isSettingsMode ? 'Update company configuration and contact settings.' : (isEdit ? 'Update company identity details.' : 'Add company details used across invoices, reports, and billing documents.') }}</p>
     </div>
     <button mat-icon-button type="button" mat-dialog-close class="cfd-close" aria-label="Close">
       <mat-icon>close</mat-icon>
@@ -15,195 +15,179 @@
 
   <mat-dialog-content class="cfd-content">
     <form [formGroup]="form" class="cfd-form" novalidate>
-      <section class="cfd-section cfd-section-primary">
-        <div class="cfd-section-title">
-          <mat-icon>badge</mat-icon>
-          <div>
-            <h3>Identity</h3>
-            <p>Basic registered company information.</p>
+      <ng-container *ngIf="!isSettingsMode">
+        <section class="cfd-section cfd-section-primary">
+          <div class="cfd-section-title">
+            <mat-icon>badge</mat-icon>
+            <div>
+              <h3>Identity</h3>
+              <p>Only company identity fields are editable in this popup.</p>
+            </div>
           </div>
-        </div>
 
-        <div class="cfd-grid">
-          <mat-form-field appearance="outline" class="cfd-col-2">
-            <mat-label>Company Name</mat-label>
-            <input matInput formControlName="name" placeholder="Enter company name" />
-            <mat-icon matPrefix>business</mat-icon>
-            <mat-error *ngIf="form.get('name')?.hasError('required')">Company name is required</mat-error>
-          </mat-form-field>
+          <div class="cfd-grid">
+            <mat-form-field appearance="outline" class="cfd-col-2">
+              <mat-label>Company Name</mat-label>
+              <input matInput formControlName="name" placeholder="Enter company name" [disabled]="isEdit && !canEditIdentityFields" />
+              <mat-icon matPrefix>business</mat-icon>
+              <mat-error *ngIf="form.get('name')?.hasError('required')">Company name is required</mat-error>
+            </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Company Code</mat-label>
-            <input matInput formControlName="companyId" readonly />
-            <mat-icon matPrefix>tag</mat-icon>
-          </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Company Code</mat-label>
+              <input matInput formControlName="companyId" readonly />
+              <mat-icon matPrefix>tag</mat-icon>
+            </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>GST Number</mat-label>
-            <input matInput formControlName="gstNumber" class="cfd-mono" />
-            <mat-icon matPrefix>receipt_long</mat-icon>
-          </mat-form-field>
-        </div>
-      </section>
+            <mat-form-field appearance="outline" class="cfd-col-2">
+              <mat-label>GST Number</mat-label>
+              <input matInput formControlName="gstNumber" class="cfd-mono" [disabled]="isEdit && !canEditIdentityFields" />
+              <mat-icon matPrefix>receipt_long</mat-icon>
+            </mat-form-field>
 
-      <section class="cfd-section">
-        <div class="cfd-section-title">
-          <mat-icon>contact_phone</mat-icon>
-          <div>
-            <h3>Contact</h3>
-            <p>Email and phone numbers shown in company records.</p>
+            <mat-form-field appearance="outline" class="cfd-col-2">
+              <mat-label>Address</mat-label>
+              <textarea matInput rows="4" formControlName="addressDetails" placeholder="Building, street, area, city, PIN" [disabled]="isEdit && !canEditIdentityFields"></textarea>
+              <mat-icon matPrefix>home_work</mat-icon>
+              <mat-error *ngIf="form.get('addressDetails')?.hasError('required')">Address is required</mat-error>
+            </mat-form-field>
           </div>
-        </div>
+        </section>
+      </ng-container>
 
-        <div class="cfd-grid">
-          <mat-form-field appearance="outline">
-            <mat-label>Email</mat-label>
-            <input matInput formControlName="emailId" type="email" placeholder="company@example.com" />
-            <mat-icon matPrefix>mail_outline</mat-icon>
-            <mat-error *ngIf="form.get('emailId')?.hasError('required')">Email is required</mat-error>
-            <mat-error *ngIf="form.get('emailId')?.hasError('email')">Enter a valid email</mat-error>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Mobile</mat-label>
-            <input matInput formControlName="mobileNo" type="tel" inputmode="tel" />
-            <mat-icon matPrefix>phone</mat-icon>
-            <mat-error *ngIf="form.get('mobileNo')?.hasError('required')">Mobile number is required</mat-error>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Alternate Mobile</mat-label>
-            <input matInput formControlName="alternateMobile" type="tel" inputmode="tel" />
-            <mat-icon matPrefix>phone_iphone</mat-icon>
-          </mat-form-field>
-        </div>
-      </section>
-
-      <section class="cfd-section">
-        <div class="cfd-section-title">
-          <mat-icon>location_on</mat-icon>
-          <div>
-            <h3>Address</h3>
-            <p>Used on invoices and company documents.</p>
+      <ng-container *ngIf="isSettingsMode">
+        <section class="cfd-section">
+          <div class="cfd-section-title">
+            <mat-icon>contact_phone</mat-icon>
+            <div>
+              <h3>Contact</h3>
+              <p>Email and phone numbers shown in company records.</p>
+            </div>
           </div>
-        </div>
 
-        <div class="cfd-grid">
-          <mat-form-field appearance="outline" class="cfd-col-2">
-            <mat-label>Full Address</mat-label>
-            <textarea matInput rows="4" formControlName="addressDetails" placeholder="Building, street, area, city, PIN"></textarea>
-            <mat-icon matPrefix>home_work</mat-icon>
-            <mat-error *ngIf="form.get('addressDetails')?.hasError('required')">Address is required</mat-error>
-          </mat-form-field>
+          <div class="cfd-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Email</mat-label>
+              <input matInput formControlName="emailId" type="email" placeholder="company@example.com" />
+              <mat-icon matPrefix>mail_outline</mat-icon>
+              <mat-error *ngIf="form.get('emailId')?.hasError('required')">Email is required</mat-error>
+              <mat-error *ngIf="form.get('emailId')?.hasError('email')">Enter a valid email</mat-error>
+            </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Country</mat-label>
-            <mat-select formControlName="countryCode" (selectionChange)="onCountryChange($event.value)">
-              <mat-option *ngFor="let country of countryList" [value]="country.countryCode">
-                {{ country.countryName }} ({{ country.countryCode }})
-              </mat-option>
-            </mat-select>
-            <mat-icon matPrefix>flag</mat-icon>
-          </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Mobile</mat-label>
+              <input matInput formControlName="mobileNo" type="tel" inputmode="tel" />
+              <mat-icon matPrefix>phone</mat-icon>
+              <mat-error *ngIf="form.get('mobileNo')?.hasError('required')">Mobile number is required</mat-error>
+            </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>State</mat-label>
-            <mat-select formControlName="stateCode" (selectionChange)="onStateChange($event.value)" [disabled]="!stateList.length">
-              <mat-option *ngFor="let state of stateList" [value]="state.stateCode">
-                {{ state.stateName }} ({{ state.stateCode }})
-              </mat-option>
-            </mat-select>
-            <mat-icon matPrefix>pin_drop</mat-icon>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline" class="cfd-col-2">
-            <mat-label>Sales Invoice Rate</mat-label>
-            <mat-select formControlName="salesInvoiceRateMode">
-              <mat-option value="without_tax">Rate Without Tax</mat-option>
-              <mat-option value="with_tax">Rate With Tax</mat-option>
-            </mat-select>
-            <mat-icon matPrefix>calculate</mat-icon>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Default Product Category Code</mat-label>
-            <mat-select formControlName="defaultProductCategoryCode">
-              <mat-option value="">No default category</mat-option>
-              <mat-option *ngFor="let category of categoryList" [value]="category.code">
-                {{ category.name }} ({{ category.code }})
-              </mat-option>
-            </mat-select>
-            <mat-icon matPrefix>category</mat-icon>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Invoice Number Mode</mat-label>
-            <mat-select formControlName="invoiceDisplayNumberMode">
-              <mat-option value="manual">Manual entry</mat-option>
-              <mat-option value="auto">Auto generate</mat-option>
-            </mat-select>
-            <mat-icon matPrefix>numbers</mat-icon>
-          </mat-form-field>
-
-          <mat-form-field appearance="outline">
-            <mat-label>Invoice Number Prefix</mat-label>
-            <input matInput formControlName="invoiceDisplayNumberPrefix" maxlength="10" placeholder="Example: COMP1" />
-            <mat-icon matPrefix>short_text</mat-icon>
-          </mat-form-field>
-        </div>
-      </section>
-
-      <section class="cfd-section">
-        <div class="cfd-section-title">
-          <mat-icon>touch_app</mat-icon>
-          <div><h3>Invoice Actions</h3><p>Choose which actions appear in the invoice list.</p></div>
-        </div>
-        <div class="cfd-grid">
-          <mat-checkbox formControlName="showActionPreview">Preview</mat-checkbox>
-          <mat-checkbox formControlName="showActionPdf">PDF</mat-checkbox>
-          <mat-checkbox formControlName="showActionPosPrint">POS Print</mat-checkbox>
-          <mat-checkbox formControlName="showActionPosPreview">POS Preview</mat-checkbox>
-          <mat-checkbox formControlName="showActionEmail">Email</mat-checkbox>
-          <mat-checkbox formControlName="showActionWhatsApp">WhatsApp</mat-checkbox>
-          <mat-checkbox formControlName="showActionStatement">Statement</mat-checkbox>
-        </div>
-      </section>
-
-      <section class="cfd-section">
-        <div class="cfd-section-title">
-          <mat-icon>account_balance</mat-icon>
-          <div>
-            <h3>Bank Details</h3>
-            <p>Optional payment details printed when available.</p>
+            <mat-form-field appearance="outline">
+              <mat-label>Alternate Mobile</mat-label>
+              <input matInput formControlName="alternateMobile" type="tel" inputmode="tel" />
+              <mat-icon matPrefix>phone_iphone</mat-icon>
+            </mat-form-field>
           </div>
-        </div>
+        </section>
 
-        <div class="cfd-grid">
-          <mat-form-field appearance="outline">
-            <mat-label>Bank Name</mat-label>
-            <input matInput formControlName="bankName" />
-            <mat-icon matPrefix>account_balance</mat-icon>
-          </mat-form-field>
+        <section class="cfd-section">
+          <div class="cfd-section-title">
+            <mat-icon>calculate</mat-icon>
+            <div>
+              <h3>Invoice Configuration</h3>
+              <p>Billing defaults and invoice behavior.</p>
+            </div>
+          </div>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Account Number</mat-label>
-            <input matInput formControlName="accountNumber" class="cfd-mono" />
-            <mat-icon matPrefix>credit_card</mat-icon>
-          </mat-form-field>
+          <div class="cfd-grid">
+            <mat-form-field appearance="outline" class="cfd-col-2">
+              <mat-label>Sales Invoice Rate</mat-label>
+              <mat-select formControlName="salesInvoiceRateMode">
+                <mat-option value="without_tax">Rate Without Tax</mat-option>
+                <mat-option value="with_tax">Rate With Tax</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>calculate</mat-icon>
+            </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>IFSC Code</mat-label>
-            <input matInput formControlName="ifsc" class="cfd-mono cfd-uppercase" />
-            <mat-icon matPrefix>swap_horiz</mat-icon>
-          </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Default Product Category Code</mat-label>
+              <mat-select formControlName="defaultProductCategoryCode">
+                <mat-option value="">No default category</mat-option>
+                <mat-option *ngFor="let category of categoryList" [value]="category.code">
+                  {{ category.name }} ({{ category.code }})
+                </mat-option>
+              </mat-select>
+              <mat-icon matPrefix>category</mat-icon>
+            </mat-form-field>
 
-          <mat-form-field appearance="outline">
-            <mat-label>Bank Branch / Address</mat-label>
-            <input matInput formControlName="accountAddress" />
-            <mat-icon matPrefix>location_city</mat-icon>
-          </mat-form-field>
-        </div>
-      </section>
+            <mat-form-field appearance="outline">
+              <mat-label>Invoice Number Mode</mat-label>
+              <mat-select formControlName="invoiceDisplayNumberMode">
+                <mat-option value="manual">Manual entry</mat-option>
+                <mat-option value="auto">Auto generate</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>numbers</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Invoice Number Prefix</mat-label>
+              <input matInput formControlName="invoiceDisplayNumberPrefix" maxlength="10" placeholder="Example: COMP1" />
+              <mat-icon matPrefix>short_text</mat-icon>
+            </mat-form-field>
+          </div>
+        </section>
+
+        <section class="cfd-section">
+          <div class="cfd-section-title">
+            <mat-icon>touch_app</mat-icon>
+            <div><h3>Invoice Actions</h3><p>Choose which actions appear in the invoice list.</p></div>
+          </div>
+          <div class="cfd-grid">
+            <mat-checkbox formControlName="showActionPreview">Preview</mat-checkbox>
+            <mat-checkbox formControlName="showActionPdf">PDF</mat-checkbox>
+            <mat-checkbox formControlName="showActionPosPrint">POS Print</mat-checkbox>
+            <mat-checkbox formControlName="showActionPosPreview">POS Preview</mat-checkbox>
+            <mat-checkbox formControlName="showActionEmail">Email</mat-checkbox>
+            <mat-checkbox formControlName="showActionWhatsApp">WhatsApp</mat-checkbox>
+            <mat-checkbox formControlName="showActionStatement">Statement</mat-checkbox>
+          </div>
+        </section>
+
+        <section class="cfd-section">
+          <div class="cfd-section-title">
+            <mat-icon>account_balance</mat-icon>
+            <div>
+              <h3>Bank Details</h3>
+              <p>Optional payment details printed when available.</p>
+            </div>
+          </div>
+
+          <div class="cfd-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Bank Name</mat-label>
+              <input matInput formControlName="bankName" />
+              <mat-icon matPrefix>account_balance</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Account Number</mat-label>
+              <input matInput formControlName="accountNumber" class="cfd-mono" />
+              <mat-icon matPrefix>credit_card</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>IFSC Code</mat-label>
+              <input matInput formControlName="ifsc" class="cfd-mono cfd-uppercase" />
+              <mat-icon matPrefix>swap_horiz</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Bank Branch / Address</mat-label>
+              <input matInput formControlName="accountAddress" />
+              <mat-icon matPrefix>location_city</mat-icon>
+            </mat-form-field>
+          </div>
+        </section>
+      </ng-container>
     </form>
   </mat-dialog-content>
 

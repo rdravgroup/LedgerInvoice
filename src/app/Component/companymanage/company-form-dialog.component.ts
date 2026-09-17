@@ -23,20 +23,26 @@ export class CompanyFormDialogComponent implements OnInit {
   form: any;
   submitting = false;
   isEdit = false;
+  mode: 'identity' | 'settings' = 'identity';
   countryList: Country[] = [];
   stateList: State[] = [];
   categoryList: any[] = [];
+  isAdmin = false;
+  isSuperAdmin = false;
+  isGuest = false;
 
   constructor(
     private fb: FormBuilder,
     private dialogRef: MatDialogRef<CompanyFormDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: { company?: Company } | null,
+    @Inject(MAT_DIALOG_DATA) public data: { company?: Company; mode?: 'identity' | 'settings' } | null,
     private service: CompanyService,
     private masterService: MasterService,
     private userService: UserService,
     private auth: AuthService,
     private toastr: ToastrService
   ) {
+    this.mode = data?.mode === 'settings' ? 'settings' : 'identity';
+
     this.form = this.fb.group({
       companyId: [''],
       name: ['', Validators.required],
@@ -73,8 +79,29 @@ export class CompanyFormDialogComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.syncRoleFlags();
     this.loadCountries();
     this.loadCategories();
+  }
+
+  get isSettingsMode(): boolean {
+    return this.mode === 'settings';
+  }
+
+  get canEditIdentityFields(): boolean {
+    return !this.isEdit || this.isSuperAdmin;
+  }
+
+  // Settings are unrestricted for admin and super-admin.
+  get canEditCompanySettings(): boolean {
+    return true;
+  }
+
+  private syncRoleFlags(): void {
+    const role = (this.auth.getUserRole() || '').toLowerCase();
+    this.isSuperAdmin = role === 'super_admin' || role === 'superadmin';
+    this.isAdmin = role === 'admin';
+    this.isGuest = role === 'guest';
   }
 
   private pick(source: any, ...keys: string[]): any {
@@ -126,6 +153,24 @@ export class CompanyFormDialogComponent implements OnInit {
     return value === '' ? true : !!value;
   }
 
+  private hasRestrictedIdentityChange(): boolean {
+    if (!this.isEdit || !this.isAdmin || this.isSuperAdmin) return false;
+
+    const original = this.data?.company ?? {};
+    const current = this.form.getRawValue();
+
+    const originalName = String(this.pick(original, 'name', 'Name') ?? '').trim();
+    const currentName = String(current.name ?? '').trim();
+
+    const originalGst = String(this.pick(original, 'gstNumber', 'GstNumber', 'gst', 'GST', 'coGST', 'CoGST') ?? '').trim();
+    const currentGst = String(current.gstNumber ?? '').trim();
+
+    const originalAddress = String(this.pick(original, 'addressDetails', 'AddressDetails', 'address', 'Address', 'coAddr', 'CoAddr') ?? '').trim();
+    const currentAddress = String(current.addressDetails ?? '').trim();
+
+    return currentName !== originalName || currentGst !== originalGst || currentAddress !== originalAddress;
+  }
+
   private buildCompanyPayload(raw: any): any {
     const normalized = this.normalizeCompanyForForm(raw);
     const payload: any = {
@@ -156,6 +201,13 @@ export class CompanyFormDialogComponent implements OnInit {
       ,showActionWhatsApp: normalized.showActionWhatsApp
       ,showActionStatement: normalized.showActionStatement
     };
+
+    // Admin can update settings freely, but identity values must never be sent in the settings dialog.
+    if (this.isEdit && this.isAdmin && !this.isSuperAdmin) {
+      delete payload.name;
+      delete payload.addressDetails;
+      delete payload.gstNumber;
+    }
 
     Object.keys(payload).forEach(key => {
       if (typeof payload[key] === 'string') payload[key] = payload[key].trim();
@@ -255,6 +307,12 @@ export class CompanyFormDialogComponent implements OnInit {
 
   save(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+
+    if (this.isEdit && this.isAdmin && !this.isSuperAdmin && this.hasRestrictedIdentityChange()) {
+      this.toastr.error('Admin cannot update Company Name, GST Number, or Address. Please use the Identity form as Super Admin.', 'Permission denied');
+      return;
+    }
+
     this.submitting = true;
 
     if (this.isEdit) {

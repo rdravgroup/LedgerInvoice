@@ -79,18 +79,21 @@
 
           <mat-form-field appearance="outline" class="field-full">
             <mat-label>Username or Email</mat-label>
-            <input #usernameInput matInput formControlName="username" type="text"
+            <input #usernameInput matInput formControlName="username" type="text" maxlength="100"
                    autocomplete="username" autocapitalize="none"
                    placeholder="Enter username or email" />
             <mat-icon matPrefix aria-hidden="true">person_outline</mat-icon>
             <mat-error *ngIf="_loginForm.get('username')?.hasError('required')">
               Username or email is required
             </mat-error>
+            <mat-error *ngIf="_loginForm.get('username')?.hasError('maxlength')">
+              Username or email cannot exceed 100 characters
+            </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline" class="field-full">
             <mat-label>Password</mat-label>
-            <input matInput formControlName="password"
+            <input matInput formControlName="password" maxlength="255"
                    [type]="showPassword ? 'text' : 'password'"
                    autocomplete="current-password"
                    placeholder="Enter your password" />
@@ -102,6 +105,9 @@
             </button>
             <mat-error *ngIf="_loginForm.get('password')?.hasError('required')">
               Password is required
+            </mat-error>
+            <mat-error *ngIf="_loginForm.get('password')?.hasError('maxlength')">
+              Password cannot exceed 255 characters
             </mat-error>
           </mat-form-field>
 
@@ -141,7 +147,7 @@
           @if (!otpSent) {
             <mat-form-field appearance="outline" class="field-full">
               <mat-label>Email Address</mat-label>
-              <input #emailInput matInput formControlName="email" type="email"
+              <input #emailInput matInput formControlName="email" type="email" maxlength="100"
                      autocomplete="email"
                      placeholder="example@email.com" />
               <mat-icon matPrefix aria-hidden="true">mail_outline</mat-icon>
@@ -150,6 +156,9 @@
               </mat-error>
               <mat-error *ngIf="_otpLoginForm.get('email')?.hasError('email')">
                 Please enter a valid email address
+              </mat-error>
+              <mat-error *ngIf="_otpLoginForm.get('email')?.hasError('maxlength')">
+                Email cannot exceed 100 characters
               </mat-error>
             </mat-form-field>
 
