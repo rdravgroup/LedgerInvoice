@@ -106,6 +106,15 @@
         </div>
       </div>
 
+      <div class="inv-discount-banner" *ngIf="companyDiscountMode !== 'none'">
+        <mat-icon>local_offer</mat-icon>
+        <div class="inv-discount-copy">
+          <strong>Discount active: {{ discountModeLabel }}</strong>
+          <span>{{ discountTypeLabel }} configured from Company Settings</span>
+        </div>
+        <span class="inv-discount-total" *ngIf="hasActiveDiscount">-₹{{ (itemwiseDiscountAmount + invoicewiseDiscountAmount) | number:'1.2-2' }}</span>
+      </div>
+
       <!-- Customer Actions -->
       <div class="inv-ca-section" *ngIf="showCustomerActions">
         <div class="inv-ca-toggle">
@@ -170,11 +179,12 @@
                   <th class="inv-th s7">Taxable</th>
                   <th class="inv-th s8">GST</th>
                   <th class="inv-th s5">Total</th>
+                  <th class="inv-th s-discount" *ngIf="isItemwiseDiscountVisible">Item Discount</th>
                   <th class="inv-th s6"></th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let item of invproducts.controls; let i = index" [formGroupName]="i" class="inv-grid-row">
+                <tr *ngFor="let item of invproducts.controls; let i = index" [formGroupName]="i" class="inv-grid-row" [class.inv-grid-row--picker-open]="productDropdownRow === i">
                   <td class="inv-td t1">{{ i + 1 }}</td>
                   <td class="inv-td t2">
                     <div class="inv-product-picker" (click)="$event.stopPropagation()">
@@ -185,6 +195,7 @@
                         </button>
                       </mat-form-field>
                       <div class="inv-product-panel" *ngIf="productDropdownRow === i">
+                        <div class="inv-product-panel-title">Select product for item {{ i + 1 }}</div>
                         <div class="inv-dd-search">
                           <mat-icon>search</mat-icon>
                           <input [(ngModel)]="rowProductSearch[i]" [ngModelOptions]="{standalone:true}" placeholder="Search…" class="inv-dd-input" />
@@ -214,10 +225,29 @@
                   </td>
                   <td class="inv-td t7"><span class="inv-taxable">₹{{ item.get('taxableAmount')?.value | number:'1.2-2' }}</span></td>
                   <td class="inv-td t8">
-                    <span class="inv-tax-chip" *ngIf="item.get('igstAmount')?.value <= 0">CGST ₹{{ item.get('cgstAmount')?.value | number:'1.2-2' }} + SGST ₹{{ item.get('sgstAmount')?.value | number:'1.2-2' }}</span>
-                    <span class="inv-tax-chip inv-tax-chip--igst" *ngIf="item.get('igstAmount')?.value > 0">IGST ₹{{ item.get('igstAmount')?.value | number:'1.2-2' }}</span>
+                    <button mat-icon-button type="button" class="inv-tax-info" *ngIf="item.get('igstAmount')?.value <= 0"
+                      [matTooltip]="'CGST ₹' + (item.get('cgstAmount')?.value | number:'1.2-2') + ' + SGST ₹' + (item.get('sgstAmount')?.value | number:'1.2-2')"
+                      matTooltipPosition="above" aria-label="Show CGST and SGST amounts">
+                      <mat-icon>receipt_long</mat-icon>
+                    </button>
+                    <button mat-icon-button type="button" class="inv-tax-info inv-tax-info--igst" *ngIf="item.get('igstAmount')?.value > 0"
+                      [matTooltip]="'IGST ₹' + (item.get('igstAmount')?.value | number:'1.2-2')"
+                      matTooltipPosition="above" aria-label="Show IGST amount">
+                      <mat-icon>receipt_long</mat-icon>
+                    </button>
                   </td>
                   <td class="inv-td t5"><span class="inv-row-total">₹{{ item.get('amount')?.value | number:'1.2-2' }}</span></td>
+                  <td class="inv-td t-discount" *ngIf="isItemwiseDiscountVisible">
+                    <mat-form-field appearance="outline" class="inv-cell-f inv-cf-discount" subscriptSizing="dynamic">
+                      <mat-label>Item discount</mat-label>
+                      <input matInput type="number" min="0" [max]="(item.get('itemDiscountType')?.value || companyDiscountType) === 'percentage' ? 100 : item.get('amount')?.value" formControlName="itemDiscountValue" (input)="summarycalculation()" />
+                      <mat-select matSuffix formControlName="itemDiscountType" (selectionChange)="summarycalculation()" aria-label="Item discount type">
+                        <mat-option value="percentage">%</mat-option>
+                        <mat-option value="manual">₹</mat-option>
+                      </mat-select>
+                      <mat-error *ngIf="itemDiscountError(item)">{{ itemDiscountError(item) }}</mat-error>
+                    </mat-form-field>
+                  </td>
                   <td class="inv-td t6">
                     <button mat-icon-button color="warn" type="button" (click)="Removeproduct(i)"><mat-icon>delete_outline</mat-icon></button>
                   </td>
@@ -225,7 +255,7 @@
               </tbody>
               <tfoot>
                 <tr class="inv-total-row">
-                  <td colspan="6" class="inv-total-lbl">Invoice Total</td>
+                  <td [attr.colspan]="isItemwiseDiscountVisible ? 6 : 5" class="inv-total-lbl">Invoice Total</td>
                   <td class="inv-total-val" aria-live="polite">₹{{ totalAmountValue | number:'1.2-2' }}</td>
                   <td></td>
                 </tr>
@@ -235,8 +265,8 @@
         </div>
 
         <!-- ── Mobile card list ───────────────────────── -->
-        <div class="inv-mob-list" *ngIf="invproducts.length > 0">
-          <div class="inv-mob-card" *ngFor="let item of invproducts.controls; let i = index">
+        <div class="inv-mob-list" *ngIf="invproducts.length > 0" formArrayName="sales_product_info">
+          <div class="inv-mob-card" *ngFor="let item of invproducts.controls; let i = index" [formGroupName]="i">
             <div class="inv-mob-r1">
               <span class="inv-mob-num">{{ i + 1 }}</span>
               <span class="inv-mob-name">{{ getProductName(item.get('productId')?.value) || '— Select product —' }}</span>
@@ -247,6 +277,17 @@
               <span>{{ rateColumnLabel }}: ₹{{ item.get('rateWithTax')?.value | number:'1.2-2' }}</span>
               <span>GST: {{ item.get('gstRate')?.value | number:'1.0-2' }}%</span>
               <span>Taxable: ₹{{ item.get('taxableAmount')?.value | number:'1.2-2' }}</span>
+            </div>
+            <div class="inv-mob-discount" *ngIf="isItemwiseDiscountVisible">
+              <mat-form-field appearance="outline" class="mob-discount-field" subscriptSizing="dynamic">
+                <mat-label>Item discount</mat-label>
+                <input matInput type="number" min="0" formControlName="itemDiscountValue" (input)="summarycalculation()" />
+                <mat-select matSuffix formControlName="itemDiscountType" (selectionChange)="summarycalculation()" aria-label="Item discount type">
+                  <mat-option value="percentage">%</mat-option>
+                  <mat-option value="manual">₹</mat-option>
+                </mat-select>
+                <mat-error *ngIf="itemDiscountError(item)">{{ itemDiscountError(item) }}</mat-error>
+              </mat-form-field>
             </div>
             <div class="inv-mob-r3">
               <button mat-stroked-button color="primary" type="button" (click)="openMobileItemEntry(i)" class="inv-mob-edit">
@@ -262,6 +303,18 @@
             <strong>₹{{ totalAmountValue | number:'1.2-2' }}</strong>
           </div>
         </div>
+
+          <div class="inv-overall-discount-control" *ngIf="isInvoicewiseDiscountVisible">
+            <mat-form-field appearance="outline" class="mob-discount-field" subscriptSizing="dynamic">
+              <mat-label>Discount on Invoice</mat-label>
+              <input matInput type="number" min="0" [max]="overallDiscountTypeControl.value === 'percentage' ? 100 : getInvoiceSubtotal()" [formControl]="overallDiscountValueControl" (input)="summarycalculation()" />
+              <mat-select matSuffix [formControl]="overallDiscountTypeControl" (selectionChange)="summarycalculation()" aria-label="Overall discount type">
+                <mat-option value="percentage">%</mat-option>
+                <mat-option value="manual">₹</mat-option>
+              </mat-select>
+              <mat-error *ngIf="overallDiscountError">{{ overallDiscountError }}</mat-error>
+            </mat-form-field>
+          </div>
 
       </div>
     </mat-card-content>
@@ -294,6 +347,15 @@
           <span class="inv-sum-hi" lang="hi">आज का ख़रीद</span>
           <span class="inv-sum-en">New Invoice Amount</span>
           <span class="inv-sum-amt" aria-live="polite">₹{{ totalAmountValue | number:'1.2-2' }}</span>
+        </div>
+      </div>
+      <div class="inv-sum-discount" *ngIf="companyDiscountMode !== 'none'">
+        <div class="inv-sum-discount-head"><mat-icon>local_offer</mat-icon><span>{{ discountModeLabel }} discount</span></div>
+        <div class="inv-sum-discount-line" *ngIf="companyDiscountMode === 'itemwise' || companyDiscountMode === 'both'">
+          <span>Item wise</span><strong>-₹{{ itemwiseDiscountAmount | number:'1.2-2' }}</strong>
+        </div>
+        <div class="inv-sum-discount-line" *ngIf="companyDiscountMode === 'invoicewise' || companyDiscountMode === 'both'">
+          <span>Invoice wise</span><strong>-₹{{ invoicewiseDiscountAmount | number:'1.2-2' }}</strong>
         </div>
       </div>
       <div class="inv-sum-row inv-sum-green">

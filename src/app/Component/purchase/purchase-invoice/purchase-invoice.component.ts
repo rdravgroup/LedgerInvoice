@@ -75,6 +75,8 @@ export class PurchaseInvoiceComponent implements OnInit, OnDestroy {
     this.invoiceForm = this.fb.group({
       piNumber:       [inv?.piNumber || null],
       companyId:      [inv?.companyId || this.cid()],
+      paidAmount:     [inv?.paidAmount || 0],
+      status:         [inv?.status || 'pending'],
       vendorId:       [inv?.vendorId || '', Validators.required],
       vendorInvoiceNo:[inv?.vendorInvoiceNo || ''],
       poNumber:       [inv?.poNumber || ''],
@@ -232,15 +234,38 @@ export class PurchaseInvoiceComponent implements OnInit, OnDestroy {
 
   // ── Navigation ────────────────────────────────────────────────
   openNew(): void { this.buildForm(); this.view = 'form'; }
-  openEdit(inv: PurchaseInvoice): void { this.buildForm(inv); this.view = 'form'; }
+  openEdit(inv: PurchaseInvoice): void {
+    if (!inv.piNumber) return;
+    this.loading = true;
+    this.svc.getInvoiceById(inv.piNumber, this.cid()).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (response: any) => {
+        const detail = response?.data ?? response?.Data;
+        if (!detail) {
+          this.toastr.error(response?.errorMessage || 'Could not load purchase invoice details');
+          this.loading = false;
+          return;
+        }
+        this.buildForm(detail);
+        this.isInterState = (detail.items || []).some((line: PurchaseInvoiceLine) => Number(line.igstRate || 0) > 0);
+        this.view = 'form';
+        this.loading = false;
+      },
+      error: (error: any) => {
+        this.toastr.error(error?.error?.errorMessage || error?.message || 'Could not load purchase invoice details');
+        this.loading = false;
+      }
+    });
+  }
   openDetail(inv: PurchaseInvoice): void { this.selectedInvoice = inv; this.view = 'detail'; }
   backToList(): void { this.selectedInvoice = null; this.view = 'list'; this.loadList(); }
 
   // ── Save ──────────────────────────────────────────────────────
   save(): void {
     if (this.invoiceForm.invalid) { this.invoiceForm.markAllAsTouched(); return; }
+    const currentPaidAmount = Number(this.invoiceForm.get('paidAmount')?.value || 0);
     const dto: PurchaseInvoice = {
       ...this.invoiceForm.getRawValue(),
+      poNumber: String(this.invoiceForm.get('poNumber')?.value ?? '').trim() || null,
       subtotal:       this.subtotal,
       cgstAmount:     this.totalCgst,
       sgstAmount:     this.totalSgst,
@@ -252,11 +277,15 @@ export class PurchaseInvoiceComponent implements OnInit, OnDestroy {
       freightCharges: this.freightCharges,
       otherCharges:   this.otherCharges,
       discountAmount: this.discountAmount,
-      paidAmount:     0, outstandingAmount: this.grandTotal, status: 'pending'
+      paidAmount:     this.invoiceForm.get('piNumber')?.value ? currentPaidAmount : 0,
+      outstandingAmount: Math.max(0, this.grandTotal - (this.invoiceForm.get('piNumber')?.value ? currentPaidAmount : 0)),
+      status: this.invoiceForm.get('piNumber')?.value ? (this.invoiceForm.get('status')?.value || 'pending') : 'pending'
     };
-    this.svc.saveInvoice(dto, this.cid()).pipe(takeUntil(this.destroy$)).subscribe({
+    const isEditing = !!dto.piNumber;
+    const saveRequest = isEditing ? this.svc.updateInvoice(dto) : this.svc.saveInvoice(dto, this.cid());
+    saveRequest.pipe(takeUntil(this.destroy$)).subscribe({
       next: (r: any) => {
-        if (r?.result === 'pass') { this.toastr.success('Purchase invoice saved'); this.backToList(); }
+        if (r?.result === 'pass') { this.toastr.success(isEditing ? 'Purchase invoice updated' : 'Purchase invoice saved'); this.backToList(); }
         else this.toastr.error(r?.errorMessage || 'Save failed');
       },
       error: (e: any) => this.toastr.error(e?.message || 'Save failed')

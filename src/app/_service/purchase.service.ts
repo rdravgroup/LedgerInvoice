@@ -92,9 +92,21 @@ export class PurchaseService {
     return this.http.get<ApiResponse<PurchaseInvoice[]>>(`${this.base}invoices`, { params });
   }
 
+  getInvoiceById(piNumber: string, companyId: string): Observable<ApiResponse<PurchaseInvoice>> {
+    const params = new HttpParams().set('companyId', companyId);
+    return this.http.get<ApiResponse<PurchaseInvoice>>(
+      `${this.base}invoices/${encodeURIComponent(piNumber)}`,
+      { params }
+    );
+  }
+
   saveInvoice(dto: PurchaseInvoice, companyId: string): Observable<ApiResponse> {
     const params = new HttpParams().set('companyId', companyId);
     return this.http.post<ApiResponse>(`${this.base}invoices`, dto, { params });
+  }
+
+  updateInvoice(dto: PurchaseInvoice): Observable<ApiResponse> {
+    return this.http.put<ApiResponse>(`${this.base}invoices`, dto);
   }
 
   cancelInvoice(piNumber: string): Observable<ApiResponse> {

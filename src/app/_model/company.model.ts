@@ -21,6 +21,9 @@ export interface Company {
   defaultProductCategoryCode?: string;
   invoiceDisplayNumberMode?: 'auto' | 'manual' | string;
   invoiceDisplayNumberPrefix?: string;
+  discountMode?: 'none' | 'itemwise' | 'invoicewise' | 'both' | string;
+  discountType?: 'percentage' | 'manual' | string;
+  discountValue?: number;
   showActionPreview?: boolean;
   showActionPdf?: boolean;
   showActionPosPrint?: boolean;

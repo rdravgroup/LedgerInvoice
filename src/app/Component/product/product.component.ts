@@ -270,6 +270,8 @@ export class ProductComponent implements OnInit, OnDestroy {
       totalGstRate: [0, [Validators.required, Validators.min(0), Validators.max(100), this.numberValidator(100, 2)]],
       rateWithoutTax: [0, [Validators.required, Validators.min(0), this.numberValidator(this.decimalMax, 3)]],
       rateWithTax: [0, [Validators.required, Validators.min(0), this.numberValidator(this.decimalMax, 3)]],
+      discountType: ['percentage', Validators.required],
+      discountValue: [0, [Validators.required, Validators.min(0)]],
       purchaseRate: [null, [Validators.min(0), this.numberValidator(this.decimalMax, 3)]],
       purchaseRateDate: [null],
       stockQty: [0, [Validators.min(0), this.numberValidator(this.decimalMax, 3)]],
@@ -392,6 +394,12 @@ export class ProductComponent implements OnInit, OnDestroy {
     }
 
     const formValue = this.productForm.getRawValue();
+    const discountType = String(formValue.discountType || 'percentage').toLowerCase();
+    const discountValue = Number(formValue.discountValue || 0);
+    if (discountValue < 0 || (discountType === 'percentage' && discountValue > 100)) {
+      this.toastr.warning(discountType === 'percentage' ? 'Discount percentage must be between 0 and 100.' : 'Discount cannot be negative.', 'Validation');
+      return;
+    }
     const payload = {
       uniqueKeyId: this.isEditMode ? this.editProductCode : null,
       ...formValue,
@@ -438,6 +446,8 @@ export class ProductComponent implements OnInit, OnDestroy {
       totalGstRate: product.totalGstRate,
       rateWithoutTax: product.rateWithoutTax,
       rateWithTax: product.rateWithTax,
+      discountType: product.discountType || 'percentage',
+      discountValue: product.discountValue ?? 0,
       purchaseRate: product.purchaseRate,
       purchaseRateDate: product.purchaseRateDate ? new Date(product.purchaseRateDate) : null,
       stockQty: product.stockQty ?? 0,
@@ -472,7 +482,7 @@ export class ProductComponent implements OnInit, OnDestroy {
     this.isEditMode = false;
     this.editProductCode = '';
     this.showExtraFields = false;
-    this.productForm.reset({ isActive: true, categoryCode: this.defaultCategoryCode, rateWithoutTax: 0, rateWithTax: 0, purchaseRate: null, purchaseRateDate: null, stockQty: 0, minStockQty: 0, maxStockQty: 0, reorderLevel: 0, lastPurchaseRate: 0, lastPurchaseDate: null });
+    this.productForm.reset({ isActive: true, categoryCode: this.defaultCategoryCode, rateWithoutTax: 0, rateWithTax: 0, discountType: 'percentage', discountValue: 0, purchaseRate: null, purchaseRateDate: null, stockQty: 0, minStockQty: 0, maxStockQty: 0, reorderLevel: 0, lastPurchaseRate: 0, lastPurchaseDate: null });
     this.productForm.patchValue({ cgstRate: 0, scgstRate: 0, totalGstRate: 0 });
     // Keep hidden extra fields disabled until user expands them
     this.setExtraFieldsState(this.showExtraFields);

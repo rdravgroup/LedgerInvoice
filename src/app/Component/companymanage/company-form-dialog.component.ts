@@ -63,6 +63,9 @@ export class CompanyFormDialogComponent implements OnInit {
       ,defaultProductCategoryCode: ['']
       ,invoiceDisplayNumberMode: ['manual', Validators.required]
       ,invoiceDisplayNumberPrefix: [{ value: '', disabled: true }]
+      ,discountMode: ['none', Validators.required]
+      ,discountType: ['percentage', Validators.required]
+      ,discountValue: [0, [Validators.min(0)]]
       ,showActionPreview: [true]
       ,showActionPdf: [true]
       ,showActionPosPrint: [true]
@@ -133,6 +136,9 @@ export class CompanyFormDialogComponent implements OnInit {
       ,defaultProductCategoryCode: this.pick(company, 'defaultProductCategoryCode', 'DefaultProductCategoryCode')
       ,invoiceDisplayNumberMode: this.normalizeNumberMode(this.pick(company, 'invoiceDisplayNumberMode', 'InvoiceDisplayNumberMode'))
       ,invoiceDisplayNumberPrefix: this.pick(company, 'invoiceDisplayNumberPrefix', 'InvoiceDisplayNumberPrefix')
+      ,discountMode: this.normalizeDiscountMode(this.pick(company, 'discountMode', 'DiscountMode'))
+      ,discountType: this.normalizeDiscountType(this.pick(company, 'discountType', 'DiscountType'))
+      ,discountValue: Number(this.pick(company, 'discountValue', 'DiscountValue') ?? 0)
       ,showActionPreview: this.pickBoolean(company, 'showActionPreview', 'ShowActionPreview')
       ,showActionPdf: this.pickBoolean(company, 'showActionPdf', 'ShowActionPdf')
       ,showActionPosPrint: this.pickBoolean(company, 'showActionPosPrint', 'ShowActionPosPrint')
@@ -147,6 +153,16 @@ export class CompanyFormDialogComponent implements OnInit {
   }
   private normalizeNumberMode(value: any): 'auto' | 'manual' {
     return String(value || '').toLowerCase() === 'auto' ? 'auto' : 'manual';
+  }
+  private normalizeDiscountMode(value: any): 'none' | 'itemwise' | 'invoicewise' | 'both' {
+    const normalized = String(value || '').toLowerCase();
+    if (normalized === 'itemwise') return 'itemwise';
+    if (normalized === 'invoicewise') return 'invoicewise';
+    if (normalized === 'both') return 'both';
+    return 'none';
+  }
+  private normalizeDiscountType(value: any): 'percentage' | 'manual' {
+    return String(value || '').toLowerCase() === 'manual' ? 'manual' : 'percentage';
   }
   private pickBoolean(source: any, ...keys: string[]): boolean {
     const value = this.pick(source, ...keys);
@@ -193,6 +209,9 @@ export class CompanyFormDialogComponent implements OnInit {
       ,defaultProductCategoryCode: normalized.defaultProductCategoryCode || null
       ,invoiceDisplayNumberMode: this.normalizeNumberMode(normalized.invoiceDisplayNumberMode)
       ,invoiceDisplayNumberPrefix: normalized.invoiceDisplayNumberPrefix || null
+      ,discountMode: this.normalizeDiscountMode(normalized.discountMode)
+      ,discountType: this.normalizeDiscountType(normalized.discountType)
+      ,discountValue: Number(normalized.discountValue ?? 0)
       ,showActionPreview: normalized.showActionPreview
       ,showActionPdf: normalized.showActionPdf
       ,showActionPosPrint: normalized.showActionPosPrint

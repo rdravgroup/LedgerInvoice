@@ -1,5 +1,5 @@
 import {
-  Component, OnInit, AfterViewInit, ChangeDetectorRef, OnDestroy, HostListener,
+  Component, Injectable, OnInit, AfterViewInit, ChangeDetectorRef, OnDestroy, HostListener,
   ViewChild, ViewChildren, TemplateRef, QueryList, ElementRef
 } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
@@ -48,6 +48,7 @@ const INVOICE_DATE_FORMATS = {
   }
 };
 
+@Injectable()
 class InvoiceDateAdapter extends NativeDateAdapter {
   override format(date: Date, _displayFormat: unknown): string {
     const day = String(date.getDate()).padStart(2, '0');
@@ -224,6 +225,9 @@ export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy 
   isLoadingOutstanding = false;
   salesInvoiceRateMode: 'with_tax' | 'without_tax' = 'without_tax';
   invoiceDisplayNumberMode: 'auto' | 'manual' = 'manual';
+  companyDiscountMode: 'none' | 'itemwise' | 'invoicewise' | 'both' = 'none';
+  companyDiscountType: 'percentage' | 'manual' = 'percentage';
+  companyDiscountValue = 0;
   private companyStateCode = '';
   private selectedCustomerStateCode = '';
 
@@ -306,6 +310,9 @@ export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy 
       remark: this.builder.control(''),
       createBy: this.builder.control(''), updateBy: this.builder.control(''),
       totalAmount: this.builder.control(0), grandTotalAmount: this.builder.control(0),
+      discountAmount: this.builder.control(0),
+      overallDiscountValue: this.builder.control<number | null>(null),
+      overallDiscountType: this.builder.control<'percentage' | 'manual' | null>(null),
       cgstRate: this.builder.control(0), sgstRate: this.builder.control(0),
       cgstAmount: this.builder.control(0), sgstAmount: this.builder.control(0),
       igstAmount: this.builder.control(0), totalGstAmount: this.builder.control(0),
@@ -354,6 +361,8 @@ export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy 
           customerId: d.customerId||'', destination: d.destination||'', remark: d.remark||'',
           invoiceDate, companyId: d.companyId||'', dispatchedThrough: d.dispatchedThrough||'',
           deliveryNote: d.deliveryNote||'', totalAmount: d.totalAmount||0,
+          overallDiscountValue: d.overallDiscountValue ?? d.OverallDiscountValue ?? null,
+          overallDiscountType: d.overallDiscountType ?? d.OverallDiscountType ?? null,
           gstCalculationType: d.gstCalculationType || this.currentGstMode, isInterStateSupply: !!d.isInterStateSupply,
         });
         this.selectedInvoiceDate = invoiceDate;
@@ -374,6 +383,8 @@ export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy 
           const row = this.Generaterow();
           row.patchValue({ productId: detail.productId, quantity: Number(detail.quantity||0),
             rateWithTax: Number(this.selectInvoiceLineRate(detail) || 0), amount: Number(detail.amount||0),
+            itemDiscountValue: detail.itemDiscountValue ?? detail.ItemDiscountValue ?? this.companyDiscountValue,
+            itemDiscountType: detail.itemDiscountType ?? detail.ItemDiscountType ?? this.companyDiscountType,
             taxableAmount: Number(detail.taxableAmount||0), gstRate: Number(detail.gstRate ?? detail.totalGstRate ?? 0),
             cgstRate: Number(detail.cgstRate||0), sgstRate: Number(detail.sgstRate ?? detail.scgstRate ?? 0), igstRate: Number(detail.igstRate||0),
             cgstAmount: Number(detail.cgstAmount||0), sgstAmount: Number(detail.sgstAmount||0), igstAmount: Number(detail.igstAmount||0) });
@@ -392,6 +403,8 @@ export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy 
     if (this.invoicedetail.controls.some(p => !p.get('productId')?.value)) { this.alert.warning('Select a product for each row!', 'Validation'); return; }
     if (this.invoicedetail.controls.some(p => !(p.get('quantity')?.value > 0))) { this.alert.warning('Quantity must be > 0!', 'Validation'); return; }
     if (this.invoicedetail.controls.some(p => !(p.get('rateWithTax')?.value > 0))) { this.alert.warning('Rate must be > 0!', 'Validation'); return; }
+    const discountValidation = this.validateDiscountInputs();
+    if (discountValidation) { this.alert.warning(discountValidation, 'Discount validation'); return; }
     const username = this.authService.getUsername() || '';
     if (this.isedit) { this.invoiceform.patchValue({ updateBy: username }); this.invoiceform.patchValue({ customerId: this.apiCustomerId }, { emitEvent: false }); }
     else this.invoiceform.patchValue({ createBy: username });
@@ -421,6 +434,8 @@ export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy 
         rateWithoutTax: this.isGstExclusive ? inputRate : Number(p.rateWithoutTax || 0),
         rateWithTax: this.isGstExclusive ? grossRate : inputRate,
         amount: p.amount,
+        itemDiscountValue: this.isItemwiseDiscountVisible && p.itemDiscountValue !== '' && p.itemDiscountValue !== null && p.itemDiscountValue !== undefined ? Number(p.itemDiscountValue) : null,
+        itemDiscountType: this.isItemwiseDiscountVisible ? (p.itemDiscountType || null) : null,
         taxableAmount: p.taxableAmount||0, gstRate: p.gstRate||0, cgstRate: p.cgstRate||0, sgstRate: p.sgstRate||0, igstRate: p.igstRate||0,
         cgstAmount: p.cgstAmount||0, sgstAmount: p.sgstAmount||0, igstAmount: p.igstAmount||0,
         createBy: formData.createBy, updateBy: formData.updateBy,
@@ -439,6 +454,11 @@ export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy 
       companyId: formData.companyId, customerId: formData.customerId, destination: formData.destination||'',
       dispatchedThrough: formData.dispatchedThrough||'Not Applicable', deliveryNote: formData.deliveryNote||'Not Applicable',
       remark: formData.remark||'', totalAmount: formData.totalAmount,
+      discountAmount: formData.discountAmount || 0,
+      itemwiseDiscountAmount: this.itemwiseDiscountAmount,
+      invoicewiseDiscountAmount: this.invoicewiseDiscountAmount,
+      overallDiscountValue: this.isInvoicewiseDiscountVisible && formData.overallDiscountValue !== '' && formData.overallDiscountValue !== null && formData.overallDiscountValue !== undefined ? Number(formData.overallDiscountValue) : null,
+      overallDiscountType: this.isInvoicewiseDiscountVisible ? (formData.overallDiscountType || null) : null,
       grandTotalAmount: formData.grandTotalAmount||formData.totalAmount,
       cgstRate: formData.cgstRate||0, sgstRate: formData.sgstRate||0, cgstAmount: formData.cgstAmount||0, sgstAmount: formData.sgstAmount||0,
       igstAmount: formData.igstAmount||0, totalGstAmount: formData.totalGstAmount||0,
@@ -480,6 +500,8 @@ export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy 
       quantity:      this.builder.control(0),
       rateWithTax:   this.builder.control(0),
       amount:        this.builder.control(0),
+      itemDiscountValue: this.builder.control<number | null>(null),
+      itemDiscountType: this.builder.control<'percentage' | 'manual' | null>(null),
       taxableAmount: this.builder.control(0),
       gstRate:       this.builder.control(0),
       cgstRate:      this.builder.control(0),
@@ -504,7 +526,14 @@ export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy 
       next: (res) => {
         const p = res as any;
         if (p) {
-          this.invoiceproduct.patchValue({ rateWithTax: this.selectProductRate(p), gstRate: p.totalGstRate ?? 0, cgstRate: p.cgstRate ?? 0, sgstRate: p.scgstRate ?? 0 }, { emitEvent: false });
+          this.invoiceproduct.patchValue({
+            rateWithTax: this.selectProductRate(p),
+            itemDiscountValue: p.discountValue ?? p.DiscountValue ?? p.discountPct ?? p.DiscountPct ?? this.companyDiscountValue,
+            itemDiscountType: p.discountType ?? p.DiscountType ?? this.companyDiscountType,
+            gstRate: p.totalGstRate ?? 0,
+            cgstRate: p.cgstRate ?? 0,
+            sgstRate: p.scgstRate ?? 0
+          }, { emitEvent: false });
           this.Itemcalculation(index);
           this.focusQuantity(index);
         }
@@ -538,9 +567,126 @@ export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy 
     const cgst = Math.round(arr.reduce((a: number, x: any) => a + Number(x.cgstAmount || 0), 0) * 100) / 100;
     const sgst = Math.round(arr.reduce((a: number, x: any) => a + Number(x.sgstAmount || 0), 0) * 100) / 100;
     const igst = Math.round(arr.reduce((a: number, x: any) => a + Number(x.igstAmount || 0), 0) * 100) / 100;
-    this.invoiceform.patchValue({ totalAmount: sum, grandTotalAmount: sum, cgstAmount: cgst, sgstAmount: sgst, igstAmount: igst, totalGstAmount: cgst + sgst + igst }, { emitEvent: false });
-    this.totalAmountSubject.next(sum);
+    const itemwiseDiscount = this.getItemwiseDiscountForRows(arr);
+    const invoiceDiscount = this.getCurrentInvoiceDiscountAmount(Math.max(0, sum - itemwiseDiscount));
+    const discount = Math.min(sum, itemwiseDiscount + invoiceDiscount);
+    const netTotal = Math.max(0, Math.round((sum - discount) * 100) / 100);
+
+    this.invoiceform.patchValue({
+      totalAmount: netTotal,
+      grandTotalAmount: netTotal,
+      discountAmount: discount,
+      cgstAmount: cgst,
+      sgstAmount: sgst,
+      igstAmount: igst,
+      totalGstAmount: cgst + sgst + igst
+    }, { emitEvent: false });
+    this.totalAmountSubject.next(netTotal);
     this.cdr.detectChanges();
+  }
+
+  getCurrentInvoiceDiscountAmount(referenceSubtotal?: number): number {
+    const subtotal = Number(referenceSubtotal ?? this.getInvoiceSubtotal()) || 0;
+    if (!this.isInvoicewiseDiscountVisible) {
+      return 0;
+    }
+
+    const overrideValue = this.invoiceform?.get('overallDiscountValue')?.value;
+    const hasOverride = overrideValue !== null && overrideValue !== undefined && overrideValue !== '';
+    const value = Math.max(0, Number(hasOverride ? overrideValue : this.companyDiscountValue || 0));
+    const type = hasOverride
+      ? (this.invoiceform?.get('overallDiscountType')?.value || this.companyDiscountType)
+      : this.companyDiscountType;
+    return this.calculateDiscount(subtotal, value, type);
+  }
+
+  private getItemwiseDiscountForRows(rows: any[] = []): number {
+    if (!rows.length || !this.isItemwiseDiscountVisible) {
+      return 0;
+    }
+
+    return rows.reduce((sum, item) => {
+      const amount = Math.max(0, Number(item.amount || 0));
+      const hasOverride = item.itemDiscountValue !== null && item.itemDiscountValue !== undefined && item.itemDiscountValue !== '';
+      const value = Math.max(0, Number(hasOverride ? item.itemDiscountValue : this.companyDiscountValue || 0));
+      const type = hasOverride ? (item.itemDiscountType || this.companyDiscountType) : this.companyDiscountType;
+      return sum + this.calculateDiscount(amount, value, type);
+    }, 0);
+  }
+
+  private calculateDiscount(amount: number, value: number, type: 'percentage' | 'manual' | string): number {
+    if (amount <= 0 || value <= 0) return 0;
+    if (String(type).toLowerCase() === 'manual') return Math.min(amount, value);
+    return Math.min(amount, amount * (Math.min(100, value) / 100));
+  }
+
+  private validateDiscountInputs(): string | null {
+    if (this.isItemwiseDiscountVisible) {
+      for (const row of this.invoiceform.getRawValue().sales_product_info || []) {
+        const value = Number(row.itemDiscountValue || 0);
+        const type = row.itemDiscountType || this.companyDiscountType;
+        const amount = Math.max(0, Number(row.amount || 0));
+        if (value < 0) return 'Item discount cannot be negative.';
+        if (type === 'percentage' && value > 100) return 'Item discount percentage cannot exceed 100%.';
+        if (type === 'manual' && value > amount) return 'Item discount cannot exceed the item total.';
+      }
+    }
+
+    if (this.isInvoicewiseDiscountVisible) {
+      const value = Number(this.invoiceform.get('overallDiscountValue')?.value || 0);
+      const type = this.invoiceform.get('overallDiscountType')?.value || this.companyDiscountType;
+      const invoiceBase = Math.max(0, this.getInvoiceSubtotal() - this.itemwiseDiscountAmount);
+      if (value < 0) return 'Overall discount cannot be negative.';
+      if (type === 'percentage' && value > 100) return 'Overall discount percentage cannot exceed 100%.';
+      if (type === 'manual' && value > invoiceBase) return 'Overall discount cannot exceed the invoice total.';
+    }
+
+    return null;
+  }
+
+  get isItemwiseDiscountVisible(): boolean {
+    return this.companyDiscountMode === 'itemwise' || this.companyDiscountMode === 'both';
+  }
+
+  get isInvoicewiseDiscountVisible(): boolean {
+    return this.companyDiscountMode === 'invoicewise' || this.companyDiscountMode === 'both';
+  }
+
+  get discountTypeOptions(): Array<'percentage' | 'manual'> {
+    return ['percentage', 'manual'];
+  }
+
+  get overallDiscountValueControl(): FormControl {
+    return this.invoiceform.get('overallDiscountValue') as FormControl;
+  }
+
+  get overallDiscountTypeControl(): FormControl {
+    return this.invoiceform.get('overallDiscountType') as FormControl;
+  }
+
+  itemDiscountError(item: any): string {
+    const value = Number(item.get('itemDiscountValue')?.value || 0);
+    const type = item.get('itemDiscountType')?.value || this.companyDiscountType;
+    const amount = Math.max(0, Number(item.get('amount')?.value || 0));
+    if (value < 0) return 'Cannot be negative';
+    if (type === 'percentage' && value > 100) return 'Maximum 100%';
+    if (type === 'manual' && value > amount) return 'Cannot exceed item total';
+    return '';
+  }
+
+  get overallDiscountError(): string {
+    const value = Number(this.overallDiscountValueControl.value || 0);
+    const type = this.overallDiscountTypeControl.value || this.companyDiscountType;
+    const invoiceBase = Math.max(0, this.getInvoiceSubtotal() - this.itemwiseDiscountAmount);
+    if (value < 0) return 'Cannot be negative';
+    if (type === 'percentage' && value > 100) return 'Maximum 100%';
+    if (type === 'manual' && value > invoiceBase) return 'Cannot exceed invoice total';
+    return '';
+  }
+
+  getInvoiceSubtotal(): number {
+    const rows = this.invoiceform?.getRawValue()?.sales_product_info || [];
+    return rows.reduce((sum: number, item: any) => sum + Number(item.amount || 0), 0);
   }
 
   get isGstExclusive(): boolean { return this.currentGstMode === 'exclusive'; }
@@ -603,12 +749,55 @@ export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy 
     return this.salesInvoiceRateMode === 'with_tax' ? 'inclusive' : 'exclusive';
   }
 
+  private normalizeDiscountMode(value: string): 'none' | 'itemwise' | 'invoicewise' | 'both' {
+    const normalized = String(value || '').toLowerCase();
+    if (normalized === 'itemwise') return 'itemwise';
+    if (normalized === 'invoicewise') return 'invoicewise';
+    if (normalized === 'both') return 'both';
+    return 'none';
+  }
+
+  private normalizeDiscountType(value: string): 'percentage' | 'manual' {
+    return String(value || '').toLowerCase() === 'manual' ? 'manual' : 'percentage';
+  }
+
   private loadCompanyRateMode(companyId: string): void {
     if (!companyId) { return; }
     this.companyService.getCompanyById(companyId).pipe(takeUntil(this.destroy$)).subscribe({
       next: (company: any) => {
         this.salesInvoiceRateMode = String(company?.salesInvoiceRateMode || company?.SalesInvoiceRateMode || '').toLowerCase() === 'with_tax' ? 'with_tax' : 'without_tax';
         this.invoiceDisplayNumberMode = String(company?.invoiceDisplayNumberMode || company?.InvoiceDisplayNumberMode || '').toLowerCase() === 'auto' ? 'auto' : 'manual';
+        this.companyDiscountMode = this.normalizeDiscountMode(company?.discountMode ?? company?.DiscountMode ?? 'none');
+        this.companyDiscountType = this.normalizeDiscountType(company?.discountType ?? company?.DiscountType ?? 'percentage');
+        this.companyDiscountValue = Number(company?.discountValue ?? company?.DiscountValue ?? 0);
+        if (!this.isInvoicewiseDiscountVisible) {
+          this.invoiceform.get('overallDiscountValue')?.setValue(null, { emitEvent: false });
+          this.invoiceform.get('overallDiscountType')?.setValue(null, { emitEvent: false });
+        }
+        if (!this.isItemwiseDiscountVisible) {
+          this.invproducts?.controls.forEach(row => {
+            row.get('itemDiscountValue')?.setValue(null, { emitEvent: false });
+            row.get('itemDiscountType')?.setValue(null, { emitEvent: false });
+          });
+        }
+        const overallDiscountType = this.invoiceform.get('overallDiscountType');
+        if (this.isInvoicewiseDiscountVisible && overallDiscountType?.value == null) {
+          overallDiscountType?.setValue(this.companyDiscountType, { emitEvent: false });
+        }
+        const overallDiscountValue = this.invoiceform.get('overallDiscountValue');
+        if (this.isInvoicewiseDiscountVisible && overallDiscountValue?.value == null) {
+          overallDiscountValue?.setValue(this.companyDiscountValue, { emitEvent: false });
+        }
+        this.invproducts?.controls.forEach(row => {
+          const itemDiscountType = row.get('itemDiscountType');
+          if (this.isItemwiseDiscountVisible && itemDiscountType?.value == null) {
+            itemDiscountType?.setValue(this.companyDiscountType, { emitEvent: false });
+          }
+          const itemDiscountValue = row.get('itemDiscountValue');
+          if (this.isItemwiseDiscountVisible && itemDiscountValue?.value == null) {
+            itemDiscountValue?.setValue(this.companyDiscountValue, { emitEvent: false });
+          }
+        });
         const invoiceNumberControl = this.invoiceform.get('invoiceNumber');
         if (!this.isedit && this.invoiceDisplayNumberMode === 'auto') {
           invoiceNumberControl?.clearValidators();
@@ -867,6 +1056,30 @@ export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy 
 
   getProductName(productId: string): string {
     return this.masterproduct.find((p: any) => p.uniqueKeyID===productId)?.productName||'';
+  }
+
+  get itemwiseDiscountAmount(): number {
+    return this.getItemwiseDiscountForRows(this.invoiceform?.getRawValue()?.sales_product_info || []);
+  }
+
+  get invoicewiseDiscountAmount(): number {
+    const subtotal = this.getInvoiceSubtotal();
+    return this.getCurrentInvoiceDiscountAmount(Math.max(0, subtotal - this.itemwiseDiscountAmount));
+  }
+
+  get hasActiveDiscount(): boolean {
+    return this.itemwiseDiscountAmount > 0 || this.invoicewiseDiscountAmount > 0;
+  }
+
+  get discountModeLabel(): string {
+    if (this.companyDiscountMode === 'both') return 'Item wise + Invoice wise';
+    if (this.companyDiscountMode === 'itemwise') return 'Item wise';
+    if (this.companyDiscountMode === 'invoicewise') return 'Invoice wise';
+    return 'No discount';
+  }
+
+  get discountTypeLabel(): string {
+    return this.companyDiscountType === 'percentage' ? `${this.companyDiscountValue}%` : `₹${this.companyDiscountValue}`;
   }
 
   onSummaryMouseDown(e: MouseEvent): void {

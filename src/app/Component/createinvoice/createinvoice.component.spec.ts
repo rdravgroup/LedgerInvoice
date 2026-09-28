@@ -66,4 +66,39 @@ describe('CreateinvoiceComponent', () => {
   it('should not stay in loading state for a new invoice', () => {
     expect(component.isLoading).toBeFalse();
   });
+
+  it('should apply invoice discount from company settings before saving totals', () => {
+    component.companyDiscountMode = 'invoicewise';
+    component.companyDiscountType = 'percentage';
+    component.companyDiscountValue = 10;
+
+    const arr = component.invoiceform.get('sales_product_info') as any;
+    arr.clear();
+    arr.push(component.Generaterow());
+    arr.push(component.Generaterow());
+    arr.at(0).patchValue({ amount: 100, cgstAmount: 9, sgstAmount: 9, igstAmount: 0 });
+    arr.at(1).patchValue({ amount: 100, cgstAmount: 9, sgstAmount: 9, igstAmount: 0 });
+
+    component.summarycalculation();
+
+    expect(component.invoiceform.get('discountAmount')?.value).toBe(20);
+    expect(component.invoiceform.get('totalAmount')?.value).toBe(180);
+    expect(component.invoiceform.get('grandTotalAmount')?.value).toBe(180);
+    expect(component.getCurrentInvoiceDiscountAmount()).toBe(20);
+  });
+
+  it('does not submit an overall discount when company mode is itemwise only', () => {
+    component.companyDiscountMode = 'itemwise';
+    component.companyDiscountType = 'percentage';
+    component.companyDiscountValue = 0.5;
+    component.invoiceform.patchValue({
+      overallDiscountValue: 0.5,
+      overallDiscountType: 'percentage'
+    });
+
+    const payload = component.transformPayloadForBackend(component.invoiceform.getRawValue());
+
+    expect(payload.overallDiscountValue).toBeNull();
+    expect(payload.overallDiscountType).toBeNull();
+  });
 });

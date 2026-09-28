@@ -133,6 +133,32 @@
               <input matInput formControlName="invoiceDisplayNumberPrefix" maxlength="10" placeholder="Example: COMP1" />
               <mat-icon matPrefix>short_text</mat-icon>
             </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Discount Mode</mat-label>
+              <mat-select formControlName="discountMode">
+                <mat-option value="none">None</mat-option>
+                <mat-option value="itemwise">Item wise</mat-option>
+                <mat-option value="invoicewise">Invoice wise</mat-option>
+                <mat-option value="both">Both</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>discount</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Discount Type</mat-label>
+              <mat-select formControlName="discountType">
+                <mat-option value="percentage">Percentage</mat-option>
+                <mat-option value="manual">Manual</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>tune</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Default Discount Value</mat-label>
+              <input matInput type="number" min="0" formControlName="discountValue" />
+              <mat-icon matPrefix>{{ form.get('discountType')?.value === 'manual' ? 'currency_rupee' : 'percent' }}</mat-icon>
+            </mat-form-field>
           </div>
         </section>
 

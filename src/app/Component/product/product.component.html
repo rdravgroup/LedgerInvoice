@@ -144,6 +144,24 @@
         </mat-form-field>
 
         <mat-form-field appearance="outline">
+          <mat-label>Product Discount Type</mat-label>
+          <mat-select formControlName="discountType">
+            <mat-option value="percentage">Percentage</mat-option>
+            <mat-option value="manual">Manual amount</mat-option>
+          </mat-select>
+          <mat-icon matPrefix>local_offer</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Product Discount Value</mat-label>
+          <input matInput type="number" min="0" [max]="productForm.get('discountType')?.value === 'percentage' ? 100 : 999999999999999" formControlName="discountValue" placeholder="0">
+          <mat-icon matPrefix>{{ productForm.get('discountType')?.value === 'percentage' ? 'percent' : 'currency_rupee' }}</mat-icon>
+          <mat-error *ngIf="productForm.get('discountValue')?.hasError('required')">Discount value is required</mat-error>
+          <mat-error *ngIf="productForm.get('discountValue')?.hasError('min')">Discount cannot be negative</mat-error>
+          <mat-error *ngIf="productForm.get('discountValue')?.hasError('max')">Percentage cannot exceed 100</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
           <mat-label>Purchase Rate Date</mat-label>
           <input matInput [matDatepicker]="purchaseRatePicker" formControlName="purchaseRateDate" placeholder="Choose a date">
           <mat-datepicker-toggle matSuffix [for]="purchaseRatePicker"></mat-datepicker-toggle>
