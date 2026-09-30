@@ -5,6 +5,15 @@
 .pi-card { border-radius: 14px !important; margin-bottom: 16px; }
 .pi-gst-toggle { margin-top: 8px; }
 .pi-items-scroll { overflow-x: auto; }
+.pi-list-table-scroll {
+  width: 100%;
+  max-height: min(68vh, 680px);
+  min-height: 180px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.pu-table.pi-list-table { width: 100%; min-width: 980px; }
 .pi-add-line-btn { margin-top: 10px; border-radius: 20px !important; }
 .pi-line-total { font-weight: 600; color: var(--md-sys-color-primary); }
 

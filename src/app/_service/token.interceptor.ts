@@ -33,7 +33,6 @@ export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
         }
       }),
       catchError(error => {
-        logger.logApiError(req.method, req.url, error.status, error);
         return throwError(() => error);
       })
     );

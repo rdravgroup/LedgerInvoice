@@ -40,7 +40,7 @@ import { takeUntil } from 'rxjs/operators';
               <div class="list-card-avatar">{{ (element.productName || '').charAt(0) }}</div>
               <div class="list-card-info">
                 <div class="list-card-name">{{ element.productName }}</div>
-                <div class="list-card-sub">{{ element.categoryCode }} • {{ (element.rateWithTax) | currency:'INR' }}</div>
+                <div class="list-card-sub">{{ getCategoryName(element.categoryCode) }} • {{ (element.rateWithTax) | currency:'INR' }}</div>
               </div>
             </div>
             <div class="list-card-company">
@@ -67,7 +67,7 @@ import { takeUntil } from 'rxjs/operators';
 
         <ng-container matColumnDef="categoryCode">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Category</th>
-          <td mat-cell *matCellDef="let element">{{ element.categoryCode }}</td>
+          <td mat-cell *matCellDef="let element">{{ getCategoryName(element.categoryCode) }}</td>
         </ng-container>
 
         <ng-container matColumnDef="price">
@@ -159,6 +159,7 @@ import { takeUntil } from 'rxjs/operators';
 export class ProductListDialogComponent implements OnInit {
   dataSource: any;
   displayedColumns: string[] = ['productName', 'categoryCode', 'price', 'purchaseRate', 'purchaseRateDate', 'isActive', 'actions'];
+  private categoryNames = new Map<string, string>();
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
 
@@ -167,6 +168,14 @@ export class ProductListDialogComponent implements OnInit {
     @Inject(MAT_DIALOG_DATA) public data: any
   ) {
     this.dataSource = new MatTableDataSource(data.products);
+    this.categoryNames = new Map<string, string>(
+      (data.categories || []).map((category: any) => [String(category.code), String(category.name || category.code)])
+    );
+  }
+
+  getCategoryName(code: string | null | undefined): string {
+    const value = String(code ?? '').trim();
+    return this.categoryNames.get(value) || value || 'Uncategorized';
   }
 
   ngOnInit() {
@@ -200,6 +209,7 @@ export class ProductListDialogComponent implements OnInit {
   styleUrls: ['./product.component.css']
 })
 export class ProductComponent implements OnInit, OnDestroy {
+  private readonly superAdminFallbackCompanyId = 'COMP1';
   private destroy$ = new Subject<void>();
   productForm!: FormGroup;
   productList: any[] = [];
@@ -242,6 +252,13 @@ export class ProductComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.initForm();
+    if (this.isSuperAdminRole() && !this.selectedCompanyService.getSelectedCompanyId()) {
+      Promise.resolve().then(() => {
+        if (!this.destroy$.isStopped && !this.selectedCompanyService.getSelectedCompanyId()) {
+          this.selectedCompanyService.setSelectedCompanyId(this.superAdminFallbackCompanyId);
+        }
+      });
+    }
     this.loadProducts();
     this.loadCategories();
     this.loadMeasurements();
@@ -257,6 +274,20 @@ export class ProductComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  private isSuperAdminRole(): boolean {
+    const role = (this.authService.getUserRole() || '').toLowerCase().replace(/-/g, '_');
+    return role === 'super_admin' || role === 'superadmin'
+      || role === 'super_duper_admin' || role === 'superduper';
+  }
+
+  private effectiveProductCompanyId(): string {
+    const selectedCompanyId = this.selectedCompanyService.getSelectedCompanyId()?.trim();
+    if (this.isSuperAdminRole()) {
+      return selectedCompanyId || this.superAdminFallbackCompanyId;
+    }
+    return this.authService.getCompanyId() || selectedCompanyId || '';
   }
 
   initForm() {
@@ -312,7 +343,7 @@ export class ProductComponent implements OnInit, OnDestroy {
   }
 
   loadProducts() {
-    const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+    const effectiveCompanyId = this.effectiveProductCompanyId();
     this.service.GetProducts(effectiveCompanyId ?? undefined).subscribe({
       next: (res: any) => {
         this.productList = res || [];
@@ -348,7 +379,7 @@ export class ProductComponent implements OnInit, OnDestroy {
   }
 
   private loadCompanyConfiguration(): void {
-    const companyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+    const companyId = this.effectiveProductCompanyId();
     if (!companyId) return;
     this.companyService.getCompanyById(companyId).pipe(takeUntil(this.destroy$)).subscribe({
       next: (company: any) => {
@@ -380,6 +411,7 @@ export class ProductComponent implements OnInit, OnDestroy {
       maxWidth: '95vw',
       data: {
         products: this.productList,
+        categories: this.categoryList,
         onEdit: (product: any) => this.editProduct(product),
         onDelete: (product: any) => this.deleteProduct(product)
       }
@@ -407,7 +439,7 @@ export class ProductComponent implements OnInit, OnDestroy {
       rateWithoutTax: formValue.rateWithoutTax || 0
     };
 
-    const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+    const effectiveCompanyId = this.effectiveProductCompanyId();
     if (!effectiveCompanyId) {
       this.toastr.warning('Please select a company before saving products.', 'Validation');
       return;
@@ -463,7 +495,7 @@ export class ProductComponent implements OnInit, OnDestroy {
 
   deleteProduct(product: any) {
     if (confirm(`Delete product "${product.productName}"?`)) {
-      const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.authService.getCompanyId();
+      const effectiveCompanyId = this.effectiveProductCompanyId();
       this.service.RemoveProduct(product.uniqueKeyID, effectiveCompanyId ?? undefined).subscribe({
         next: (res: any) => {
           if (res.result === 'pass') {

@@ -10,6 +10,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const toastr = inject(ToastrService);
   const logger = inject(LoggerService);
   const isPinEndpoint = isPinAuthEndpoint(req.url);
+  const isPasswordLoginEndpoint = /\/User\/loginwithpassword(?:[/?]|$)/i.test(req.url);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
@@ -17,9 +18,15 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       const authRoutes = ['/login', '/oauth-login', '/confirmotp', '/register', '/resetpassword', '/forgetpassword'];
       const onAuthRoute = authRoutes.some(r => currentUrl.startsWith(r));
 
-      let errorMessage = 'An unexpected error occurred';
-
       logger.logApiError(req.method, req.url, error.status, error);
+
+      // Login failures are expected authentication responses; preserve the HTTP body/status
+      // for the login form and do not clear a possibly valid existing session here.
+      if (isPasswordLoginEndpoint) {
+        return throwError(() => error);
+      }
+
+      let errorMessage = 'An unexpected error occurred';
 
       if (error.error instanceof ErrorEvent) {
         errorMessage = error.error.message;

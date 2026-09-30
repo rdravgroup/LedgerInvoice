@@ -80,7 +80,8 @@
     <!-- Desktop: table -->
     @if (!loading && dataSource.data.length > 0) {
       <mat-card class="pu-table-card" [class.hidden]="isMobile">
-        <table mat-table [dataSource]="dataSource" matSort class="pu-table">
+        <div class="pi-list-table-scroll" tabindex="0" aria-label="Purchase invoices table; scroll horizontally or vertically to see all columns">
+        <table mat-table [dataSource]="dataSource" matSort class="pu-table pi-list-table">
           <ng-container matColumnDef="piNumber">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Invoice #</th>
             <td mat-cell *matCellDef="let r"><code class="pu-code">{{ r.piNumber }}</code></td>
@@ -124,6 +125,7 @@
           <tr mat-header-row *matHeaderRowDef="listColumns; sticky:true"></tr>
           <tr mat-row *matRowDef="let row; columns:listColumns" class="pu-tr"></tr>
         </table>
+        </div>
         <mat-paginator [pageSizeOptions]="[10,20,50]" [pageSize]="20" showFirstLastButtons></mat-paginator>
       </mat-card>
     }

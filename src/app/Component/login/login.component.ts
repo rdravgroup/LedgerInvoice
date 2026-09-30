@@ -339,7 +339,11 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       error: (error) => {
         this.isLoading = false;
         this._loginForm.get('password')?.reset();
-        const errorMessage = error?.error?.message || 'Failed to login. Please check your credentials.';
+        const errorMessage = error?.error?.errorMessage
+          || error?.error?.ErrorMessage
+          || error?.error?.message
+          || (error?.status === 401 ? 'Invalid identifier or password.' : error?.message)
+          || 'Failed to login. Please try again.';
         this.toastr.error(errorMessage, 'Error');
         this.logger.error('LOGIN_COMPONENT', 'Password login error', { identifier: payload.identifier }, error);
       }

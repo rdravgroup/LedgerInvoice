@@ -58,10 +58,7 @@ export class UserService {
     this.logger.logApiRequest('POST', url, data);
     return this.http.post<LoginResponse>(url, data, { headers, withCredentials: true }).pipe(
       tap(response => this.logger.logApiResponse('POST', url, 200, response)),
-      catchError(err => {
-        this.logger.logApiError('POST', url, err?.status || 500, err);
-        return this.handleError(err);
-      })
+      catchError(err => this.handleError(err))
     );
   }
   requestLoginOtp(data: RequestLoginOtp): Observable<ApiResponse> {
