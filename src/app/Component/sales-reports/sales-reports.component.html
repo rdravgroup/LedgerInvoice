@@ -51,14 +51,26 @@
       </mat-form-field>
 
       <!-- Customer filter -->
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-form-field appearance="outline" class="customer-filter-field" subscriptSizing="dynamic">
         <mat-label>Customer (optional)</mat-label>
-        <mat-select formControlName="customerId">
-          <mat-option value="">All Customers</mat-option>
-          @for (c of customers; track c.uniqueKeyID) {
-            <mat-option [value]="c.uniqueKeyID">{{ c.name }}</mat-option>
+        <input matInput [formControl]="customerSearch" [matAutocomplete]="customerAutocomplete"
+               (input)="onCustomerSearchInput()" placeholder="All customers or search by name" />
+        <mat-icon matSuffix>search</mat-icon>
+        <mat-autocomplete #customerAutocomplete="matAutocomplete" [displayWith]="displayCustomer"
+                          (optionSelected)="selectCustomer($event.option.value)">
+          <mat-option [value]="allCustomersOption">All Customers</mat-option>
+          @for (c of filteredCustomers; track c.uniqueKeyID) {
+            <mat-option [value]="c">
+              <span class="customer-option-name">{{ c.name || c.customer_company || 'Unnamed customer' }}</span>
+              <span class="customer-option-meta">
+                {{ c.uniqueKeyID }}@if (c.email || c.phone || c.mobileNo) { · {{ c.email || c.phone || c.mobileNo }} }
+              </span>
+            </mat-option>
           }
-        </mat-select>
+          @if (filteredCustomers.length === 0) {
+            <mat-option disabled>No matching customers</mat-option>
+          }
+        </mat-autocomplete>
       </mat-form-field>
 
       <button mat-flat-button color="primary" type="button" (click)="runReport()" [disabled]="loading">
@@ -252,7 +264,7 @@
           <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
         </table>
       </div>
-      <mat-paginator [pageSizeOptions]="[20, 50, 100]" [pageSize]="20" showFirstLastButtons></mat-paginator>
+      <mat-paginator [pageSizeOptions]="[20, 50, 100]" [pageSize]="50" showFirstLastButtons></mat-paginator>
     </mat-card>
   }
 

@@ -1,7 +1,7 @@
 // src/app/Component/sales-reports/sales-reports.component.ts
 import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormControl, FormGroup } from '@angular/forms';
 import { MaterialModule } from '../../material.module';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
@@ -30,6 +30,17 @@ export class SalesReportsComponent implements OnInit, OnDestroy {
   reportType = 'summary';
   dataSource = new MatTableDataSource<any>();
   customers: any[] = [];
+  customerSearch = new FormControl('', { nonNullable: true });
+  readonly allCustomersOption = { uniqueKeyID: '', name: 'All Customers' };
+
+  get filteredCustomers(): any[] {
+    const query = this.customerSearch.value.trim().toLocaleLowerCase();
+    if (!query || query === 'all customers') return this.customers;
+    return this.customers.filter(customer =>
+      [customer.name, customer.customer_company, customer.uniqueKeyID, customer.email, customer.emailId, customer.phone, customer.mobileNo]
+        .some(value => String(value || '').toLocaleLowerCase().includes(query))
+    );
+  }
 
   summaryColumns = [
     'invoiceNumber', 'displayInvNumber', 'invoiceDate',
@@ -50,8 +61,18 @@ export class SalesReportsComponent implements OnInit, OnDestroy {
   totalReturns   = 0;
   totalNet       = 0;
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort)      sort!: MatSort;
+  private paginatorRef?: MatPaginator;
+
+  @ViewChild(MatPaginator)
+  set paginator(paginator: MatPaginator | undefined) {
+    this.paginatorRef = paginator;
+    if (paginator) this.dataSource.paginator = paginator;
+  }
+
+  @ViewChild(MatSort)
+  set sort(sort: MatSort | undefined) {
+    if (sort) this.dataSource.sort = sort;
+  }
 
   private destroy$ = new Subject<void>();
 
@@ -72,11 +93,6 @@ export class SalesReportsComponent implements OnInit, OnDestroy {
         this.loadCustomers();
         this.runReport();
       });
-  }
-
-  ngAfterViewInit(): void {
-    this.dataSource.paginator = this.paginator;
-    this.dataSource.sort      = this.sort;
   }
 
   ngOnDestroy(): void {
@@ -114,7 +130,31 @@ export class SalesReportsComponent implements OnInit, OnDestroy {
   loadCustomers(): void {
     this.masterSvc.GetCustomer(this.cid())
       .pipe(takeUntil(this.destroy$))
-      .subscribe({ next: (r: any) => this.customers = r?.data || r || [] });
+      .subscribe({
+        next: (r: any) => {
+          const rows = Array.isArray(r) ? r : r?.data ?? r?.Data ?? r?.items ?? r?.Items ?? [];
+          this.customers = (Array.isArray(rows) ? rows : []).sort((a: any, b: any) =>
+            String(a?.name || a?.customer_company || '').localeCompare(
+              String(b?.name || b?.customer_company || ''), undefined, { sensitivity: 'base', numeric: true }
+            )
+          );
+        }
+      });
+  }
+
+  displayCustomer(value: any): string {
+    if (typeof value === 'string') return value;
+    if (value === this.allCustomersOption || !value?.uniqueKeyID) return 'All Customers';
+    return value?.name || value?.customer_company || '';
+  }
+
+  onCustomerSearchInput(): void {
+    this.filterForm.get('customerId')?.setValue('');
+  }
+
+  selectCustomer(customer: any): void {
+    this.filterForm.get('customerId')?.setValue(customer?.uniqueKeyID || '');
+    this.customerSearch.setValue(customer?.uniqueKeyID ? this.displayCustomer(customer) : 'All Customers', { emitEvent: false });
   }
 
   runReport(): void {
@@ -176,6 +216,7 @@ export class SalesReportsComponent implements OnInit, OnDestroy {
 
   applyFilter(e: Event): void {
     this.dataSource.filter = (e.target as HTMLInputElement).value.trim().toLowerCase();
+    this.paginatorRef?.firstPage();
   }
 
   private calcTotals(rows: any[]): void {

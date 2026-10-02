@@ -2,6 +2,13 @@
 @import '../purchase-shared.css';
 
 .rpt-tab-content   { padding: 20px 0; }
+.rpt-date-field { flex: 0 1 220px !important; min-width: 190px; }
+.rpt-date-field ::ng-deep .mat-mdc-form-field-infix { min-height: 44px; }
+.rpt-date-field ::ng-deep .mat-datepicker-toggle .mat-mdc-icon-button { width: 36px; height: 36px; padding: 6px; }
+.rpt-vendor-field { flex: 0 1 320px !important; min-width: 240px; }
+.rpt-vendor-option-name, .rpt-vendor-option-meta { display: block; line-height: 1.35; }
+.rpt-vendor-option-name { font-weight: 600; }
+.rpt-vendor-option-meta { color: var(--md-sys-color-on-surface-variant); font-size: 11px; }
 .rpt-table-scroll  { overflow-x: auto; }
 .rpt-table         { min-width: 700px; }
 .rpt-table tfoot   { background: var(--md-sys-color-surface-variant); }
@@ -15,3 +22,8 @@
 .rpt-vendor-name   { font-size:16px; font-weight:600; }
 .rpt-balance       { font-size:18px; font-weight:700; font-family:monospace; color:var(--md-sys-color-primary); }
 .success { color: #2e7d32; font-weight: 600; }
+
+@media (max-width: 600px) {
+	.rpt-date-field { flex: 1 1 100% !important; min-width: 0; }
+	.rpt-vendor-field { flex: 1 1 100% !important; min-width: 0; }
+}

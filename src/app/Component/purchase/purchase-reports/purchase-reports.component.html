@@ -10,8 +10,18 @@
     <mat-tab label="Purchase Register">
       <div class="rpt-tab-content">
         <form [formGroup]="registerForm" class="pu-filter-row" (ngSubmit)="loadRegister()">
-          <mat-form-field appearance="outline"><mat-label>From</mat-label><input matInput type="date" formControlName="from" /></mat-form-field>
-          <mat-form-field appearance="outline"><mat-label>To</mat-label><input matInput type="date" formControlName="to" /></mat-form-field>
+          <mat-form-field appearance="outline" class="rpt-date-field" subscriptSizing="dynamic">
+            <mat-label>From</mat-label>
+            <input matInput [matDatepicker]="fromPicker" formControlName="from" />
+            <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
+            <mat-datepicker #fromPicker></mat-datepicker>
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="rpt-date-field" subscriptSizing="dynamic">
+            <mat-label>To</mat-label>
+            <input matInput [matDatepicker]="toPicker" formControlName="to" [min]="registerForm.get('from')?.value" />
+            <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
+            <mat-datepicker #toPicker></mat-datepicker>
+          </mat-form-field>
           <button mat-flat-button color="primary" type="submit"><mat-icon>refresh</mat-icon> Run</button>
         </form>
 
@@ -107,11 +117,24 @@
     <mat-tab label="Vendor Ledger">
       <div class="rpt-tab-content">
         <form [formGroup]="ledgerForm" class="pu-filter-row" (ngSubmit)="loadLedger()">
-          <mat-form-field appearance="outline" style="min-width:260px">
-            <mat-label>Select Vendor</mat-label>
-            <mat-select formControlName="vendorId">
-              @for (v of vendors; track v.vendorId) { <mat-option [value]="v.vendorId">{{ v.vendorName }}</mat-option> }
-            </mat-select>
+          <mat-form-field appearance="outline" class="rpt-vendor-field" subscriptSizing="dynamic">
+            <mat-label>Search vendor</mat-label>
+            <input matInput [formControl]="vendorSearch" [matAutocomplete]="vendorAutocomplete"
+                   (input)="onVendorSearchInput()" placeholder="Name, vendor ID, GSTIN or contact" />
+            <mat-icon matSuffix>search</mat-icon>
+            <mat-autocomplete #vendorAutocomplete="matAutocomplete" [displayWith]="displayVendor"
+                              (optionSelected)="selectVendor($event.option.value)">
+              @for (vendor of filteredVendors; track vendor.vendorId) {
+                <mat-option [value]="vendor">
+                  <span class="rpt-vendor-option-name">{{ vendor.vendorName }}</span>
+                  <span class="rpt-vendor-option-meta">{{ vendor.vendorId }}@if (vendor.gstin) { · {{ vendor.gstin }} }</span>
+                </mat-option>
+              }
+              @if (filteredVendors.length === 0) {
+                <mat-option disabled>No matching vendors</mat-option>
+              }
+            </mat-autocomplete>
+            <mat-error>Select a vendor from the search results</mat-error>
           </mat-form-field>
           <button mat-flat-button color="primary" type="submit"><mat-icon>refresh</mat-icon> Load Ledger</button>
         </form>
