@@ -181,12 +181,17 @@
             <div class="pu-form-row3">
               <mat-form-field appearance="outline" class="pu-field">
                 <mat-label>Invoice Date *</mat-label>
-                <input matInput type="date" formControlName="invoiceDate" />
+                <input matInput [matDatepicker]="invoiceDatePicker" formControlName="invoiceDate" />
+                <mat-datepicker-toggle matIconSuffix [for]="invoiceDatePicker"></mat-datepicker-toggle>
+                <mat-datepicker #invoiceDatePicker></mat-datepicker>
                 <mat-error>Required</mat-error>
               </mat-form-field>
               <mat-form-field appearance="outline" class="pu-field">
                 <mat-label>Due Date</mat-label>
-                <input matInput type="date" formControlName="dueDate" />
+                <input matInput [matDatepicker]="dueDatePicker" formControlName="dueDate"
+                       [min]="invoiceForm.get('invoiceDate')?.value" />
+                <mat-datepicker-toggle matIconSuffix [for]="dueDatePicker"></mat-datepicker-toggle>
+                <mat-datepicker #dueDatePicker></mat-datepicker>
               </mat-form-field>
               <mat-form-field appearance="outline" class="pu-field">
                 <mat-label>Place of Supply</mat-label>
@@ -211,9 +216,9 @@
             <table class="pu-items-table" formArrayName="items">
               <thead>
                 <tr>
-                  <th style="min-width:160px">Product *</th>
-                  <th style="min-width:70px">HSN</th>
-                  <th style="min-width:60px">Unit</th>
+                  <th style="min-width:240px">Product *</th>
+                  <th style="min-width:120px">HSN / SAC</th>
+                  <th style="min-width:100px">Unit</th>
                   <th style="min-width:80px" class="num">Qty</th>
                   <th style="min-width:90px" class="num">Rate ₹</th>
                   <th style="min-width:60px" class="num">Disc %</th>
@@ -233,24 +238,44 @@
               <tbody>
                 @for (line of items.controls; track $index; let i = $index) {
                   <tr [formGroupName]="i">
-                    <td>
-                      <mat-select formControlName="productId" (selectionChange)="onProductSelect(i, $event.value)" style="width:100%;font-size:13px">
-                        @for (p of products; track p.uniqueKeyID) {
-                          <mat-option [value]="p.uniqueKeyID">{{ p.productName || p.name }}</mat-option>
-                        }
-                      </mat-select>
+                    <td class="pi-product-cell">
+                      <mat-form-field appearance="outline" class="pi-item-field pi-product-field">
+                        <mat-label>Search products</mat-label>
+                        <input matInput formControlName="productName" [matAutocomplete]="productAuto"
+                               (input)="onProductSearchInput(i)" placeholder="Name, code or HSN" />
+                        <mat-icon matSuffix>search</mat-icon>
+                        <mat-autocomplete #productAuto="matAutocomplete" [displayWith]="displayProduct"
+                                          (optionSelected)="onProductSelect(i, $event.option.value)">
+                          @for (p of filteredProductsFor(i); track p.uniqueKeyID || p.productId || p.productName) {
+                            <mat-option [value]="p">
+                              <span class="pi-product-option-name">{{ p.productName || p.name }}</span>
+                              <span class="pi-product-option-meta">
+                                {{ p.uniqueKeyID || p.productId || 'Product' }}
+                                @if (p.hsnSacNumber || p.hsnSacCode) { <span> · HSN {{ p.hsnSacNumber || p.hsnSacCode }}</span> }
+                              </span>
+                            </mat-option>
+                          }
+                          @if (filteredProductsFor(i).length === 0) {
+                            <mat-option disabled>No matching products</mat-option>
+                          }
+                        </mat-autocomplete>
+                        <mat-error>{{ line.get('productName')?.hasError('productUnselected') ? 'Choose a product from the results' : 'Product is required' }}</mat-error>
+                      </mat-form-field>
                     </td>
-                    <td><input formControlName="hsnSac" (change)="onLineChange(i)" /></td>
-                    <td><input formControlName="measurement" (change)="onLineChange(i)" /></td>
-                    <td><input formControlName="quantity" type="number" min="0.001" step="0.001" (input)="onLineChange(i)" class="num" /></td>
-                    <td><input formControlName="rate" type="number" min="0" step="0.01" (input)="onLineChange(i)" class="num" /></td>
-                    <td><input formControlName="discountPct" type="number" min="0" max="100" step="0.01" (input)="onLineChange(i)" class="num" /></td>
+                    <td><mat-form-field appearance="outline" class="pi-item-field"><mat-label>HSN</mat-label><input matInput formControlName="hsnSac" maxlength="12" /></mat-form-field></td>
+                    <td><mat-form-field appearance="outline" class="pi-item-field"><mat-label>Unit</mat-label><input matInput formControlName="measurement" maxlength="20" /></mat-form-field></td>
+                    <td><mat-form-field appearance="outline" class="pi-item-field pi-number-field"><mat-label>Qty</mat-label><input matInput formControlName="quantity" type="number" min="0.001" step="0.001" (input)="onLineChange(i)" /></mat-form-field></td>
+                    <td><mat-form-field appearance="outline" class="pi-item-field pi-number-field"><mat-label>Rate</mat-label><span matTextPrefix>₹&nbsp;</span><input matInput formControlName="rate" type="number" min="0" step="0.01" (input)="onLineChange(i)" /></mat-form-field></td>
+                    <td><mat-form-field appearance="outline" class="pi-item-field pi-number-field"><mat-label>Disc %</mat-label><input matInput formControlName="discountPct" type="number" min="0" max="100" step="0.01" (input)="onLineChange(i)" /><span matTextSuffix>%</span></mat-form-field></td>
                     <td class="num">{{ line.get('taxableAmount')?.value | number:'1.2-2' }}</td>
                     <td>
-                      <mat-select [value]="isInterState ? line.get('igstRate')?.value : (line.get('cgstRate')?.value||0)*2"
-                                  (selectionChange)="onGstRateChange(i, $event.value)" style="font-size:13px">
-                        @for (r of gstRates; track r) { <mat-option [value]="r">{{ r }}%</mat-option> }
-                      </mat-select>
+                      <mat-form-field appearance="outline" class="pi-item-field pi-number-field">
+                        <mat-label>{{ isInterState ? 'IGST' : 'GST' }}</mat-label>
+                        <mat-select [value]="isInterState ? line.get('igstRate')?.value : (line.get('cgstRate')?.value||0)*2"
+                                    (selectionChange)="onGstRateChange(i, $event.value)">
+                          @for (r of gstRates; track r) { <mat-option [value]="r">{{ r }}%</mat-option> }
+                        </mat-select>
+                      </mat-form-field>
                     </td>
                     @if (!isInterState) {
                       <td class="num">{{ line.get('cgstAmount')?.value | number:'1.2-2' }}</td>

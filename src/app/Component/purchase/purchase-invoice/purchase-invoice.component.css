@@ -17,6 +17,35 @@
 .pi-add-line-btn { margin-top: 10px; border-radius: 20px !important; }
 .pi-line-total { font-weight: 600; color: var(--md-sys-color-primary); }
 
+.pi-items-scroll { padding-top: 4px; }
+.pu-items-table { min-width: 1280px; table-layout: auto; }
+.pu-items-table th { white-space: nowrap; }
+.pu-items-table td { vertical-align: middle; }
+.pi-item-field { display: block; width: 100%; min-width: 82px; }
+.pi-product-field { min-width: 224px; }
+.pi-number-field { min-width: 76px; }
+.pi-item-field ::ng-deep .mat-mdc-form-field-subscript-wrapper { display: none; }
+.pi-item-field ::ng-deep .mat-mdc-text-field-wrapper { padding-inline: 9px; }
+.pi-item-field ::ng-deep .mat-mdc-form-field-infix { min-height: 40px; padding-block: 9px; }
+.pi-item-field ::ng-deep input.mat-mdc-input-element { font-size: 13px; }
+.pi-product-option-name, .pi-product-option-meta { display: block; line-height: 1.35; }
+.pi-product-option-name { font-weight: 600; }
+.pi-product-option-meta { color: var(--md-sys-color-on-surface-variant); font-size: 11px; }
+.pi-items-scroll .pu-items-table td.num { white-space: nowrap; }
+
+.pi-form-shell .mat-mdc-form-field { min-width: 0; }
+.pi-form-shell .pu-form-row3 > .pu-field { flex: 1 1 0; }
+
+@media (max-width: 767px) {
+  .pi-form-shell { max-width: 100%; }
+  .pi-form-shell .pu-page-header { align-items: flex-start; gap: 12px; }
+  .pi-form-shell .pu-page-header > div:last-child { flex-wrap: wrap; justify-content: flex-end; }
+  .pi-card { border-radius: 8px !important; }
+  .pi-items-scroll { margin-inline: -8px; }
+  .pi-form-footer { position: sticky; bottom: 0; z-index: 3; background: var(--md-sys-color-surface); padding: 10px 0; }
+  .pi-form-footer button { flex: 1; }
+}
+
 .pi-charges-totals {
   display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start;
 }

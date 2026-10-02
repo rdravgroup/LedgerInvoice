@@ -71,7 +71,7 @@ export class PurchaseInvoiceComponent implements OnInit, OnDestroy {
 
   // ── Form builder ──────────────────────────────────────────────
   buildForm(inv?: PurchaseInvoice): void {
-    const today = new Date().toISOString().split('T')[0];
+    const today = this.toDateControlValue(new Date());
     this.invoiceForm = this.fb.group({
       piNumber:       [inv?.piNumber || null],
       companyId:      [inv?.companyId || this.cid()],
@@ -80,8 +80,8 @@ export class PurchaseInvoiceComponent implements OnInit, OnDestroy {
       vendorId:       [inv?.vendorId || '', Validators.required],
       vendorInvoiceNo:[inv?.vendorInvoiceNo || ''],
       poNumber:       [inv?.poNumber || ''],
-      invoiceDate:    [inv?.invoiceDate?.split('T')[0] || today, Validators.required],
-      dueDate:        [inv?.dueDate?.split('T')[0] || ''],
+      invoiceDate:    [this.toDateControlValue(inv?.invoiceDate) || today, Validators.required],
+      dueDate:        [this.toDateControlValue(inv?.dueDate) || null],
       supplyPlace:    [inv?.supplyPlace || ''],
       freightCharges: [inv?.freightCharges || 0, Validators.min(0)],
       otherCharges:   [inv?.otherCharges  || 0, Validators.min(0)],
@@ -97,7 +97,7 @@ export class PurchaseInvoiceComponent implements OnInit, OnDestroy {
   buildLine(i?: PurchaseInvoiceLine): FormGroup {
     return this.fb.group({
       productId:    [i?.productId  || '', Validators.required],
-      productName:  [i?.productName || ''],
+      productName:  [i?.productName || '', Validators.required],
       hsnSac:       [i?.hsnSac  || ''],
       measurement:  [i?.measurement || ''],
       quantity:     [i?.quantity  || 1,    [Validators.required, Validators.min(0.001)]],
@@ -161,16 +161,61 @@ export class PurchaseInvoiceComponent implements OnInit, OnDestroy {
     for (let i = 0; i < this.items.length; i++) this.onLineChange(i);
   }
 
-  onProductSelect(idx: number, productId: string): void {
-    const p = this.products.find(x => x.uniqueKeyID === productId);
+  filteredProductsFor(idx: number): any[] {
+    const query = String(this.items.at(idx).get('productName')?.value || '').trim().toLowerCase();
+    const matches = !query ? this.products : this.products.filter(product =>
+      [product.productName, product.name, product.uniqueKeyID, product.hsnSacNumber, product.hsnSacCode]
+        .some(value => String(value || '').toLowerCase().includes(query))
+    );
+    return matches.slice(0, 50);
+  }
+
+  displayProduct(product: any): string {
+    return typeof product === 'string' ? product : (product?.productName || product?.name || '');
+  }
+
+  onProductSearchInput(idx: number): void {
+    const line = this.items.at(idx);
+    const productName = line.get('productName');
+    line.get('productId')?.setValue('', { emitEvent: false });
+    productName?.updateValueAndValidity({ emitEvent: false });
+    if (productName?.value) productName.setErrors({ productUnselected: true });
+  }
+
+  onProductSelect(idx: number, p: any): void {
     if (!p) return;
+    const productId = p.uniqueKeyID || p.productId || p.id || '';
+    const gstRate = Number(p.totalGstRate ?? p.gstRate ?? 0);
     this.items.at(idx).patchValue({
-      productName: p.productName || p.name,
-      hsnSac: p.hsnSacCode || p.hsnSac || '',
+      productId,
+      productName: p.productName || p.name || '',
+      hsnSac: p.hsnSacNumber || p.hsnSacCode || p.hsnSac || '',
       measurement: p.measurement || p.unit || '',
-      rate: +(p.purchaseRate || p.sellingPrice || 0)
+      rate: Number(p.lastPurchaseRate || p.purchaseRate || p.rateWithoutTax || p.sellingPrice || 0),
+      cgstRate: this.isInterState ? 0 : gstRate / 2,
+      sgstRate: this.isInterState ? 0 : gstRate / 2,
+      igstRate: this.isInterState ? gstRate : 0
     }, { emitEvent: false });
+    this.items.at(idx).get('productName')?.updateValueAndValidity({ emitEvent: false });
     this.onLineChange(idx);
+  }
+
+  private toDateControlValue(value: string | Date | null | undefined): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+    const dateOnly = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (dateOnly) return new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]));
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  private toApiDate(value: Date | string | null | undefined): string | null {
+    const date = this.toDateControlValue(value);
+    if (!date) return null;
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   // ── Summary totals ────────────────────────────────────────────
@@ -265,6 +310,8 @@ export class PurchaseInvoiceComponent implements OnInit, OnDestroy {
     const currentPaidAmount = Number(this.invoiceForm.get('paidAmount')?.value || 0);
     const dto: PurchaseInvoice = {
       ...this.invoiceForm.getRawValue(),
+      invoiceDate: this.toApiDate(this.invoiceForm.get('invoiceDate')?.value) || '',
+      dueDate: this.toApiDate(this.invoiceForm.get('dueDate')?.value) || '',
       poNumber: String(this.invoiceForm.get('poNumber')?.value ?? '').trim() || null,
       subtotal:       this.subtotal,
       cgstAmount:     this.totalCgst,
