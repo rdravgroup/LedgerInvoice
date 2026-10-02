@@ -205,7 +205,13 @@ export interface ResetPasswordRequest {
   confirmnewpassword?: string;
 }
 
-export interface LoginWithPasswordRequest { identifier: string; password: string; username?: string; rememberMe?: boolean; }
+export interface LoginWithPasswordRequest {
+  identifier: string;
+  email?: string;
+  password: string;
+  username?: string;
+  rememberMe?: boolean;
+}
 
 export interface RememberSessionResponse {
   result: string;

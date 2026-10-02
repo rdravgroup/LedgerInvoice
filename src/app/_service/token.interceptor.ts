@@ -110,8 +110,8 @@ export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
               endpoint: req.url
             });
             // Don't logout if this is a refresh request itself (avoid double logout)
-            if (!req.url.includes('GenerateRefreshToken') && !isPinEndpoint) {
-              authService.logout(false);
+            if (!req.url.includes('GenerateRefreshToken') && !isPinEndpoint && authService.getToken()) {
+              authService.logout(false, 'token-expired');
             }
             // Rethrow original HttpErrorResponse so caller can read status
             return throwError(() => error);

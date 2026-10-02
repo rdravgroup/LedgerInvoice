@@ -30,7 +30,9 @@ export class AuthService {
   private readonly TOKEN_EXPIRY_MINUTES = 15; // Backend token expiry
   private readonly TOKEN_REFRESH_INTERVAL = 12 * 60 * 1000; // 12 minutes
   private readonly INACTIVITY_TIMEOUT_MINUTES = 30; // Session timeout after inactivity
+  private readonly PERSISTENT_LOGIN_TIMEOUT_MINUTES = 60 * 24 * 30; // 30 days for remember-me sessions
   private inactivityTimer: any;
+  private readonly activityHandler = () => this.resetInactivityTimer();
 
   // Session expiry warning subject
   private sessionExpiryWarning = new BehaviorSubject<{ willExpionIn: number } | null>(null);
@@ -44,6 +46,28 @@ export class AuthService {
     private selectedCompanyService: SelectedCompanyService
   ) {
     this.checkAuthStatus();
+    this.installActivityListeners();
+  }
+
+  private installActivityListeners(): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const events = ['click', 'keydown', 'mousemove', 'touchstart', 'scroll'];
+    events.forEach(eventName => window.addEventListener(eventName, this.activityHandler, { passive: true }));
+  }
+
+  private isPersistentLoginEnabled(): boolean {
+    return localStorage.getItem('rememberMe') === 'true';
+  }
+
+  private persistRememberMe(rememberMe: boolean): void {
+    if (rememberMe) {
+      localStorage.setItem('rememberMe', 'true');
+      return;
+    }
+    localStorage.removeItem('rememberMe');
   }
 
   /**
@@ -116,9 +140,12 @@ export class AuthService {
   /**
    * Store user login details and credentials
    */
-  login(response: LoginResponse, username?: string): void {
+  login(response: LoginResponse, username?: string, rememberMe = false): void {
     console.log('AUTH_SERVICE: Login called with response:', response);
     console.log('AUTH_SERVICE: response.userRole =', response.userRole);
+
+    const rememberMeEnabled = response?.rememberMeEnabled ?? (rememberMe || this.isPersistentLoginEnabled());
+    this.persistRememberMe(rememberMeEnabled);
 
     // CHANGE: Clear any stale company selection from the previous session BEFORE setting new auth state.
     // This prevents company context leaking to a different user on the same browser/device.
@@ -126,7 +153,11 @@ export class AuthService {
 
     localStorage.setItem('token', response.token);
     // Ensure we never pass undefined to localStorage
-    localStorage.removeItem('refreshToken');
+    if (response.refreshToken) {
+      localStorage.setItem('refreshToken', response.refreshToken);
+    } else {
+      localStorage.removeItem('refreshToken');
+    }
     localStorage.setItem('username', username || '');
 
     // Determine role: prefer explicit response.userRole, otherwise decode from JWT
@@ -168,6 +199,7 @@ export class AuthService {
     localStorage.removeItem('username');
     localStorage.removeItem('userrole');
     localStorage.removeItem('companyid');
+    localStorage.removeItem('logoutReason');
     this.isAuthenticated.set(false);
     this.userEmail.next('');
     this.userRoleSubject.next(null);
@@ -183,7 +215,7 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${this.baseUrl}Authorize/pin/validate`, { pin }, { withCredentials: true }).pipe(
       tap(response => {
         if (response?.token) {
-          this.login(response, response.username || '');
+          this.login(response, response.username || '', true);
         }
       })
     );
@@ -292,11 +324,13 @@ export class AuthService {
    * This prevents the selected company from persisting to the next user session on the same browser.
    * All other logout logic is unchanged.
    */
-  logout(revokeServerSession = true): void {
-    console.log('AUTH_SERVICE: Logging out user...');
+  logout(revokeServerSession = true, reason: string = 'manual'): void {
+    console.log('AUTH_SERVICE: Logging out user...', { reason });
+    localStorage.setItem('logoutReason', reason);
 
     if (revokeServerSession) {
-      this.http.post(`${this.baseUrl}Authorize/logout`, {}, { withCredentials: true }).subscribe({ error: () => {} });
+      this.http.post(`${this.baseUrl}Authorize/logout`, { reason, source: 'client' }, { withCredentials: true }).subscribe({ error: () => {} });
+      localStorage.removeItem('rememberMe');
     }
 
     // CHANGE: clear company selection so next login starts fresh
@@ -427,15 +461,27 @@ export class AuthService {
 
   resetInactivityTimer(): void {
     if (this.inactivityTimer) clearTimeout(this.inactivityTimer);
+
+    const timeoutMs = this.isPersistentLoginEnabled()
+      ? this.PERSISTENT_LOGIN_TIMEOUT_MINUTES * 60 * 1000
+      : this.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000;
+
+    if (!this.isAuthenticated() || timeoutMs <= 0) {
+      this.inactivityTimer = null;
+      return;
+    }
+
     this.inactivityTimer = setTimeout(() => {
       if (this.isAuthenticated()) {
         console.warn('AUTH_SERVICE: Inactivity timeout — logging out');
-        this.logout(false);
+        this.logout(false, 'inactivity');
       }
-    }, this.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000);
+    }, timeoutMs);
   }
 
-  getInactivityTimeoutMinutes(): number { return this.INACTIVITY_TIMEOUT_MINUTES; }
+  getInactivityTimeoutMinutes(): number {
+    return this.isPersistentLoginEnabled() ? this.PERSISTENT_LOGIN_TIMEOUT_MINUTES / 60 : this.INACTIVITY_TIMEOUT_MINUTES;
+  }
   getTokenRefreshIntervalMinutes(): number { return this.TOKEN_REFRESH_INTERVAL / 1000 / 60; }
   isTokenValid(): boolean { return !!localStorage.getItem('token'); }
   getToken(): string | null { return localStorage.getItem('token'); }

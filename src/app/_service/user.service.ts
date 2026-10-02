@@ -112,8 +112,14 @@ export class UserService {
   proceedLogin(data: UserCredentials): Observable<LoginResponse> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
     const url = `${this.baseUrl}Authorize/GenerateToken`;
-    this.logger.logApiRequest('POST', url, data);
-    return this.http.post<LoginResponse>(url, data, { headers, withCredentials: true }).pipe(
+    const payload = {
+      email: data.username,
+      username: data.username,
+      password: data.password,
+      rememberMe: false
+    };
+    this.logger.logApiRequest('POST', url, payload);
+    return this.http.post<LoginResponse>(url, payload, { headers, withCredentials: true }).pipe(
       tap(response => this.logger.logApiResponse('POST', url, 200, response)),
       catchError(err => {
         this.logger.logApiError('POST', url, err?.status || 500, err);

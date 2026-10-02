@@ -291,13 +291,16 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     this.isLoading = true;
-    const payload: LoginWithPasswordRequest = {
-      identifier: this._loginForm.value.username as string,
+    const identifier = (this._loginForm.value.username as string).trim();
+    const payload: LoginWithPasswordRequest & { email?: string } = {
+      identifier,
+      email: identifier,
+      username: identifier,
       password: this._loginForm.value.password as string,
       rememberMe: !!this._loginForm.value.rememberMe
     };
-    this.logger.info('LOGIN_COMPONENT', 'Attempting password-based login', { identifier: payload.identifier });
-    this.service.loginWithPassword(payload).subscribe({
+    this.logger.info('LOGIN_COMPONENT', 'Attempting password-based login', { identifier: payload.identifier, email: payload.email });
+    this.service.loginWithPassword(payload as LoginWithPasswordRequest).subscribe({
       next: (response) => {
         this.isLoading = false;
         this._response = response;
@@ -310,13 +313,11 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
           
           if (usernameFromResponse) {
             console.log('LOGIN_COMPONENT: Using username from response:', usernameFromResponse);
-            this.authService.login(this._response, usernameFromResponse);
-            this.continueAfterPinSetup(this._response, usernameFromResponse, response.userRole);
-          } else {
-            // Login immediately so token is available for any subsequent protected requests
-            this.authService.login(this._response, payload.identifier);
-
-            // Fetch user details to get the actual username for later use
+                this.authService.login(this._response, usernameFromResponse, !!this._loginForm.value.rememberMe);
+                this.continueAfterPinSetup(this._response, usernameFromResponse, response.userRole);
+              } else {
+                // Login immediately so token is available for any subsequent protected requests
+                this.authService.login(this._response, payload.identifier, !!this._loginForm.value.rememberMe);
             console.log('LOGIN_COMPONENT: Fetching user details using identifier:', payload.identifier);
             this.service.getUserByCode(payload.identifier).subscribe({
               next: (user) => {
