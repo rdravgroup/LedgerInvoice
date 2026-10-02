@@ -58,7 +58,7 @@
   <!-- Mobile: Card List -->
   @if (!loading && datasource.data.length > 0) {
     <div class="mobile-card-list" [class.hidden]="!isMobile">
-      @for (row of datasource.filteredData; track row.uniqueKeyID) {
+      @for (row of pagedCustomers; track row.uniqueKeyID) {
         <mat-card class="list-card">
           <mat-card-content>
             <div class="list-card-header">
@@ -100,7 +100,7 @@
   <!-- Desktop: Mat Table -->
   @if (!loading && datasource.data.length > 0) {
     <mat-card class="table-card" [class.hidden]="isMobile">
-      <table mat-table [dataSource]="datasource" matSort class="full-table" role="grid">
+      <table mat-table [dataSource]="datasource" matSort matSortActive="name" matSortDirection="asc" class="full-table" role="grid">
 
         <!-- Name Column -->
         <ng-container matColumnDef="name">
@@ -166,13 +166,15 @@
         <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
       </table>
 
-      <mat-paginator
-        [pageSizeOptions]="[10, 20, 50]"
-        [pageSize]="20"
-        showFirstLastButtons
-        aria-label="Select page">
-      </mat-paginator>
     </mat-card>
+    <div class="customer-pagination">
+      <mat-paginator
+        [pageSizeOptions]="[10, 20, 50,100,150]"
+        [pageSize]="50"
+        showFirstLastButtons
+        aria-label="Select customer page">
+      </mat-paginator>
+    </div>
   }
 
 </div>

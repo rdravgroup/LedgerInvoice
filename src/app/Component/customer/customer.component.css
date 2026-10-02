@@ -74,6 +74,14 @@
 }
 .table-card.hidden { display: none; }
 .full-table { width: 100%; }
+.customer-pagination {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  border-top: 1px solid var(--md-sys-color-outline-variant);
+  background: var(--md-sys-color-surface);
+}
+.customer-pagination mat-paginator { width: 100%; }
 
 .table-row { transition: background var(--md-sys-motion-duration-short2) var(--md-sys-motion-easing-standard); }
 .table-row:hover { background: rgba(79, 70, 229, 0.04); }

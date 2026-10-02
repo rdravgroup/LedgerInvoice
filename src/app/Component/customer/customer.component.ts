@@ -53,8 +53,22 @@ export class CustomerComponent implements OnInit, OnDestroy {
     userrole: '', menucode: '',
   };
 
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
+  private paginatorRef?: MatPaginator;
+  private sortRef?: MatSort;
+
+  @ViewChild(MatPaginator)
+  set paginator(paginator: MatPaginator | undefined) {
+    this.paginatorRef = paginator;
+    if (paginator) this.datasource.paginator = paginator;
+  }
+
+  @ViewChild(MatSort)
+  set sort(sort: MatSort | undefined) {
+    this.sortRef = sort;
+    if (sort) this.datasource.sort = sort;
+  }
+
+  get paginator(): MatPaginator | undefined { return this.paginatorRef; }
 
   constructor(
     private service: CustomerService,
@@ -98,6 +112,13 @@ export class CustomerComponent implements OnInit, OnDestroy {
 
   applyFilter(event: Event): void {
     this.datasource.filter = (event.target as HTMLInputElement).value.trim().toLowerCase();
+    this.paginator?.firstPage();
+  }
+
+  get pagedCustomers(): customer[] {
+    const pageSize = this.paginator?.pageSize || 20;
+    const start = (this.paginator?.pageIndex || 0) * pageSize;
+    return this.datasource.filteredData.slice(start, start + pageSize);
   }
 
   getActiveCount(): number   { return this.customerlist?.filter(c =>  c.isActive)?.length || 0; }
@@ -137,16 +158,14 @@ export class CustomerComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (item) => {
-          this.customerlist = item;
-          // Sort descending by ID
-          this.customerlist.sort((a, b) => {
-            const keyA = a.uniqueKeyID || '';
-            const keyB = b.uniqueKeyID || '';
-            return keyB.localeCompare(keyA, undefined, { numeric: true });
-          });
-          this.datasource = new MatTableDataSource<customer>(this.customerlist);
-          this.datasource.paginator = this.paginator;
-          this.datasource.sort = this.sort;
+          this.customerlist = Array.isArray(item) ? item : [];
+          this.customerlist.sort((a, b) =>
+            (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base', numeric: true })
+          );
+          this.datasource.data = this.customerlist;
+          if (this.paginator) this.datasource.paginator = this.paginator;
+          if (this.sortRef) this.datasource.sort = this.sortRef;
+          this.paginator?.firstPage();
           this.loading = false;
         },
         error: (error) => {

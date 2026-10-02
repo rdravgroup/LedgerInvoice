@@ -109,8 +109,10 @@ export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy 
   rowProductSearch: string[] = [];
 
   get filteredCustomers(): any[] {
-    const q = this.customerSearchTerm.toLowerCase();
-    return q ? this.mastercustomer.filter((c: any) => this.getCustomerSearchText(c).includes(q)) : this.mastercustomer;
+    const q = this.customerSearchTerm.trim().toLocaleLowerCase();
+    return q
+      ? this.mastercustomer.filter((customer: any) => this.getCustomerSearchText(customer).includes(q))
+      : this.mastercustomer;
   }
 
   get selectedCustomerCompany(): string {
@@ -139,10 +141,20 @@ export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy 
   }
 
   private getCustomerSearchText(customer: any): string {
-    return [customer?.customer_company]
+    return [customer?.customer_company, customer?.name, customer?.uniqueKeyID, customer?.email, customer?.mobileNo, customer?.phone]
       .filter(Boolean)
       .join(' ')
-      .toLowerCase();
+      .toLocaleLowerCase();
+  }
+
+  private sortCustomers(customers: any[]): any[] {
+    const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+    return [...customers].sort((a, b) =>
+      collator.compare(
+        String(a?.customer_company || a?.name || '').trim(),
+        String(b?.customer_company || b?.name || '').trim()
+      )
+    );
   }
 
   openNewCustomer(event: Event): void {
@@ -874,11 +886,12 @@ export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy 
       switchMap(() => this.service.GetCustomer(companyId))
     ).subscribe({
       next: (res: any) => {
-        const customers = Array.isArray(res) ? res : res?.data || res?.Data || res?.items || res?.Items || [];
-        this.mastercustomer = customers.map((customer: any) => ({
+        const responseData = Array.isArray(res) ? res : res?.data || res?.Data || res?.items || res?.Items || [];
+        const customers = Array.isArray(responseData) ? responseData : [];
+        this.mastercustomer = this.sortCustomers(customers.map((customer: any) => ({
           ...customer,
           uniqueKeyID: this.getCustomerId(customer)
-        }));
+        })));
         if (!this.isedit && !this.invoiceform.get('customerId')?.value) {
           const cashCode = `${String(companyId).trim().toUpperCase()}-CASH`;
           const cashCustomer = this.mastercustomer.find(customer =>
@@ -903,7 +916,7 @@ export class CreateinvoiceComponent implements OnInit, AfterViewInit, OnDestroy 
           let selected = this.mastercustomer.find((customer: any) => String(customer.uniqueKeyID) === requestedId);
           if (!selected && requestedId) {
             selected = { ...selectCustomer, uniqueKeyID: requestedId };
-            this.mastercustomer = [selected, ...this.mastercustomer];
+            this.mastercustomer = this.sortCustomers([selected, ...this.mastercustomer]);
           }
           const customerId = selected?.uniqueKeyID;
           if (customerId) {
