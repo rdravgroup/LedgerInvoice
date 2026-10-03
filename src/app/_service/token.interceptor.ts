@@ -1,7 +1,8 @@
 import { HttpInterceptorFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthService } from './authentication.service';
-import { catchError, tap, throwError } from 'rxjs';
+import { catchError, switchMap, tap, throwError } from 'rxjs';
 import { LoggerService } from './logger.service';
 
 /**
@@ -13,6 +14,7 @@ import { LoggerService } from './logger.service';
 export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const logger = inject(LoggerService);
+  const router = inject(Router);
   
   // Allow callers to explicitly skip adding Authorization header by setting
   // a custom header `X-Skip-Auth: true` on the request. This is useful when
@@ -120,12 +122,31 @@ export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
               logger.warn('TOKEN_INTERCEPTOR', 'Unauthorized (401) for current session token', {
                 endpoint: req.url
               });
-              if (!req.url.includes('GenerateRefreshToken')) {
-                authService.logout(false, 'token-expired');
-              }
+              if (isRefreshRequest(req.url)) return throwError(() => error);
+
+              // Refresh once for the expired request, then replay it with the new JWT.
+              return authService.refreshToken().pipe(
+                switchMap(response => {
+                  const retryRequest = req.clone({
+                    setHeaders: { Authorization: `Bearer ${response.token}` }
+                  });
+                  return next(retryRequest).pipe(catchError(retryError => {
+                    if (retryError instanceof HttpErrorResponse && retryError.status === 401) {
+                      authService.logout(false, 'token-expired');
+                      router.navigateByUrl('/login');
+                    }
+                    return throwError(() => retryError);
+                  }));
+                }),
+                catchError(refreshError => {
+                  if (refreshError?.status === 400 || refreshError?.status === 401 || !authService.getAuthStatus()) {
+                    if (authService.getAuthStatus()) authService.logout(false, 'token-expired');
+                    router.navigateByUrl('/login');
+                  }
+                  return throwError(() => error);
+                })
+              );
             }
-            // Rethrow original HttpErrorResponse so caller can read status
-            return throwError(() => error);
 
           case 403:
             // Forbidden - user doesn't have permission
@@ -175,13 +196,17 @@ function shouldSkipTokenInsertion(request: any): boolean {
     'requestforgotpasswordotp',         // Request forgot password OTP
     'resetpasswordwithotp',             // Reset password with OTP    'GetBycode',                        // Login helper endpoint used before token storage
     'Getbycode',                        // Same endpoint variant
-    'GetbycodeDetailed',                // User detail endpoint used during login    // Note: removed 'GenerateRefreshToken' from public endpoints so the
-    // Authorization header is included. Some backends require the bearer
-    // token to validate refresh requests.
+    'GetbycodeDetailed',                // User detail endpoint used during login
+    // GenerateRefreshToken is authenticated through the explicit refresh payload;
+    // AuthService marks it with X-Skip-Auth so an expired bearer token is not sent.
     'userregistration',                 // Legacy registration endpoint
   ];
 
   return publicEndpoints.some(endpoint => request.url.includes(endpoint));
+}
+
+function isRefreshRequest(url: string): boolean {
+  return /\/Authorize\/GenerateRefreshToken(?:[/?]|$)/i.test(url);
 }
 
 

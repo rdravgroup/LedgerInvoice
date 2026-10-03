@@ -15,37 +15,30 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
       const currentUrl = router.url || '';
-      const authRoutes = ['/login', '/oauth-login', '/confirmotp', '/register', '/resetpassword', '/forgetpassword'];
-      const onAuthRoute = authRoutes.some(r => currentUrl.startsWith(r));
-
       logger.logApiError(req.method, req.url, error.status, error);
+
+      // Let refresh errors reach AuthService with their original HTTP status.
+      if (/\/Authorize\/GenerateRefreshToken(?:[/?]|$)/i.test(req.url)) {
+        return throwError(() => error);
+      }
+
+      // The token interceptor owns refresh and replay. A protected request's 401
+      // must reach it before any local session data is changed.
+      if (error.status === 401) {
+        reportClientAuth401(
+          req.url,
+          currentUrl,
+          error,
+          'preserve-auth-route-for-caller',
+          !!req.headers.get('Authorization')
+        );
+        return throwError(() => error);
+      }
 
       // Login failures are expected authentication responses; preserve the HTTP body/status
       // for the login form and do not clear a possibly valid existing session here.
       if (isPasswordLoginEndpoint) {
         return throwError(() => error);
-      }
-
-      if (error.status === 401) {
-        const requestToken = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '') || '';
-        const currentToken = localStorage.getItem('token') || '';
-        if (currentToken && (!requestToken || requestToken !== currentToken)) {
-          logger.logAuthEvent('Ignoring stale or uncredentialed 401; a newer local session exists', {
-            method: req.method,
-            url: req.url,
-            currentUrl,
-            requestHadBearerToken: !!requestToken,
-            requestMatchesCurrentSession: false
-          });
-          reportClientAuth401(
-            req.url,
-            currentUrl,
-            error,
-            'ignore-stale-401',
-            !!req.headers.get('Authorization')
-          );
-          return throwError(() => error);
-        }
       }
 
       let errorMessage = 'An unexpected error occurred';
@@ -72,36 +65,6 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
               message: errorMessage,
               body: req.body
             });
-            break;
-          case 401:
-            const responseCode = error.error?.code || error.error?.Code || '';
-            const sessionReplaced = responseCode === 'SINGLE_DEVICE_SESSION_REPLACED';
-            const redirectDecision = onAuthRoute
-              ? 'preserve-auth-route-for-caller'
-              : sessionReplaced
-                ? 'login-session-replaced'
-                : 'login';
-            logger.logAuthEvent('Protected API returned 401', {
-              method: req.method,
-              url: req.url,
-              currentUrl,
-              responseCode: responseCode || 'none',
-              responseMessage: error.error?.message || error.error?.errorMessage || error.error?.ErrorMessage || 'none',
-              hadAccessToken: !!localStorage.getItem('token'),
-              redirectDecision
-            });
-            reportClientAuth401(req.url, currentUrl, error, redirectDecision, !!req.headers.get('Authorization'));
-
-            errorMessage = sessionReplaced
-              ? 'You were logged out because this account was opened on another device.'
-              : 'Unauthorized. Please login again.';
-            logger.warn('ERROR_INTERCEPTOR', 'Unauthorized (401)', { url: req.url });
-            localStorage.removeItem('token');
-            localStorage.removeItem('username');
-            localStorage.removeItem('userrole');
-            if (!onAuthRoute) {
-              router.navigateByUrl('/login');
-            }
             break;
           case 402:
             errorMessage = error.error?.message || error.error?.errorMessage || 'Payment required. Please complete subscription.';
@@ -156,15 +119,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         }
       }
 
-      if (!(error?.status === 401 && onAuthRoute) && error?.status !== 402) {
+      if (error?.status !== 402) {
         toastr.error(errorMessage);
       }
 
       if (error?.status === 402) {
-        return throwError(() => error);
-      }
-
-      if (error?.status === 401) {
         return throwError(() => error);
       }
 
