@@ -13,7 +13,6 @@ import { LoggerService } from './logger.service';
 export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const logger = inject(LoggerService);
-  const isPinEndpoint = isPinAuthEndpoint(req.url);
   
   // Allow callers to explicitly skip adding Authorization header by setting
   // a custom header `X-Skip-Auth: true` on the request. This is useful when
@@ -105,13 +104,25 @@ export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
             return throwError(() => error);
 
           case 401:
-            // Token expired or invalid - logout user
-            logger.warn('TOKEN_INTERCEPTOR', 'Unauthorized (401) - Token invalid or expired', {
-              endpoint: req.url
-            });
-            // Don't logout if this is a refresh request itself (avoid double logout)
-            if (!req.url.includes('GenerateRefreshToken') && !isPinEndpoint && authService.getToken()) {
-              authService.logout(false, 'token-expired');
+            {
+              const requestToken = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '') || '';
+              const currentToken = authService.getToken();
+              const requestMatchesCurrentSession = !!requestToken && !!currentToken && requestToken === currentToken;
+              if (!requestMatchesCurrentSession) {
+                logger.warn('TOKEN_INTERCEPTOR', 'Ignoring 401 from a request that does not belong to the current session', {
+                  endpoint: req.url,
+                  requestHadBearerToken: !!requestToken,
+                  currentSessionActive: !!currentToken
+                });
+                return throwError(() => error);
+              }
+
+              logger.warn('TOKEN_INTERCEPTOR', 'Unauthorized (401) for current session token', {
+                endpoint: req.url
+              });
+              if (!req.url.includes('GenerateRefreshToken')) {
+                authService.logout(false, 'token-expired');
+              }
             }
             // Rethrow original HttpErrorResponse so caller can read status
             return throwError(() => error);
@@ -152,13 +163,6 @@ export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
  * Determine if token should be skipped for this request
  * Public endpoints don't require authentication
  */
-function isPinAuthEndpoint(url: string): boolean {
-  return url.includes('Authorize/pin/validate-current')
-    || url.includes('Authorize/pin/validate')
-    || url.includes('Authorize/pin/change')
-    || url.includes('Authorize/pin/setup');
-}
-
 function shouldSkipTokenInsertion(request: any): boolean {
   const publicEndpoints = [
     'GenerateToken',                    // Password login (legacy)

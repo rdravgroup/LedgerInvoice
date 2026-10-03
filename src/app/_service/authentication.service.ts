@@ -4,7 +4,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { LoginResponse, UserCredentials, VerifyLoginOtp, CreatePassword, UserDetailed, RememberSessionResponse } from '../_model/user.model';
+import { LoginResponse, UserCredentials, VerifyLoginOtp, CreatePassword, UserDetailed } from '../_model/user.model';
 import { UserService } from './user.service';
 import { LoggerService } from './logger.service';
 // CHANGE: inject SelectedCompanyService so logout can clear stored company
@@ -30,7 +30,6 @@ export class AuthService {
   private readonly TOKEN_EXPIRY_MINUTES = 15; // Backend token expiry
   private readonly TOKEN_REFRESH_INTERVAL = 12 * 60 * 1000; // 12 minutes
   private readonly INACTIVITY_TIMEOUT_MINUTES = 30; // Session timeout after inactivity
-  private readonly PERSISTENT_LOGIN_TIMEOUT_MINUTES = 60 * 24 * 30; // 30 days for remember-me sessions
   private inactivityTimer: any;
   private readonly activityHandler = () => this.resetInactivityTimer();
 
@@ -56,18 +55,6 @@ export class AuthService {
 
     const events = ['click', 'keydown', 'mousemove', 'touchstart', 'scroll'];
     events.forEach(eventName => window.addEventListener(eventName, this.activityHandler, { passive: true }));
-  }
-
-  private isPersistentLoginEnabled(): boolean {
-    return localStorage.getItem('rememberMe') === 'true';
-  }
-
-  private persistRememberMe(rememberMe: boolean): void {
-    if (rememberMe) {
-      localStorage.setItem('rememberMe', 'true');
-      return;
-    }
-    localStorage.removeItem('rememberMe');
   }
 
   /**
@@ -140,12 +127,9 @@ export class AuthService {
   /**
    * Store user login details and credentials
    */
-  login(response: LoginResponse, username?: string, rememberMe = false): void {
+  login(response: LoginResponse, username?: string): void {
     console.log('AUTH_SERVICE: Login called with response:', response);
     console.log('AUTH_SERVICE: response.userRole =', response.userRole);
-
-    const rememberMeEnabled = response?.rememberMeEnabled ?? (rememberMe || this.isPersistentLoginEnabled());
-    this.persistRememberMe(rememberMeEnabled);
 
     // CHANGE: Clear any stale company selection from the previous session BEFORE setting new auth state.
     // This prevents company context leaking to a different user on the same browser/device.
@@ -205,32 +189,6 @@ export class AuthService {
     this.userRoleSubject.next(null);
     this.companyIdSubject.next(null);
     this.sessionExpiryWarning.next(null);
-  }
-
-  checkRememberedSession(): Observable<RememberSessionResponse> {
-    return this.http.get<RememberSessionResponse>(`${this.baseUrl}Authorize/remembered-session`, { withCredentials: true });
-  }
-
-  validateRememberedPin(pin: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.baseUrl}Authorize/pin/validate`, { pin }, { withCredentials: true }).pipe(
-      tap(response => {
-        if (response?.token) {
-          this.login(response, response.username || '', true);
-        }
-      })
-    );
-  }
-  validateCurrentPin(pin: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}Authorize/pin/validate-current`, { pin });
-  }
-
-
-  setupPin(pin: string, confirmPin: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}Authorize/pin/setup`, { pin, confirmPin });
-  }
-
-  changePin(currentPin: string, newPin: string, confirmPin: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}Authorize/pin/change`, { currentPin, newPin, confirmPin });
   }
 
   /**
@@ -330,7 +288,6 @@ export class AuthService {
 
     if (revokeServerSession) {
       this.http.post(`${this.baseUrl}Authorize/logout`, { reason, source: 'client' }, { withCredentials: true }).subscribe({ error: () => {} });
-      localStorage.removeItem('rememberMe');
     }
 
     // CHANGE: clear company selection so next login starts fresh
@@ -462,9 +419,7 @@ export class AuthService {
   resetInactivityTimer(): void {
     if (this.inactivityTimer) clearTimeout(this.inactivityTimer);
 
-    const timeoutMs = this.isPersistentLoginEnabled()
-      ? this.PERSISTENT_LOGIN_TIMEOUT_MINUTES * 60 * 1000
-      : this.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000;
+    const timeoutMs = this.INACTIVITY_TIMEOUT_MINUTES * 60 * 1000;
 
     if (!this.isAuthenticated() || timeoutMs <= 0) {
       this.inactivityTimer = null;
@@ -480,7 +435,7 @@ export class AuthService {
   }
 
   getInactivityTimeoutMinutes(): number {
-    return this.isPersistentLoginEnabled() ? this.PERSISTENT_LOGIN_TIMEOUT_MINUTES / 60 : this.INACTIVITY_TIMEOUT_MINUTES;
+    return this.INACTIVITY_TIMEOUT_MINUTES;
   }
   getTokenRefreshIntervalMinutes(): number { return this.TOKEN_REFRESH_INTERVAL / 1000 / 60; }
   isTokenValid(): boolean { return !!localStorage.getItem('token'); }

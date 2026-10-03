@@ -23,7 +23,6 @@ import { MatSelect } from '@angular/material/select';
 import { ToastrService } from 'ngx-toastr';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { AiChatComponent } from '../ai-chat/ai-chat.component';
-import { AuthPinDialogComponent } from '../auth-pin-dialog/auth-pin-dialog.component';
 
 function resolveRole(raw: string): 'super_duper_admin' | 'super_admin' | 'other' {
   const r = (raw || '').toLowerCase().replace(/[\s-]/g, '_');
@@ -375,25 +374,6 @@ export class AppmenuComponent implements OnInit, OnDestroy {
   logoutUser(): void {
     this.authService.logout(true);
     this.router.navigateByUrl('/login');
-  }
-
-  changeAccessPin(): void {
-    const dialogRef = this.dialog.open(AuthPinDialogComponent, {
-      disableClose: true,
-      panelClass: 'auth-pin-dialog-panel',
-      data: { mode: 'change', username: this.Loginuser }
-    });
-
-    dialogRef.afterClosed().subscribe(result => {
-      if (!result?.pin || !result?.currentPin) {
-        return;
-      }
-
-      this.authService.changePin(result.currentPin, result.pin, result.confirmPin).subscribe({
-        next: () => this.toastr.success('Access PIN changed successfully', 'PIN Updated'),
-        error: error => this.toastr.error(error?.error?.errorMessage || 'Unable to change PIN', 'PIN Update')
-      });
-    });
   }
 
   openAiChatDialog(): void {

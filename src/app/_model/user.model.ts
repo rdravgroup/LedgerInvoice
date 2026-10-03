@@ -133,8 +133,6 @@ export interface LoginResponse {
   message?: string;
   errorMessage?: string;
   result?: string;
-  requiresPinSetup?: boolean;
-  rememberMeEnabled?: boolean;
   email?: string;
   requiresPasswordChange?: boolean;
 }
@@ -210,17 +208,6 @@ export interface LoginWithPasswordRequest {
   email?: string;
   password: string;
   username?: string;
-  rememberMe?: boolean;
-}
-
-export interface RememberSessionResponse {
-  result: string;
-  rememberedSession: boolean;
-  pinRequired: boolean;
-  pinSetupRequired: boolean;
-  username?: string;
-  userRole?: string;
-  message?: string;
 }
 
 // Convenience types used by UI components

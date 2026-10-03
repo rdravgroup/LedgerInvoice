@@ -115,8 +115,7 @@ export class UserService {
     const payload = {
       email: data.username,
       username: data.username,
-      password: data.password,
-      rememberMe: false
+      password: data.password
     };
     this.logger.logApiRequest('POST', url, payload);
     return this.http.post<LoginResponse>(url, payload, { headers, withCredentials: true }).pipe(

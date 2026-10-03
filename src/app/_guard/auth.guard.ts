@@ -2,17 +2,16 @@ import { CanActivateFn, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { UserService } from '../_service/user.service';
 import { AuthService } from '../_service/authentication.service';
+import { LoggerService } from '../_service/logger.service';
 import { inject } from '@angular/core';
 import { map, switchMap, of, catchError } from 'rxjs';
-import { MatDialog } from '@angular/material/dialog';
-import { AuthPinDialogComponent } from '../Component/auth-pin-dialog/auth-pin-dialog.component';
 
 export const authGuard: CanActivateFn = (route, state) => {
   const router = inject(Router);
   const toastr = inject(ToastrService);
   const service = inject(UserService);
   const authService = inject(AuthService);
-  const dialog = inject(MatDialog);
+  const logger = inject(LoggerService);
 
   let menuname = '';
 
@@ -96,42 +95,11 @@ export const authGuard: CanActivateFn = (route, state) => {
     return checkMenuAccess();
   }
 
-  return authService.checkRememberedSession().pipe(
-    switchMap(session => {
-      if (!session?.rememberedSession || !session.pinRequired) {
-        toastr.warning('Unauthorized access');
-        router.navigateByUrl('/login');
-        return of(false);
-      }
-
-      const dialogRef = dialog.open(AuthPinDialogComponent, {
-        disableClose: true,
-        panelClass: 'auth-pin-dialog-panel',
-        data: { mode: 'validate', username: session.username }
-      });
-
-      return dialogRef.afterClosed().pipe(
-        switchMap(result => {
-          if (!result?.pin) {
-            router.navigateByUrl('/login');
-            return of(false);
-          }
-
-          return authService.validateRememberedPin(result.pin).pipe(
-            switchMap(() => checkMenuAccess()),
-            catchError(error => {
-              toastr.error(error?.error?.errorMessage || 'PIN validation failed. Please login with password.', 'Access PIN');
-              router.navigateByUrl('/login');
-              return of(false);
-            })
-          );
-        })
-      );
-    }),
-    catchError(() => {
-      toastr.warning('Unauthorized access');
-      router.navigateByUrl('/login');
-      return of(false);
-    })
-  );
+  logger.logAuthEvent('Protected route requires authentication', {
+    targetUrl: state.url,
+    hasAccessToken: !!authService.getToken(),
+    hasUsername: !!username,
+    hasRole: !!userRole
+  });
+  return router.createUrlTree(['/login'], { queryParams: { returnUrl: state.url } });
 };

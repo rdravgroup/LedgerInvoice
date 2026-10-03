@@ -4,12 +4,12 @@ import { inject } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { catchError, throwError } from 'rxjs';
 import { LoggerService } from './logger.service';
+import { environment } from '../../environments/environment';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const toastr = inject(ToastrService);
   const logger = inject(LoggerService);
-  const isPinEndpoint = isPinAuthEndpoint(req.url);
   const isPasswordLoginEndpoint = /\/User\/loginwithpassword(?:[/?]|$)/i.test(req.url);
 
   return next(req).pipe(
@@ -24,6 +24,28 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       // for the login form and do not clear a possibly valid existing session here.
       if (isPasswordLoginEndpoint) {
         return throwError(() => error);
+      }
+
+      if (error.status === 401) {
+        const requestToken = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '') || '';
+        const currentToken = localStorage.getItem('token') || '';
+        if (currentToken && (!requestToken || requestToken !== currentToken)) {
+          logger.logAuthEvent('Ignoring stale or uncredentialed 401; a newer local session exists', {
+            method: req.method,
+            url: req.url,
+            currentUrl,
+            requestHadBearerToken: !!requestToken,
+            requestMatchesCurrentSession: false
+          });
+          reportClientAuth401(
+            req.url,
+            currentUrl,
+            error,
+            'ignore-stale-401',
+            !!req.headers.get('Authorization')
+          );
+          return throwError(() => error);
+        }
       }
 
       let errorMessage = 'An unexpected error occurred';
@@ -52,12 +74,25 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             });
             break;
           case 401:
-            if (isPinEndpoint) {
-              logger.warn('ERROR_INTERCEPTOR', 'PIN validation failed (401)', { url: req.url });
-              return throwError(() => error);
-            }
+            const responseCode = error.error?.code || error.error?.Code || '';
+            const sessionReplaced = responseCode === 'SINGLE_DEVICE_SESSION_REPLACED';
+            const redirectDecision = onAuthRoute
+              ? 'preserve-auth-route-for-caller'
+              : sessionReplaced
+                ? 'login-session-replaced'
+                : 'login';
+            logger.logAuthEvent('Protected API returned 401', {
+              method: req.method,
+              url: req.url,
+              currentUrl,
+              responseCode: responseCode || 'none',
+              responseMessage: error.error?.message || error.error?.errorMessage || error.error?.ErrorMessage || 'none',
+              hadAccessToken: !!localStorage.getItem('token'),
+              redirectDecision
+            });
+            reportClientAuth401(req.url, currentUrl, error, redirectDecision, !!req.headers.get('Authorization'));
 
-            errorMessage = error.error?.code === 'SINGLE_DEVICE_SESSION_REPLACED'
+            errorMessage = sessionReplaced
               ? 'You were logged out because this account was opened on another device.'
               : 'Unauthorized. Please login again.';
             logger.warn('ERROR_INTERCEPTOR', 'Unauthorized (401)', { url: req.url });
@@ -121,11 +156,15 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         }
       }
 
-      if (!isPinEndpoint && !(error?.status === 401 && onAuthRoute) && error?.status !== 402) {
+      if (!(error?.status === 401 && onAuthRoute) && error?.status !== 402) {
         toastr.error(errorMessage);
       }
 
       if (error?.status === 402) {
+        return throwError(() => error);
+      }
+
+      if (error?.status === 401) {
         return throwError(() => error);
       }
 
@@ -134,9 +173,32 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   );
 };
 
-function isPinAuthEndpoint(url: string): boolean {
-  return url.includes('Authorize/pin/validate-current')
-    || url.includes('Authorize/pin/validate')
-    || url.includes('Authorize/pin/change')
-    || url.includes('Authorize/pin/setup');
+function reportClientAuth401(
+  requestUrl: string,
+  currentUrl: string,
+  error: HttpErrorResponse,
+  redirectDecision: string,
+  hadBearerToken: boolean
+): void {
+  if (typeof fetch === 'undefined') return;
+  try {
+    const requestPath = new URL(requestUrl, window.location.origin).pathname;
+    const payload = {
+      status: error.status,
+      requestPath,
+      currentRoute: (currentUrl || '/').split('?')[0],
+      responseCode: error.error?.code || error.error?.Code || '',
+      hadBearerToken,
+      redirectDecision
+    };
+    void fetch(`${environment.apiUrl}Authorize/client-auth-diagnostic`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      credentials: 'omit',
+      keepalive: true
+    }).catch(() => {});
+  } catch {
+    // Diagnostics must never interfere with the original failed request.
+  }
 }
