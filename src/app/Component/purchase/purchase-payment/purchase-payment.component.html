@@ -17,10 +17,25 @@
     </button>
   </div>
 
-  <div class="pu-layout" [class.pu-layout-split]="showForm">
+  <div class="pu-layout">
 
     <!-- ── List panel ──────────────────────────────────────── -->
     <div class="pu-list-panel">
+      <div class="pu-summary-row pp-summary-row">
+        <div class="pu-summary-card">
+          <div class="label">Payments recorded</div>
+          <div class="value">{{ dataSource.data.length }}</div>
+        </div>
+        <div class="pu-summary-card">
+          <div class="label">Total amount</div>
+          <div class="value primary">₹{{ totalPaid | number:'1.2-2' }}</div>
+        </div>
+        <div class="pu-summary-card">
+          <div class="label">Net paid</div>
+          <div class="value success">₹{{ totalNetPaid | number:'1.2-2' }}</div>
+        </div>
+      </div>
+
       <mat-form-field appearance="outline" class="pu-search" subscriptSizing="dynamic">
         <mat-label>Search payments</mat-label>
         <mat-icon matPrefix>search</mat-icon>
@@ -60,6 +75,7 @@
                     <div class="pu-vc-meta">
                       <span class="pp-mode-chip">{{ p.paymentMode | titlecase }}</span>
                       @if (p.piNumber) { <span>· {{ p.piNumber }}</span> }
+                      @else if (isAdvancePayment(p)) { <span class="pp-advance-label">Advance</span> }
                     </div>
                   </div>
                   <div class="pp-card-amount">₹{{ p.amount | number:'1.2-2' }}</div>
@@ -76,8 +92,20 @@
                 @if (p.bankRef) {
                   <div class="pp-tds">Ref: {{ p.bankRef }}</div>
                 }
+                @if (isAdvancePayment(p)) {
+                  <div class="pp-advance-balance">
+                    Available advance: <strong>₹{{ availableAdvance(p) | number:'1.2-2' }}</strong>
+                  </div>
+                }
                 <div class="pu-vc-actions">
-                  <button mat-stroked-button color="warn" (click)="deletePayment(p.paymentId!)">
+                  @if (isAdvancePayment(p) && availableAdvance(p) > 0) {
+                    <button mat-stroked-button color="primary" type="button"
+                      (click)="openAdvanceAllocation(p)">
+                      <mat-icon>account_balance</mat-icon> Adjust with Advance
+                    </button>
+                  }
+                  <button mat-stroked-button color="warn" aria-label="Delete payment details"
+                    (click)="deletePayment(p.paymentId!)">
                     <mat-icon>delete</mat-icon>
                   </button>
                 </div>
@@ -107,7 +135,15 @@
 
             <ng-container matColumnDef="piNumber">
               <th mat-header-cell *matHeaderCellDef>Invoice</th>
-              <td mat-cell *matCellDef="let r">{{ r.piNumber || '—' }}</td>
+              <td mat-cell *matCellDef="let r">
+                @if (r.piNumber) {
+                  {{ r.piNumber }}
+                } @else if (isAdvancePayment(r)) {
+                  <span class="pp-advance-label">Advance</span>
+                } @else {
+                  —
+                }
+              </td>
             </ng-container>
 
             <ng-container matColumnDef="paymentMode">
@@ -128,9 +164,17 @@
             </ng-container>
 
             <ng-container matColumnDef="action">
-              <th mat-header-cell *matHeaderCellDef></th>
+              <th mat-header-cell *matHeaderCellDef class="pp-action-header">Actions</th>
               <td mat-cell *matCellDef="let r">
-                <button mat-icon-button color="warn" (click)="deletePayment(r.paymentId)" matTooltip="Delete payment">
+                @if (isAdvancePayment(r) && availableAdvance(r) > 0) {
+                  <button mat-stroked-button color="primary" class="pp-adjust-button" type="button"
+                    (click)="openAdvanceAllocation(r)" matTooltip="Allocate this advance to one or more invoices">
+                    <mat-icon>account_balance</mat-icon>
+                    <span>Adjust with Advance</span>
+                  </button>
+                }
+                <button mat-icon-button color="warn" (click)="deletePayment(r.paymentId)"
+                  matTooltip="Delete payment" aria-label="Delete payment details">
                   <mat-icon>delete</mat-icon>
                 </button>
               </td>
@@ -145,50 +189,90 @@
       }
     </div><!-- end list panel -->
 
-    <!-- ── Form panel ──────────────────────────────────────── -->
-    @if (showForm) {
-      <div class="pu-form-panel">
-        <div class="pu-form-header">
-          <h2>Record Payment</h2>
-          <button mat-icon-button (click)="close()" matTooltip="Close">
+    <!-- ── Record payment modal ────────────────────────────── -->
+    <ng-template #paymentModal>
+        <section class="pp-modal" role="dialog" aria-modal="true" aria-labelledby="pp-modal-title">
+        <div class="pu-form-header pp-modal-header">
+          <div>
+            <h2 id="pp-modal-title">Record a payment</h2>
+            <p>Enter the payment details and allocation information.</p>
+          </div>
+          <button mat-icon-button type="button" (click)="close()" matTooltip="Close" aria-label="Close payment form"
+            [disabled]="saving">
             <mat-icon>close</mat-icon>
           </button>
         </div>
 
         <form [formGroup]="payForm" (ngSubmit)="save()" class="pu-form-body">
+          <div class="pp-form-intro">
+            <mat-icon>payments</mat-icon>
+            <div>
+              <strong>Payment details</strong>
+              <span>Fields marked * are required.</span>
+            </div>
+          </div>
 
-          <!-- Invoice selection (optional) -->
-          <mat-form-field appearance="outline" class="pu-field-full" subscriptSizing="dynamic">
-            <mat-label>Invoice (leave blank for advance payment)</mat-label>
-            <mat-icon matPrefix>receipt_long</mat-icon>
-            <mat-select formControlName="piNumber" (selectionChange)="onInvoiceSelect($event.value)">
-              <mat-option value="">— Advance / No Invoice —</mat-option>
-              <!--
-                FIX-BUG-3: use filteredInvoices getter (filters by selected vendor non-destructively)
-                instead of this.invoices which was being permanently mutated
-              -->
-              @for (inv of filteredInvoices; track inv.piNumber) {
-                <mat-option [value]="inv.piNumber">
-                  {{ inv.piNumber }} · {{ inv.vendorName || inv.vendorId }}
-                  · Due: ₹{{ inv.outstandingAmount | number:'1.2-2' }}
-                </mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-
-          <!-- Vendor -->
+          <!-- Select vendor first so invoice options can be scoped correctly -->
           <mat-form-field appearance="outline" class="pu-field-full" subscriptSizing="dynamic">
             <mat-label>Vendor *</mat-label>
             <mat-icon matPrefix>storefront</mat-icon>
-            <!--
-              FIX-BUG-3: added (selectionChange) so invoice dropdown re-filters when vendor changes
-            -->
-            <mat-select formControlName="vendorId" (selectionChange)="onVendorChange($event.value)">
-              @for (v of vendors; track v.vendorId) {
+            <mat-select formControlName="vendorId"
+              (selectionChange)="onVendorChange($event.value)"
+              (openedChange)="onVendorDropdownChange($event)">
+              <mat-option class="pp-search-option">
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pp-dropdown-search">
+                  <mat-icon matPrefix>search</mat-icon>
+                  <input matInput placeholder="Search vendors…" [value]="vendorSearch"
+                    (input)="vendorSearch = $any($event.target).value"
+                    (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()"
+                    aria-label="Search vendors" />
+                </mat-form-field>
+              </mat-option>
+              @for (v of filteredVendors; track v.vendorId) {
                 <mat-option [value]="v.vendorId">{{ v.vendorName }}</mat-option>
+              }
+              @if (filteredVendors.length === 0) {
+                <mat-option disabled>No matching vendors</mat-option>
               }
             </mat-select>
             <mat-error>Vendor is required</mat-error>
+          </mat-form-field>
+
+          <!-- Invoice options are loaded and filtered for the selected vendor only -->
+          <mat-form-field appearance="outline" class="pu-field-full" subscriptSizing="dynamic">
+            <mat-label>Invoice (optional for advance payment)</mat-label>
+            <mat-icon matPrefix>receipt_long</mat-icon>
+            <mat-select formControlName="piNumber"
+              [disabled]="!payForm.get('vendorId')?.value || invoicesLoading"
+              (selectionChange)="onInvoiceSelect($event.value)"
+              (openedChange)="onInvoiceDropdownChange($event)">
+              @if (payForm.get('vendorId')?.value) {
+                <mat-option class="pp-search-option">
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pp-dropdown-search">
+                    <mat-icon matPrefix>search</mat-icon>
+                    <input matInput placeholder="Search invoice, vendor, or year…" [value]="invoiceSearch"
+                      (input)="invoiceSearch = $any($event.target).value"
+                      (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()"
+                      aria-label="Search invoices" />
+                  </mat-form-field>
+                </mat-option>
+                <mat-option [value]="null">Advance payment (no invoice)</mat-option>
+                @for (inv of filteredInvoices; track inv.piNumber) {
+                  <mat-option [value]="inv.piNumber">
+                    {{ inv.piNumber }} · {{ inv.invoiceDate | date:'dd MMM yyyy' }}
+                    · Due: ₹{{ inv.outstandingAmount | number:'1.2-2' }}
+                  </mat-option>
+                }
+                @if (!invoicesLoading && filteredInvoices.length === 0) {
+                  <mat-option disabled>No open invoices for this vendor</mat-option>
+                }
+              }
+            </mat-select>
+            @if (!payForm.get('vendorId')?.value) {
+              <mat-hint>Select a vendor first to view its invoices</mat-hint>
+            } @else if (invoicesLoading) {
+              <mat-hint>Loading this vendor’s invoices…</mat-hint>
+            }
           </mat-form-field>
 
           <!-- Date + Mode -->
@@ -196,7 +280,10 @@
             <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
               <mat-label>Payment Date *</mat-label>
               <mat-icon matPrefix>calendar_today</mat-icon>
-              <input matInput type="date" formControlName="paymentDate" />
+              <input matInput [matDatepicker]="paymentDatePicker" formControlName="paymentDate"
+                placeholder="dd/MM/yyyy" />
+              <mat-datepicker-toggle matSuffix [for]="paymentDatePicker"></mat-datepicker-toggle>
+              <mat-datepicker #paymentDatePicker></mat-datepicker>
               <mat-error>Date is required</mat-error>
             </mat-form-field>
 
@@ -307,17 +394,114 @@
 
           <!-- Actions -->
           <div class="pu-form-actions">
-            <button mat-stroked-button type="button" (click)="close()">
+            <button mat-stroked-button type="button" (click)="close()" [disabled]="saving">
               <mat-icon>close</mat-icon> Cancel
             </button>
-            <button mat-flat-button color="primary" type="submit">
-              <mat-icon>save</mat-icon> Record Payment
+            <button mat-flat-button color="primary" type="submit" [disabled]="saving">
+              <mat-icon [class.pp-saving-icon]="saving">{{ saving ? 'hourglass_top' : 'save' }}</mat-icon>
+              {{ saving ? 'Saving…' : 'Record Payment' }}
             </button>
           </div>
 
         </form>
-      </div>
-    }<!-- end form panel -->
+        </section>
+    </ng-template>
+
+    <ng-template #allocationModal>
+      <section class="pp-modal pp-allocation-modal" role="dialog" aria-modal="true"
+        aria-labelledby="pp-allocation-title">
+        <div class="pu-form-header pp-modal-header">
+          <div>
+            <h2 id="pp-allocation-title">Adjust with Advance</h2>
+            <p>Allocate available advance across this vendor’s open invoices.</p>
+          </div>
+          <button mat-icon-button type="button" (click)="closeAdvanceAllocation()"
+            [disabled]="allocationSaving" aria-label="Close advance allocation">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="pp-allocation-body">
+          @if (allocationPayment) {
+            <div class="pp-allocation-summary">
+              <div>
+                <span>Vendor</span>
+                <strong>{{ getVendorName(allocationPayment.vendorId) }}</strong>
+              </div>
+              <div>
+                <span>Advance available</span>
+                <strong>₹{{ availableAdvance(allocationPayment) | number:'1.2-2' }}</strong>
+              </div>
+              <div>
+                <span>To allocate</span>
+                <strong>₹{{ selectedAllocationTotal | number:'1.2-2' }}</strong>
+              </div>
+              <div [class.pp-overallocated]="remainingAdvanceAfterSelection < 0">
+                <span>Advance remaining</span>
+                <strong>₹{{ remainingAdvanceAfterSelection | number:'1.2-2' }}</strong>
+              </div>
+            </div>
+          }
+
+          @if (allocationLoading) {
+            <div class="pp-allocation-state">
+              <mat-progress-spinner mode="indeterminate" diameter="36"></mat-progress-spinner>
+              <span>Loading open invoices…</span>
+            </div>
+          } @else if (allocationInvoices.length === 0) {
+            <div class="pp-allocation-state pp-allocation-empty">
+              <mat-icon>receipt_long</mat-icon>
+              <strong>No pending invoices</strong>
+              <span>This vendor has no open invoices available for advance adjustment.</span>
+            </div>
+          } @else {
+            <div class="pp-allocation-list-heading">
+              <strong>Select invoices and enter the amount to adjust</strong>
+              <span>Allocation cannot exceed an invoice balance or the available advance.</span>
+            </div>
+            <div class="pp-allocation-list">
+              @for (invoice of allocationInvoices; track invoice.piNumber) {
+                <article class="pp-allocation-invoice" [class.pp-allocation-selected]="invoice.selected">
+                  <mat-checkbox [checked]="invoice.selected"
+                    (change)="setAllocationSelected(invoice, $event.checked)"
+                    [aria-label]="'Select invoice ' + invoice.piNumber">
+                  </mat-checkbox>
+                  <div class="pp-invoice-info">
+                    <strong>{{ invoice.piNumber }}</strong>
+                    <span>Invoice date: {{ invoice.invoiceDate | date:'dd MMM yyyy' }}</span>
+                  </div>
+                  <div class="pp-invoice-outstanding">
+                    <span>Outstanding</span>
+                    <strong>₹{{ invoice.outstandingAmount | number:'1.2-2' }}</strong>
+                  </div>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pp-allocation-amount">
+                    <mat-label>Adjust amount</mat-label>
+                    <span matPrefix>₹&nbsp;</span>
+                    <input matInput type="number" min="0" step="0.01"
+                      [max]="invoice.outstandingAmount"
+                      [disabled]="!invoice.selected || allocationSaving"
+                      [value]="invoice.allocationAmount || ''"
+                      (input)="invoice.allocationAmount = +$any($event.target).value"
+                      [attr.aria-label]="'Amount to adjust for ' + invoice.piNumber" />
+                    <mat-hint>Max ₹{{ invoice.outstandingAmount | number:'1.2-2' }}</mat-hint>
+                  </mat-form-field>
+                </article>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="pu-form-actions pp-allocation-actions">
+          <button mat-stroked-button type="button" (click)="closeAdvanceAllocation()"
+            [disabled]="allocationSaving">Cancel</button>
+          <button mat-flat-button color="primary" type="button" (click)="saveAdvanceAllocation()"
+            [disabled]="!canSaveAllocation">
+            <mat-icon [class.pp-saving-icon]="allocationSaving">{{ allocationSaving ? 'hourglass_top' : 'check' }}</mat-icon>
+            {{ allocationSaving ? 'Saving…' : 'Save Allocation' }}
+          </button>
+        </div>
+      </section>
+    </ng-template>
 
   </div><!-- end layout -->
 </div>

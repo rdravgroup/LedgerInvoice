@@ -1,33 +1,83 @@
 // src/app/Component/purchase/purchase-payment/purchase-payment.component.ts
-import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, HostListener, Injectable, TemplateRef, ViewContainerRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MaterialModule } from '../../../material.module';
+import { Overlay, OverlayModule, OverlayRef } from '@angular/cdk/overlay';
+import { TemplatePortal } from '@angular/cdk/portal';
+import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE, NativeDateAdapter } from '@angular/material/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { ToastrService } from 'ngx-toastr';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
-import { PurchaseService } from '../../../_service/purchase.service';
+import { PurchasePaymentAllocation, PurchaseService } from '../../../_service/purchase.service';
 import { AuthService } from '../../../_service/authentication.service';
 import { SelectedCompanyService } from '../../../_service/selected-company.service';
 import { PurchasePayment, PurchaseInvoice, Vendor, PAYMENT_MODES, PAYMENT_TYPES } from '../../../_model/purchase.model';
 
+const PAYMENT_DATE_FORMATS = {
+  parse: { dateInput: { day: '2-digit', month: '2-digit', year: 'numeric' } },
+  display: {
+    dateInput: { day: '2-digit', month: '2-digit', year: 'numeric' },
+    monthYearLabel: { month: 'short', year: 'numeric' },
+    dateA11yLabel: { day: 'numeric', month: 'long', year: 'numeric' },
+    monthYearA11yLabel: { month: 'long', year: 'numeric' }
+  }
+};
+
+interface AdvanceInvoiceAllocationRow extends PurchaseInvoice {
+  selected: boolean;
+  allocationAmount: number;
+}
+
+@Injectable()
+class PaymentDateAdapter extends NativeDateAdapter {
+  override format(date: Date, _displayFormat: unknown): string {
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    return `${day}/${month}/${date.getFullYear()}`;
+  }
+
+  override parse(value: unknown): Date | null {
+    if (typeof value !== 'string') return super.parse(value, '');
+    const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!match) return null;
+
+    const day = Number(match[1]);
+    const month = Number(match[2]) - 1;
+    const year = Number(match[3]);
+    const date = new Date(year, month, day);
+    return date.getFullYear() === year && date.getMonth() === month && date.getDate() === day
+      ? date
+      : null;
+  }
+}
+
 @Component({
   selector: 'app-purchase-payment',
   standalone: true,
-  imports: [CommonModule, MaterialModule, ReactiveFormsModule],
+  imports: [CommonModule, MaterialModule, OverlayModule, ReactiveFormsModule],
   templateUrl: './purchase-payment.component.html',
-  styleUrls: ['../purchase-shared.css', './purchase-payment.component.css']
+  styleUrls: ['../purchase-shared.css', './purchase-payment.component.css'],
+  providers: [
+    { provide: MAT_DATE_LOCALE, useValue: 'en-GB' },
+    { provide: DateAdapter, useClass: PaymentDateAdapter },
+    { provide: MAT_DATE_FORMATS, useValue: PAYMENT_DATE_FORMATS }
+  ]
 })
 export class PurchasePaymentComponent implements OnInit, OnDestroy {
   listColumns = ['paymentNo', 'paymentDate', 'vendorId', 'piNumber', 'paymentMode', 'amount', 'netPaid', 'action'];
   dataSource  = new MatTableDataSource<PurchasePayment>();
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort)      sort!: MatSort;
+  @ViewChild('paymentModal') paymentModal!: TemplateRef<unknown>;
+  @ViewChild('allocationModal') allocationModal!: TemplateRef<unknown>;
 
   loading  = false;
+  invoicesLoading = false;
+  saving = false;
   showForm = false;
   isMobile = window.innerWidth < 768;
 
@@ -42,15 +92,39 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
   payTypes = PAYMENT_TYPES;
 
   private destroy$ = new Subject<void>();
+  private modalOverlay?: OverlayRef;
+  private allocationOverlay?: OverlayRef;
+  private invoiceLoadRequest = 0;
+  private allocationRequestId = 0;
+  vendorSearch = '';
+  invoiceSearch = '';
+  allocationPayment?: PurchasePayment;
+  allocationInvoices: AdvanceInvoiceAllocationRow[] = [];
+  allocationLoading = false;
+  allocationSaving = false;
 
   constructor(
     private svc:        PurchaseService,
     private fb:         FormBuilder,
     private toastr:     ToastrService,
     private auth:       AuthService,
-    private selectedCo: SelectedCompanyService
-  ) {
-    window.addEventListener('resize', () => this.isMobile = window.innerWidth < 768);
+    private selectedCo: SelectedCompanyService,
+    private overlay: Overlay,
+    private viewContainerRef: ViewContainerRef
+  ) {}
+
+  @HostListener('window:resize')
+  onResize(): void {
+    this.isMobile = window.innerWidth < 768;
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    if (this.allocationOverlay && !this.allocationSaving) {
+      this.closeAdvanceAllocation();
+    } else if (this.showForm && !this.saving) {
+      this.close();
+    }
   }
 
   ngOnInit(): void {
@@ -65,6 +139,8 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.modalOverlay?.dispose();
+    this.allocationOverlay?.dispose();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -77,12 +153,13 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
   private cid = () => this.selectedCo.getSelectedCompanyId() || this.auth.getCompanyId() || '';
 
   buildForm(): void {
-    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     this.payForm = this.fb.group({
       companyId:   [this.cid()],
       vendorId:    ['', Validators.required],
-      piNumber:    [''],
+      piNumber:    [null],
       paymentDate: [today, Validators.required],
       paymentMode: ['cash', Validators.required],
       paymentType: ['regular'],
@@ -114,15 +191,62 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
 
   // FIX-BUG-3: filter at point of use from allInvoices; don't mutate this.invoices
   get filteredInvoices(): PurchaseInvoice[] {
-    const vid = this.payForm.get('vendorId')?.value;
-    if (!vid) return this.allInvoices;
-    return this.allInvoices.filter(i => i.vendorId === vid);
+    const vendorId = this.payForm.get('vendorId')?.value as string;
+    if (!vendorId) return [];
+
+    const companyId = this.cid();
+    const search = this.invoiceSearch.trim().toLowerCase();
+    return this.allInvoices.filter(invoice => {
+      const matchesCompany = !invoice.companyId || this.sameId(invoice.companyId, companyId);
+      const matchesVendor = this.sameId(invoice.vendorId, vendorId);
+      const searchFields = `${invoice.piNumber || ''} ${invoice.vendorName || ''} ${invoice.vendorId || ''} ${this.invoiceYear(invoice)}`;
+      return matchesCompany && matchesVendor &&
+        (!search || searchFields.toLowerCase().includes(search));
+    });
   }
 
-  /** Called when vendor dropdown changes — update invoice dropdown without destroying source */
+  get filteredVendors(): Vendor[] {
+    const search = this.vendorSearch.trim().toLowerCase();
+    return this.vendors.filter(v =>
+      !search || `${v.vendorName || ''} ${v.vendorId || ''}`.toLowerCase().includes(search)
+    );
+  }
+
+  onInvoiceDropdownChange(opened: boolean): void {
+    if (opened) this.invoiceSearch = '';
+  }
+
+  onVendorDropdownChange(opened: boolean): void {
+    if (opened) this.vendorSearch = '';
+  }
+
+  private asDateOnly(value: Date | string): string {
+    if (typeof value === 'string') return value;
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, '0');
+    const day = String(value.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private sameId(left?: string | null, right?: string | null): boolean {
+    return !!left && !!right && left.trim().toLowerCase() === right.trim().toLowerCase();
+  }
+
+  private invoiceYear(invoice: PurchaseInvoice): string {
+    if (!invoice.invoiceDate) return '';
+    const yearPrefix = invoice.invoiceDate.match(/^(\d{4})/);
+    if (yearPrefix) return yearPrefix[1];
+    const parsed = new Date(invoice.invoiceDate);
+    return Number.isNaN(parsed.getTime()) ? '' : String(parsed.getFullYear());
+  }
+
   onVendorChange(vendorId: string): void {
-    // Clear invoice selection when vendor changes
-    this.payForm.patchValue({ piNumber: '' }, { emitEvent: false });
+    this.payForm.patchValue({ piNumber: null, amount: null }, { emitEvent: false });
+    this.calcNet();
+    this.invoiceSearch = '';
+    this.allInvoices = [];
+    this.invoices = [];
+    this.loadInvoices(vendorId);
   }
 
   loadList(): void {
@@ -141,16 +265,35 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
       .subscribe({ next: (r: any) => this.vendors = r?.data || [] });
   }
 
-  loadInvoices(): void {
-    this.svc.getInvoices(this.cid())
+  loadInvoices(vendorId?: string): void {
+    const requestId = ++this.invoiceLoadRequest;
+    const companyId = this.cid();
+    const requestedVendorId = vendorId?.trim();
+    if (!requestedVendorId || !companyId) {
+      this.allInvoices = [];
+      this.invoices = [];
+      this.invoicesLoading = false;
+      return;
+    }
+
+    this.invoicesLoading = true;
+    this.svc.getInvoices(companyId, undefined, requestedVendorId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (r: any) => {
-          // FIX-BUG-3: store full list in allInvoices; filteredInvoices getter does the filtering
-          this.allInvoices = (r?.data || []).filter(
-            (i: any) => i.status === 'pending' || i.status === 'partial'
+          if (requestId !== this.invoiceLoadRequest) return;
+          this.allInvoices = (r?.data || []).filter((invoice: PurchaseInvoice) =>
+            this.sameId(invoice.vendorId, requestedVendorId) &&
+            (!invoice.companyId || this.sameId(invoice.companyId, companyId)) &&
+            (invoice.status === 'pending' || invoice.status === 'partial')
           );
           this.invoices = this.allInvoices;
+          this.invoicesLoading = false;
+        },
+        error: (e: any) => {
+          if (requestId !== this.invoiceLoadRequest) return;
+          this.invoicesLoading = false;
+          this.toastr.error(e?.error?.errorMessage || e?.message || 'Failed to load vendor invoices');
         }
       });
   }
@@ -160,14 +303,33 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
   }
 
   openNew(): void {
+    if (this.modalOverlay?.hasAttached()) return;
     this.buildForm();
     // FIX-BUG-6: set companyId again after buildForm() in case cid() now resolves correctly
     this.payForm.get('companyId')!.setValue(this.cid());
     this.showForm = true;
+    this.vendorSearch = '';
+    this.invoiceSearch = '';
+    this.modalOverlay = this.overlay.create({
+      hasBackdrop: true,
+      backdropClass: 'pp-overlay-backdrop',
+      panelClass: 'pp-overlay-pane',
+      width: 'min(760px, calc(100vw - 48px))',
+      maxHeight: '92vh',
+      positionStrategy: this.overlay.position().global().centerHorizontally().centerVertically(),
+      scrollStrategy: this.overlay.scrollStrategies.block()
+    });
+    this.modalOverlay.backdropClick()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.close());
+    this.modalOverlay.attach(new TemplatePortal(this.paymentModal, this.viewContainerRef));
   }
 
   close(): void {
+    if (this.saving) return;
     this.showForm = false;
+    this.modalOverlay?.dispose();
+    this.modalOverlay = undefined;
   }
 
   getVendorName(id?: string): string {
@@ -178,12 +340,26 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
     return this.allInvoices.find(i => i.piNumber === piNumber)?.outstandingAmount || 0;
   }
 
-  onInvoiceSelect(piNumber: string): void {
-    const inv = this.allInvoices.find(i => i.piNumber === piNumber);
-    if (inv) {
-      this.payForm.patchValue({ vendorId: inv.vendorId, amount: inv.outstandingAmount });
+  onInvoiceSelect(piNumber: string | null): void {
+    if (!piNumber) {
+      this.payForm.patchValue({
+        piNumber: null,
+        paymentType: 'advance',
+        amount: null
+      }, { emitEvent: false });
       this.calcNet();
+      return;
     }
+
+    const inv = this.filteredInvoices.find(i => i.piNumber === piNumber);
+    if (!inv) {
+      this.payForm.patchValue({ piNumber: null }, { emitEvent: false });
+      this.toastr.error('That invoice is not available for the selected vendor');
+      return;
+    }
+
+    this.payForm.patchValue({ paymentType: 'regular', amount: inv.outstandingAmount });
+    this.calcNet();
   }
 
   /** Check if mode needs cheque fields */
@@ -206,6 +382,8 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
   }
 
   save(): void {
+    if (this.saving) return;
+
     // FIX-BUG-7: recalculate net just before submit
     this.calcNet();
 
@@ -220,6 +398,9 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
     // chequeDate: only send when mode is cheque AND a value was entered
     const dto: PurchasePayment = {
       ...raw,
+      piNumber: raw.piNumber || null,
+      paymentType: raw.piNumber ? raw.paymentType : 'advance',
+      paymentDate: this.asDateOnly(raw.paymentDate),
       isReconciled: false,
       // Only include chequeDate when it has a real value
       chequeDate:  (this.isCheque && raw.chequeDate) ? raw.chequeDate : null,
@@ -231,34 +412,180 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
       companyId:   this.cid() || raw.companyId,
     };
 
+    this.saving = true;
     this.svc.recordPayment(dto, this.cid())
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (r: any) => {
+          this.saving = false;
           if (r?.result === 'pass') {
-            this.toastr.success(`Payment ${r.data?.paymentNo} recorded successfully`);
-            this.showForm = false;
+            this.toastr.success(`Payment ${r.data?.payNo || r.data?.paymentNo} recorded successfully`);
+            this.close();
             this.loadList();
-            this.loadInvoices(); // refresh outstanding amounts
+            this.loadInvoices(this.payForm.get('vendorId')?.value);
           } else {
             this.toastr.error(r?.errorMessage || r?.message || 'Failed to record payment');
           }
         },
-        error: (e: any) => this.toastr.error(e?.message || 'Failed to record payment')
+        error: (e: any) => {
+          this.saving = false;
+          this.toastr.error(e?.error?.errorMessage || e?.message || 'Failed to record payment');
+        }
       });
   }
 
   deletePayment(paymentId: number): void {
+    if (!paymentId) {
+      this.toastr.error('Payment identifier is missing');
+      return;
+    }
     if (!confirm('Delete this payment? Invoice outstanding will be restored.')) return;
-    this.svc.deletePayment(paymentId)
+    this.svc.deletePayment(paymentId, this.cid())
       .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next:  () => { this.toastr.success('Payment deleted'); this.loadList(); this.loadInvoices(); },
-        error: () => this.toastr.error('Delete failed')
+        next: (r: any) => {
+          if (r?.result !== 'pass') {
+            this.toastr.error(r?.errorMessage || 'Delete failed');
+            return;
+          }
+          this.toastr.success('Payment deleted');
+          this.loadList();
+          this.loadInvoices(this.payForm.get('vendorId')?.value);
+        },
+        error: (e: any) => this.toastr.error(e?.error?.errorMessage || e?.message || 'Delete failed')
       });
   }
 
   get totalPaid(): number {
     return this.dataSource.data.reduce((s, p) => s + (p.amount || 0), 0);
+  }
+
+  get totalNetPaid(): number {
+    return this.dataSource.data.reduce((s, p) => s + (p.netPaid || 0), 0);
+  }
+
+  isAdvancePayment(payment: PurchasePayment): boolean {
+    return !payment.piNumber || payment.paymentType?.toLowerCase() === 'advance';
+  }
+
+  availableAdvance(payment: PurchasePayment): number {
+    return Math.max(0, payment.availableAmount ?? ((payment.netPaid || 0) - (payment.allocatedAmount || 0)));
+  }
+
+  get selectedAllocationTotal(): number {
+    return this.roundMoney(this.allocationInvoices
+      .filter(invoice => invoice.selected)
+      .reduce((total, invoice) => total + (Number(invoice.allocationAmount) || 0), 0));
+  }
+
+  get remainingAdvanceAfterSelection(): number {
+    return this.roundMoney(this.availableAdvance(this.allocationPayment || {}) - this.selectedAllocationTotal);
+  }
+
+  get canSaveAllocation(): boolean {
+    const selected = this.allocationInvoices.filter(invoice => invoice.selected);
+    return !this.allocationLoading && !this.allocationSaving && selected.length > 0
+      && selected.every(invoice => invoice.allocationAmount > 0
+        && this.roundMoney(invoice.allocationAmount) <= invoice.outstandingAmount)
+      && this.selectedAllocationTotal > 0
+      && this.selectedAllocationTotal <= this.availableAdvance(this.allocationPayment || {});
+  }
+
+  private roundMoney(amount: number): number {
+    return Math.round((amount + Number.EPSILON) * 100) / 100;
+  }
+
+  openAdvanceAllocation(payment: PurchasePayment): void {
+    if (!payment.paymentId || !payment.vendorId || this.availableAdvance(payment) <= 0) return;
+    if (this.allocationOverlay?.hasAttached()) return;
+
+    const requestId = ++this.allocationRequestId;
+    this.allocationPayment = payment;
+    this.allocationInvoices = [];
+    this.allocationLoading = true;
+    this.allocationSaving = false;
+    this.allocationOverlay = this.overlay.create({
+      hasBackdrop: true,
+      backdropClass: 'pp-overlay-backdrop',
+      panelClass: ['pp-overlay-pane', 'pp-allocation-pane'],
+      width: 'min(760px, calc(100vw - 48px))',
+      maxHeight: '92vh',
+      positionStrategy: this.overlay.position().global().centerHorizontally().centerVertically(),
+      scrollStrategy: this.overlay.scrollStrategies.block()
+    });
+    this.allocationOverlay.backdropClick()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.closeAdvanceAllocation());
+    this.allocationOverlay.attach(new TemplatePortal(this.allocationModal, this.viewContainerRef));
+
+    const companyId = this.cid();
+    this.svc.getInvoices(companyId, undefined, payment.vendorId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: response => {
+          if (requestId !== this.allocationRequestId) return;
+          this.allocationLoading = false;
+          if (response.result !== 'pass') {
+            this.toastr.error(response.errorMessage || 'Failed to load vendor invoices');
+            return;
+          }
+
+          this.allocationInvoices = (response.data || [])
+            .filter(invoice => this.sameId(invoice.companyId, companyId)
+              && this.sameId(invoice.vendorId, payment.vendorId)
+              && ['pending', 'partial'].includes((invoice.status || '').toLowerCase())
+              && invoice.outstandingAmount > 0)
+            .sort((a, b) => new Date(a.dueDate || a.invoiceDate || 0).getTime()
+              - new Date(b.dueDate || b.invoiceDate || 0).getTime())
+            .map(invoice => ({ ...invoice, selected: false, allocationAmount: 0 }));
+        },
+        error: (error: any) => {
+          if (requestId !== this.allocationRequestId) return;
+          this.allocationLoading = false;
+          this.toastr.error(error?.error?.errorMessage || error?.message || 'Failed to load vendor invoices');
+        }
+      });
+  }
+
+  setAllocationSelected(invoice: AdvanceInvoiceAllocationRow, selected: boolean): void {
+    invoice.selected = selected;
+    if (!selected) invoice.allocationAmount = 0;
+  }
+
+  closeAdvanceAllocation(): void {
+    if (this.allocationSaving) return;
+    this.allocationRequestId++;
+    this.allocationOverlay?.dispose();
+    this.allocationOverlay = undefined;
+    this.allocationPayment = undefined;
+    this.allocationInvoices = [];
+    this.allocationLoading = false;
+  }
+
+  saveAdvanceAllocation(): void {
+    if (!this.canSaveAllocation || !this.allocationPayment?.paymentId) return;
+    const allocations: PurchasePaymentAllocation[] = this.allocationInvoices
+      .filter(invoice => invoice.selected)
+      .map(invoice => ({ piNumber: invoice.piNumber!, amount: this.roundMoney(invoice.allocationAmount) }));
+
+    this.allocationSaving = true;
+    this.svc.allocateAdvancePayment(this.allocationPayment.paymentId, this.cid(), allocations)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: response => {
+          this.allocationSaving = false;
+          if (response.result !== 'pass') {
+            this.toastr.error(response.errorMessage || 'Failed to allocate advance');
+            return;
+          }
+          this.toastr.success('Advance allocated to the selected invoices');
+          this.closeAdvanceAllocation();
+          this.loadList();
+        },
+        error: (error: any) => {
+          this.allocationSaving = false;
+          this.toastr.error(error?.error?.errorMessage || error?.message || 'Failed to allocate advance');
+        }
+      });
   }
 }

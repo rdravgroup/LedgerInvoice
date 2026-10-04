@@ -21,6 +21,11 @@ export interface ApiResponse<T = any> {
   data: T;
 }
 
+export interface PurchasePaymentAllocation {
+  piNumber: string;
+  amount: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PurchaseService {
   private base = environment.apiUrl + 'Purchase/';
@@ -86,9 +91,10 @@ export class PurchaseService {
   }
 
   // ── Purchase Invoices ─────────────────────────────────────────────────
-  getInvoices(companyId: string, status?: string): Observable<ApiResponse<PurchaseInvoice[]>> {
+  getInvoices(companyId: string, status?: string, vendorId?: string): Observable<ApiResponse<PurchaseInvoice[]>> {
     let params = new HttpParams().set('companyId', companyId);
     if (status) params = params.set('status', status);
+    if (vendorId) params = params.set('vendorId', vendorId);
     return this.http.get<ApiResponse<PurchaseInvoice[]>>(`${this.base}invoices`, { params });
   }
 
@@ -124,8 +130,25 @@ export class PurchaseService {
     return this.http.post<ApiResponse>(`${this.base}payments`, dto, { params });
   }
 
-  deletePayment(paymentId: number): Observable<ApiResponse> {
-    return this.http.delete<ApiResponse>(`${this.base}payments/${encodeURIComponent(String(paymentId))}`);
+  allocateAdvancePayment(
+    paymentId: number,
+    companyId: string,
+    allocations: PurchasePaymentAllocation[]
+  ): Observable<ApiResponse> {
+    const params = new HttpParams().set('companyId', companyId);
+    return this.http.post<ApiResponse>(
+      `${this.base}payments/${encodeURIComponent(String(paymentId))}/allocations`,
+      { allocations },
+      { params }
+    );
+  }
+
+  deletePayment(paymentId: number, companyId: string): Observable<ApiResponse> {
+    const params = new HttpParams().set('companyId', companyId);
+    return this.http.delete<ApiResponse>(
+      `${this.base}payments/${encodeURIComponent(String(paymentId))}`,
+      { params }
+    );
   }
 
   // ── Purchase Returns ─────────────────────────────────────────────────

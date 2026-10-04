@@ -153,6 +153,8 @@ export interface PurchasePayment {
   amount?: number;
   tdsDeducted?: number;
   netPaid?: number;
+  allocatedAmount?: number;
+  availableAmount?: number;
   bankRef?: string | null;
   chequeNo?: string | null;
   chequeDate?: string | null;
