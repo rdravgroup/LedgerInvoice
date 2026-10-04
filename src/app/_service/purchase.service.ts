@@ -26,6 +26,18 @@ export interface PurchasePaymentAllocation {
   amount: number;
 }
 
+export interface PurchaseReportEmailRequest {
+  companyId: string;
+  reportName: string;
+  pdfBase64: string;
+}
+
+export interface PurchaseReportEmailResponse {
+  result: string;
+  message?: string;
+  errorMessage?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class PurchaseService {
   private base = environment.apiUrl + 'Purchase/';
@@ -162,8 +174,23 @@ export class PurchaseService {
     return this.http.post<ApiResponse>(`${this.base}returns`, dto, { params });
   }
 
-  approveReturn(returnNo: string): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>(`${this.base}returns/${encodeURIComponent(returnNo)}/approve`, {});
+  approveReturn(returnNo: string, companyId: string): Observable<ApiResponse> {
+    const params = new HttpParams().set('companyId', companyId);
+    return this.http.post<ApiResponse>(`${this.base}returns/${encodeURIComponent(returnNo)}/approve`, {}, { params });
+  }
+
+  deletePendingReturn(returnNo: string, companyId: string): Observable<ApiResponse> {
+    const params = new HttpParams().set('companyId', companyId);
+    return this.http.delete<ApiResponse>(`${this.base}returns/${encodeURIComponent(returnNo)}`, { params });
+  }
+
+  cancelApprovedReturn(returnNo: string, companyId: string): Observable<ApiResponse> {
+    const params = new HttpParams().set('companyId', companyId);
+    return this.http.post<ApiResponse>(
+      `${this.base}returns/${encodeURIComponent(returnNo)}/cancel`,
+      {},
+      { params }
+    );
   }
 
   // ── Reports ──────────────────────────────────────────────────────────
@@ -180,5 +207,9 @@ export class PurchaseService {
   getStockSummary(companyId: string): Observable<ApiResponse<StockSummary[]>> {
     const params = new HttpParams().set('companyId', companyId);
     return this.http.get<ApiResponse<StockSummary[]>>(`${this.base}reports/stock-summary`, { params });
+  }
+
+  emailPurchaseReport(request: PurchaseReportEmailRequest): Observable<PurchaseReportEmailResponse> {
+    return this.http.post<PurchaseReportEmailResponse>(`${this.base}reports/email`, request);
   }
 }

@@ -178,8 +178,12 @@ export interface PurchaseReturn {
   returnNo?: string;
   companyId?: string;
   vendorId?: string;
+  vendorName?: string;
   piNumber?: string;
   returnDate?: string;
+  dueDate?: string;
+  isOverdue?: boolean;
+  daysOverdue?: number;
   reason?: string;
   remark?: string;
   items: PurchaseReturnItem[];

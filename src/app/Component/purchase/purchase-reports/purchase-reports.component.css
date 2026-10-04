@@ -2,6 +2,9 @@
 @import '../purchase-shared.css';
 
 .rpt-tab-content   { padding: 20px 0; }
+.rpt-actions { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+.rpt-actions button { min-height: 42px; }
+.rpt-actions mat-icon { margin-right: 4px; }
 .rpt-date-field { flex: 0 1 220px !important; min-width: 190px; }
 .rpt-date-field ::ng-deep .mat-mdc-form-field-infix { min-height: 44px; }
 .rpt-date-field ::ng-deep .mat-datepicker-toggle .mat-mdc-icon-button { width: 36px; height: 36px; padding: 6px; }
@@ -24,6 +27,8 @@
 .success { color: #2e7d32; font-weight: 600; }
 
 @media (max-width: 600px) {
+	.rpt-actions { width: 100%; justify-content: flex-start; }
+	.rpt-actions button { flex: 1 1 auto; }
 	.rpt-date-field { flex: 1 1 100% !important; min-width: 0; }
 	.rpt-vendor-field { flex: 1 1 100% !important; min-width: 0; }
 }

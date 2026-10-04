@@ -1,133 +1,295 @@
-<!-- src/app/Component/purchase/purchase-return/purchase-return.component.html -->
 <div class="pu-page">
   <div class="pu-page-header">
-    <div><h1 class="pu-page-title"><mat-icon class="pu-title-icon">assignment_return</mat-icon> Purchase Returns</h1>
-      <p class="pu-page-sub">{{ dataSource.data.length }} returns</p></div>
-    <button mat-flat-button color="primary" class="pu-add-btn" (click)="openNew()"><mat-icon>add</mat-icon> New Return</button>
+    <div>
+      <h1 class="pu-page-title"><mat-icon class="pu-title-icon">assignment_return</mat-icon> Purchase Returns</h1>
+      <p class="pu-page-sub">{{ dataSource.data.length }} returns</p>
+    </div>
+    <button mat-flat-button color="primary" class="pu-add-btn" type="button" (click)="openNew()" [disabled]="loading">
+      <mat-icon>add</mat-icon> New Return
+    </button>
   </div>
 
-  <div class="pu-layout" [class.pu-layout-split]="showForm">
-    <div class="pu-list-panel">
-      <mat-form-field appearance="outline" class="pu-search"><mat-label>Search</mat-label><input matInput (input)="applyFilter($event)" /><mat-icon matPrefix>search</mat-icon></mat-form-field>
+  <div class="pu-list-panel">
+    <section class="pr-summary-grid" aria-label="Purchase return statistics">
+      <article class="pr-summary-card">
+        <span>Total Returns</span>
+        <strong>{{ dataSource.data.length }}</strong>
+      </article>
+      <article class="pr-summary-card">
+        <span>Total Return Amount</span>
+        <strong>₹{{ totalReturnAmount | number:'1.2-2' }}</strong>
+      </article>
+      <article class="pr-summary-card pr-summary-pending">
+        <span>Pending</span>
+        <strong>{{ pendingReturnCount }}</strong>
+      </article>
+      <article class="pr-summary-card pr-summary-approved">
+        <span>Approved</span>
+        <strong>{{ approvedReturnCount }}</strong>
+      </article>
+      <article class="pr-summary-card pr-summary-overdue">
+        <span>Overdue</span>
+        <strong>{{ overdueReturnCount }}</strong>
+      </article>
+    </section>
 
-      @if (loading) { <div class="pu-skeleton-list">@for (i of [1,2,3]; track i) { <div class="pu-skeleton-row"></div> }</div> }
-      @if (!loading && dataSource.data.length === 0) { <div class="pu-empty"><mat-icon>assignment_return</mat-icon><h3>No purchase returns</h3></div> }
-
-      @if (!loading && dataSource.data.length > 0) {
-        <!-- Mobile cards -->
-        <div class="pu-card-list" [class.hidden]="!isMobile">
-          @for (r of dataSource.filteredData; track r.returnNo) {
-            <mat-card class="pu-vendor-card"><mat-card-content>
-              <div class="pu-vc-row1">
-                <div class="pu-vc-avatar">RET</div>
-                <div class="pu-vc-info">
-                  <div class="pu-vc-name">{{ r.returnNo }}</div>
-                  <div class="pu-vc-meta">{{ getVendorName(r.vendorId) }} · {{ r.returnDate | date:'dd MMM yyyy' }}</div>
-                  @if (r.piNumber) { <div class="pu-vc-meta">Invoice: {{ r.piNumber }}</div> }
-                </div>
-                <span class="pu-status-badge {{ r.status }}">{{ r.status | titlecase }}</span>
-              </div>
-              <div class="pr-total">₹{{ r.grandTotal | number:'1.2-2' }}</div>
-              <div class="pu-vc-actions">
-                @if (r.status === 'pending') {
-                  <button mat-flat-button color="primary" (click)="approve(r.returnNo!)"><mat-icon>check_circle</mat-icon> Approve</button>
-                }
-              </div>
-            </mat-card-content></mat-card>
-          }
-        </div>
-
-        <!-- Desktop table -->
-        <mat-card class="pu-table-card" [class.hidden]="isMobile">
-          <table mat-table [dataSource]="dataSource" matSort class="pu-table">
-            <ng-container matColumnDef="returnNo"><th mat-header-cell *matHeaderCellDef>Return #</th><td mat-cell *matCellDef="let r"><code class="pu-code">{{ r.returnNo }}</code></td></ng-container>
-            <ng-container matColumnDef="returnDate"><th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th><td mat-cell *matCellDef="let r">{{ r.returnDate | date:'dd MMM yyyy' }}</td></ng-container>
-            <ng-container matColumnDef="vendorId"><th mat-header-cell *matHeaderCellDef>Vendor</th><td mat-cell *matCellDef="let r">{{ getVendorName(r.vendorId) }}</td></ng-container>
-            <ng-container matColumnDef="piNumber"><th mat-header-cell *matHeaderCellDef>Invoice</th><td mat-cell *matCellDef="let r">{{ r.piNumber || '—' }}</td></ng-container>
-            <ng-container matColumnDef="grandTotal"><th mat-header-cell *matHeaderCellDef mat-sort-header>Total</th><td mat-cell *matCellDef="let r" class="pu-amount">₹{{ r.grandTotal | number:'1.2-2' }}</td></ng-container>
-            <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let r"><span class="pu-status-badge {{ r.status }}">{{ r.status | titlecase }}</span></td></ng-container>
-            <ng-container matColumnDef="action"><th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef="let r" class="pu-td-actions">
-                @if (r.status === 'pending') {
-                  <button mat-icon-button color="primary" (click)="approve(r.returnNo)" matTooltip="Approve Return"><mat-icon>check_circle</mat-icon></button>
-                }
-              </td>
-            </ng-container>
-            <tr mat-header-row *matHeaderRowDef="listColumns; sticky:true"></tr>
-            <tr mat-row *matRowDef="let row; columns:listColumns" class="pu-tr"></tr>
-          </table>
-          <mat-paginator [pageSizeOptions]="[10,20,50]" [pageSize]="20" showFirstLastButtons></mat-paginator>
-        </mat-card>
-      }
+    <div class="pr-list-actions">
+      <button mat-stroked-button type="button" (click)="printReturns()"
+        [disabled]="loading || reportEmailSending">
+        <mat-icon>print</mat-icon> Print
+      </button>
+      <button mat-flat-button color="primary" type="button" (click)="sendReturnsToCompanyEmail()"
+        [disabled]="loading || reportEmailSending">
+        <mat-icon>{{ reportEmailSending ? 'hourglass_top' : 'mail' }}</mat-icon>
+        {{ reportEmailSending ? 'Sending…' : 'Send to Company Email' }}
+      </button>
     </div>
 
-    <!-- Form panel -->
-    @if (showForm) {
-      <div class="pu-form-panel">
-        <div class="pu-form-header"><h2>New Purchase Return</h2><button mat-icon-button (click)="close()"><mat-icon>close</mat-icon></button></div>
-        <form [formGroup]="returnForm" (ngSubmit)="save()" class="pu-form-body">
+    <mat-form-field appearance="outline" class="pu-search" subscriptSizing="dynamic">
+      <mat-label>Search returns</mat-label>
+      <input matInput (input)="applyFilter($event)" placeholder="Vendor, invoice, return number, or status" />
+      <mat-icon matPrefix>search</mat-icon>
+    </mat-form-field>
 
-          <mat-form-field appearance="outline" class="pu-field-full">
-            <mat-label>Invoice (optional)</mat-label>
-            <mat-select formControlName="piNumber" (selectionChange)="onInvoiceSelect($event.value)">
-              <mat-option value="">— No Invoice —</mat-option>
-              @for (inv of invoices; track inv.piNumber) {
-                <mat-option [value]="inv.piNumber">{{ inv.piNumber }} · {{ inv.vendorName || inv.vendorId }}</mat-option>
-              }
-            </mat-select>
-          </mat-form-field>
-
-          <div class="pu-form-row2">
-            <mat-form-field appearance="outline" class="pu-field"><mat-label>Vendor *</mat-label>
-              <mat-select formControlName="vendorId">@for (v of vendors; track v.vendorId) { <mat-option [value]="v.vendorId">{{ v.vendorName }}</mat-option> }</mat-select>
-              <mat-error>Required</mat-error>
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="pu-field"><mat-label>Return Date *</mat-label><input matInput type="date" formControlName="returnDate" /></mat-form-field>
-          </div>
-
-          <mat-form-field appearance="outline" class="pu-field-full"><mat-label>Reason for Return *</mat-label>
-            <textarea matInput formControlName="reason" rows="2"></textarea><mat-error>Required</mat-error>
-          </mat-form-field>
-
-          <div class="pu-section-label">Return Items</div>
-          <div formArrayName="items">
-            @for (line of items.controls; track $index; let i = $index) {
-              <div class="pr-line" [formGroupName]="i">
-                <mat-form-field appearance="outline" class="pu-field-full" style="margin-bottom:4px">
-                  <mat-label>Product *</mat-label>
-                  <mat-select formControlName="productId" (selectionChange)="onProductSelect(i, $event.value)">
-                    @for (p of products; track p.uniqueKeyID) { <mat-option [value]="p.uniqueKeyID">{{ p.productName || p.name }}</mat-option> }
-                  </mat-select>
-                </mat-form-field>
-                <div class="pu-form-row3">
-                  <mat-form-field appearance="outline" class="pu-field"><mat-label>Qty *</mat-label><input matInput type="number" formControlName="quantity" min="0.001" (input)="onLineChange(i)" /></mat-form-field>
-                  <mat-form-field appearance="outline" class="pu-field"><mat-label>Rate ₹ *</mat-label><input matInput type="number" formControlName="rate" min="0" (input)="onLineChange(i)" /></mat-form-field>
-                  <mat-form-field appearance="outline" class="pu-field"><mat-label>GST %</mat-label>
-                    <mat-select formControlName="gstRate" (selectionChange)="onLineChange(i)">@for (g of gstRates; track g) { <mat-option [value]="g">{{ g }}%</mat-option> }</mat-select>
-                  </mat-form-field>
-                </div>
-                <div class="pr-line-total">Total: ₹{{ line.get('totalAmount')?.value | number:'1.2-2' }}</div>
-                <button mat-icon-button color="warn" type="button" (click)="removeLine(i)" [disabled]="items.length===1"><mat-icon>delete</mat-icon></button>
+    @if (loading) {
+      <div class="pu-skeleton-list">@for (i of [1,2,3]; track i) { <div class="pu-skeleton-row"></div> }</div>
+    }
+    @if (!loading && dataSource.data.length === 0) {
+      <div class="pu-empty"><mat-icon>assignment_return</mat-icon><h3>No purchase returns</h3><p>Create a return from a vendor invoice.</p></div>
+    }
+    @if (!loading && dataSource.data.length > 0) {
+      <div class="pu-card-list" [class.hidden]="!isMobile">
+        @for (row of dataSource.filteredData; track row.returnNo) {
+          <mat-card class="pu-vendor-card"><mat-card-content>
+            <div class="pu-vc-row1">
+              <div class="pu-vc-avatar">RET</div>
+              <div class="pu-vc-info">
+                <div class="pu-vc-name">{{ row.returnNo }}</div>
+                <div class="pu-vc-meta">{{ getVendorName(row.vendorId) }} · {{ row.returnDate | date:'dd MMM yyyy' }}</div>
+                <div class="pu-vc-meta">Invoice: {{ row.piNumber || '—' }} · Returned {{ getReturnItemQuantityLabel(row) }}</div>
+                @if (returnIsOverdue(row)) {
+                  <span class="pr-overdue">{{ row.daysOverdue }}d overdue · Due {{ row.dueDate | date:'dd MMM yyyy' }}</span>
+                }
+              </div>
+              <span class="pu-status-badge {{ row.status }}">{{ row.status | titlecase }}</span>
+            </div>
+            <div class="pr-total">₹{{ row.grandTotal | number:'1.2-2' }}</div>
+            @if (row.status?.toLowerCase() === 'pending' || row.status?.toLowerCase() === 'approved') {
+              <div class="pu-vc-actions pr-return-actions">
+                @if (row.status?.toLowerCase() === 'pending') {
+                  <button mat-stroked-button color="warn" type="button" (click)="deletePendingReturn(row.returnNo)">
+                    <mat-icon>delete</mat-icon> Delete
+                  </button>
+                  <button mat-flat-button color="primary" type="button" (click)="approve(row.returnNo)">
+                    <mat-icon>check_circle</mat-icon> Approve
+                  </button>
+                } @else if (row.status?.toLowerCase() === 'approved') {
+                  <button mat-stroked-button color="warn" type="button" (click)="cancelApprovedReturn(row.returnNo)">
+                    <mat-icon>undo</mat-icon> Cancel Return
+                  </button>
+                }
               </div>
             }
-          </div>
-
-          <button mat-stroked-button type="button" (click)="addLine()" style="border-radius:20px;margin-bottom:12px"><mat-icon>add</mat-icon> Add Item</button>
-
-          <div class="pu-totals">
-            <div class="pu-totals-row"><span class="pu-totals-label">Subtotal</span><span class="pu-totals-val">₹{{ subtotal | number:'1.2-2' }}</span></div>
-            <div class="pu-totals-row"><span class="pu-totals-label">GST</span><span class="pu-totals-val">₹{{ totalGst | number:'1.2-2' }}</span></div>
-            <div class="pu-totals-row total"><span class="pu-totals-label">Grand Total</span><span class="pu-totals-val">₹{{ grandTotal | number:'1.2-2' }}</span></div>
-          </div>
-
-          <mat-form-field appearance="outline" class="pu-field-full"><mat-label>Remarks</mat-label><textarea matInput formControlName="remark" rows="2"></textarea></mat-form-field>
-
-          <div class="pu-form-actions">
-            <button mat-stroked-button type="button" (click)="close()">Cancel</button>
-            <button mat-flat-button color="primary" type="submit"><mat-icon>save</mat-icon> Save Return</button>
-          </div>
-        </form>
+          </mat-card-content></mat-card>
+        }
       </div>
+
+      <mat-card class="pu-table-card" [class.hidden]="isMobile">
+        <table mat-table [dataSource]="dataSource" matSort class="pu-table">
+          <ng-container matColumnDef="vendorName">
+            <th mat-header-cell *matHeaderCellDef>Vendor</th>
+            <td mat-cell *matCellDef="let row">{{ row.vendorName || getVendorName(row.vendorId) }}</td>
+          </ng-container>
+          <ng-container matColumnDef="piNumber">
+            <th mat-header-cell *matHeaderCellDef>Invoice</th>
+            <td mat-cell *matCellDef="let row">{{ row.piNumber || '—' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="returnDate">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Return Date</th>
+            <td mat-cell *matCellDef="let row">{{ row.returnDate | date:'dd MMM yyyy' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="items">
+            <th mat-header-cell *matHeaderCellDef>Returned Qty</th>
+            <td mat-cell *matCellDef="let row">{{ getReturnItemQuantityLabel(row) }}</td>
+          </ng-container>
+          <ng-container matColumnDef="grandTotal">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Amount</th>
+            <td mat-cell *matCellDef="let row" class="pu-amount">₹{{ row.grandTotal | number:'1.2-2' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let row"><span class="pu-status-badge {{ row.status }}">{{ row.status | titlecase }}</span></td>
+          </ng-container>
+          <ng-container matColumnDef="overdue">
+            <th mat-header-cell *matHeaderCellDef>Overdue</th>
+            <td mat-cell *matCellDef="let row">
+              @if (returnIsOverdue(row)) {
+                <span class="pr-overdue">{{ row.daysOverdue }}d · {{ row.dueDate | date:'dd MMM yyyy' }}</span>
+              } @else { — }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="action">
+            <th mat-header-cell *matHeaderCellDef>Action</th>
+            <td mat-cell *matCellDef="let row" class="pu-td-actions">
+              @if (row.status?.toLowerCase() === 'pending') {
+                <button mat-icon-button color="warn" type="button" (click)="deletePendingReturn(row.returnNo)"
+                  matTooltip="Delete pending return">
+                  <mat-icon>delete</mat-icon>
+                </button>
+                <button mat-icon-button color="primary" type="button" (click)="approve(row.returnNo)" matTooltip="Approve return">
+                  <mat-icon>check_circle</mat-icon>
+                </button>
+              } @else if (row.status?.toLowerCase() === 'approved') {
+                <button mat-stroked-button color="warn" type="button" (click)="cancelApprovedReturn(row.returnNo)"
+                  matTooltip="Create a cancellation reversal">
+                  <mat-icon>undo</mat-icon> Cancel Return
+                </button>
+              }
+            </td>
+          </ng-container>
+          <tr mat-header-row *matHeaderRowDef="listColumns; sticky: true"></tr>
+          <tr mat-row *matRowDef="let row; columns: listColumns" class="pu-tr"></tr>
+        </table>
+        <mat-paginator [pageSizeOptions]="[10,20,50]" [pageSize]="20" showFirstLastButtons></mat-paginator>
+      </mat-card>
     }
   </div>
+
+  <ng-template #returnModal>
+    <section class="pr-modal" role="dialog" aria-modal="true" aria-labelledby="pr-modal-title">
+      <div class="pu-form-header pr-modal-header">
+        <div>
+          <h2 id="pr-modal-title">Create Purchase Return</h2>
+          <p>Select a vendor and invoice, then choose the items and quantities to return.</p>
+        </div>
+        <button mat-icon-button type="button" (click)="close()" [disabled]="saving" aria-label="Close return form">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <form [formGroup]="returnForm" (ngSubmit)="save()" class="pu-form-body pr-form-body">
+        <div class="pr-form-grid">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Vendor *</mat-label>
+            <mat-icon matPrefix>storefront</mat-icon>
+            <mat-select formControlName="vendorId" (selectionChange)="onVendorChange($event.value)"
+              (openedChange)="onVendorDropdownChange($event)">
+              <mat-option class="pr-vendor-search-option">
+                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pr-vendor-search">
+                  <mat-icon matPrefix>search</mat-icon>
+                  <input matInput placeholder="Search vendor name, ID, GSTIN…" [value]="vendorSearch"
+                    (input)="vendorSearch = $any($event.target).value"
+                    (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()"
+                    aria-label="Search vendors" />
+                </mat-form-field>
+              </mat-option>
+              @for (vendor of filteredVendors; track vendor.vendorId) {
+                <mat-option [value]="vendor.vendorId">{{ vendor.vendorName }}</mat-option>
+              }
+              @if (filteredVendors.length === 0) { <mat-option disabled>No matching vendors</mat-option> }
+            </mat-select>
+            <mat-error>Select a vendor</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Purchase Invoice *</mat-label>
+            <mat-icon matPrefix>receipt_long</mat-icon>
+            <mat-select formControlName="piNumber" (selectionChange)="onInvoiceSelect($event.value)">
+              @if (invoicesLoading) { <mat-option disabled>Loading invoices…</mat-option> }
+              @for (invoice of invoices; track invoice.piNumber) {
+                <mat-option [value]="invoice.piNumber">
+                  {{ invoice.piNumber }} · {{ invoice.invoiceDate | date:'dd MMM yyyy' }} · ₹{{ invoice.outstandingAmount | number:'1.2-2' }} due
+                </mat-option>
+              }
+              @if (!invoicesLoading && returnForm.get('vendorId')?.value && invoices.length === 0) {
+                <mat-option disabled>No invoices for this vendor</mat-option>
+              }
+              @if (!returnForm.get('vendorId')?.value) { <mat-option disabled>Select a vendor first</mat-option> }
+            </mat-select>
+            <mat-error>Select an invoice</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Return Date *</mat-label>
+            <input matInput [matDatepicker]="returnDatePicker" [max]="today" formControlName="returnDate" />
+            <mat-datepicker-toggle matIconSuffix [for]="returnDatePicker"></mat-datepicker-toggle>
+            <mat-datepicker #returnDatePicker></mat-datepicker>
+            <mat-error>Choose a valid return date</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Reason for Return *</mat-label>
+            <input matInput formControlName="reason" maxlength="500" />
+            <mat-error>Enter a reason (up to 500 characters)</mat-error>
+          </mat-form-field>
+        </div>
+
+        @if (invoicesLoading || invoiceLoading) {
+          <div class="pr-loading"><mat-progress-spinner mode="indeterminate" diameter="32"></mat-progress-spinner><span>Loading invoice information…</span></div>
+        } @else if (invoiceDetails) {
+          <section class="pr-invoice-review" aria-label="Selected invoice details">
+            <div class="pr-review-heading">
+              <div><span>Invoice</span><strong>{{ invoiceDetails.piNumber }}</strong></div>
+              <div><span>Invoice date</span><strong>{{ invoiceDetails.invoiceDate | date:'dd MMM yyyy' }}</strong></div>
+              <div><span>Invoice total</span><strong>₹{{ invoiceDetails.grandTotal | number:'1.2-2' }}</strong></div>
+              <div><span>Outstanding</span><strong>₹{{ invoiceDetails.outstandingAmount | number:'1.2-2' }}</strong></div>
+            </div>
+
+            <div class="pr-items-heading">
+              <div><strong>Invoice items</strong><span>Only available invoice quantities can be returned.</span></div>
+              <span>{{ selectedReturnLines.length }} selected</span>
+            </div>
+
+            <div class="pr-item-list" formArrayName="items">
+              @for (line of items.controls; track $index; let i = $index) {
+                <article class="pr-item-row" [formGroupName]="i" [class.pr-item-selected]="line.get('selected')?.value">
+                  <mat-checkbox formControlName="selected" (change)="setLineSelected(i, $event.checked)"
+                    [disabled]="(line.get('availableQuantity')?.value || 0) <= 0"
+                    [aria-label]="'Select ' + line.get('productName')?.value">
+                  </mat-checkbox>
+                  <div class="pr-item-name">
+                    <strong>{{ line.get('productName')?.value }}</strong>
+                    <span>Invoice qty {{ line.get('invoiceQuantity')?.value | number:'1.0-3' }} · Available {{ line.get('availableQuantity')?.value | number:'1.0-3' }}</span>
+                  </div>
+                  <div class="pr-item-rate"><span>Rate</span><strong>₹{{ line.get('rate')?.value | number:'1.2-4' }}</strong></div>
+                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pr-qty-field">
+                    <mat-label>Return qty</mat-label>
+                    <input matInput type="number" min="0.001" step="0.001"
+                      [max]="line.get('availableQuantity')?.value"
+                      formControlName="quantity"
+                      [disabled]="!line.get('selected')?.value || saving"
+                      (input)="onLineChange(i)" />
+                  </mat-form-field>
+                  <div class="pr-item-total">₹{{ line.get('totalAmount')?.value | number:'1.2-2' }}</div>
+                </article>
+              }
+              @if (items.length === 0) {
+                <div class="pr-no-items">No returnable items are available on this invoice.</div>
+              }
+            </div>
+          </section>
+        } @else {
+          <div class="pr-empty-review"><mat-icon>fact_check</mat-icon><span>Select an invoice to review its items.</span></div>
+        }
+
+        <mat-form-field appearance="outline" class="pu-field-full pr-remark" subscriptSizing="dynamic">
+          <mat-label>Remarks</mat-label>
+          <textarea matInput formControlName="remark" rows="2" maxlength="500"></textarea>
+        </mat-form-field>
+
+        <div class="pu-totals pr-totals">
+          <div class="pu-totals-row"><span class="pu-totals-label">Subtotal</span><span class="pu-totals-val">₹{{ subtotal | number:'1.2-2' }}</span></div>
+          <div class="pu-totals-row"><span class="pu-totals-label">GST</span><span class="pu-totals-val">₹{{ totalGst | number:'1.2-2' }}</span></div>
+          <div class="pu-totals-row total"><span class="pu-totals-label">Return Total</span><span class="pu-totals-val">₹{{ grandTotal | number:'1.2-2' }}</span></div>
+        </div>
+
+        <div class="pu-form-actions pr-actions">
+          <button mat-stroked-button type="button" (click)="close()" [disabled]="saving">Cancel</button>
+          <button mat-flat-button color="primary" type="submit" [disabled]="saving || invoiceLoading || invoicesLoading">
+            <mat-icon>{{ saving ? 'hourglass_top' : 'save' }}</mat-icon>{{ saving ? 'Saving…' : 'Save Return' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </ng-template>
 </div>

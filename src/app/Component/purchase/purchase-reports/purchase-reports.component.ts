@@ -10,6 +10,7 @@ import { takeUntil } from 'rxjs/operators';
 import { PurchaseService } from '../../../_service/purchase.service';
 import { AuthService } from '../../../_service/authentication.service';
 import { SelectedCompanyService } from '../../../_service/selected-company.service';
+import { jsPDF } from 'jspdf';
 import {
   PurchaseRegisterRow, VendorOutstanding, PurchaseLedgerEntry, StockSummary, Vendor
 } from '../../../_model/purchase.model';
@@ -58,6 +59,7 @@ class ReportDateAdapter extends NativeDateAdapter {
 })
 export class PurchaseReportsComponent implements OnInit, OnDestroy {
   activeTab = 0;
+  reportEmailSending = false;
 
   /* ── Purchase Register ─────────────────────────────────────── */
   registerForm!: FormGroup;
@@ -106,6 +108,10 @@ export class PurchaseReportsComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
 
   private cid = () => this.selectedCo.getSelectedCompanyId() || this.auth.getCompanyId() || '';
+
+  get isReportLoading(): boolean {
+    return [this.regLoading, this.outLoading, this.ledLoading, this.stkLoading][this.activeTab] ?? false;
+  }
 
   buildForms(): void {
     const now = new Date();
@@ -215,11 +221,31 @@ export class PurchaseReportsComponent implements OnInit, OnDestroy {
     const { vendorId } = this.ledgerForm.value;
     this.svc.getVendorLedger(vendorId, this.cid()).pipe(takeUntil(this.destroy$)).subscribe({
       next: (r: any) => {
-        this.ledgerRows = this.showApiFailure(r, 'Failed to load ledger') ? [] : this.rowsFrom<PurchaseLedgerEntry>(r);
-        // compute running balance
-        let bal = 0;
-        this.ledgerRows.forEach(l => { bal += l.creditAmount - l.debitAmount; });
-        this.runningBalance = Math.round(bal * 100) / 100;
+        const rows = this.showApiFailure(r, 'Failed to load ledger')
+          ? []
+          : this.rowsFrom<PurchaseLedgerEntry>(r);
+        let balanceInCents = 0;
+        const balancesByLedgerId = new Map<number, number>();
+
+        [...rows]
+          .sort((a, b) => {
+            const dateA = Date.parse(a.referenceDate);
+            const dateB = Date.parse(b.referenceDate);
+            const chronologicalDifference = (Number.isFinite(dateA) ? dateA : 0)
+              - (Number.isFinite(dateB) ? dateB : 0);
+            return chronologicalDifference || a.ledgerId - b.ledgerId;
+          })
+          .forEach(row => {
+            balanceInCents += Math.round((Number(row.creditAmount) || 0) * 100)
+              - Math.round((Number(row.debitAmount) || 0) * 100);
+            balancesByLedgerId.set(row.ledgerId, balanceInCents / 100);
+          });
+
+        this.ledgerRows = rows.map(row => ({
+          ...row,
+          outstandingAmount: balancesByLedgerId.get(row.ledgerId) ?? 0
+        }));
+        this.runningBalance = balanceInCents / 100;
         this.ledLoading = false;
       },
       error: () => { this.toastr.error('Failed to load ledger'); this.ledLoading = false; }
@@ -246,6 +272,255 @@ export class PurchaseReportsComponent implements OnInit, OnDestroy {
   get stockBelowReorder(): number { return this.stockRows.filter(s => s.isBelowReorder).length; }
   get stockOutOfStock():   number { return this.stockRows.filter(s => s.isOutOfStock).length; }
   get stockTotalItems():   number { return this.stockRows.length; }
+
+  printCurrentReport(): void {
+    if (this.isReportLoading) return;
+
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      this.toastr.error('Allow pop-ups to print the report.');
+      return;
+    }
+
+    try {
+      const pdf = this.createCurrentReportPdf();
+      pdf.autoPrint();
+      printWindow.location.href = pdf.output('bloburl').toString();
+    } catch (error) {
+      printWindow.close();
+      console.error('Purchase report PDF generation failed:', error);
+      this.toastr.error('Unable to generate the report PDF.');
+    }
+  }
+
+  sendCurrentReportEmail(): void {
+    if (this.isReportLoading || this.reportEmailSending) return;
+    const companyId = this.cid();
+    if (!companyId) {
+      this.toastr.error('Select a company before sending the report.');
+      return;
+    }
+
+    this.reportEmailSending = true;
+    try {
+      const pdf = this.createCurrentReportPdf();
+      const bytes = new Uint8Array(pdf.output('arraybuffer'));
+      const binary: string[] = [];
+      const chunkSize = 0x8000;
+      for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+        binary.push(String.fromCharCode(...bytes.subarray(offset, offset + chunkSize)));
+      }
+      const pdfBase64 = btoa(binary.join(''));
+
+      this.svc.emailPurchaseReport({
+        companyId,
+        reportName: this.currentReportTitle,
+        pdfBase64
+      }).pipe(takeUntil(this.destroy$)).subscribe({
+        next: response => {
+          this.reportEmailSending = false;
+          if (String(response?.result || '').toLowerCase() !== 'pass') {
+            this.toastr.error(response?.errorMessage || 'Failed to send the report email.');
+            return;
+          }
+          this.toastr.success(response.message || 'Report sent to the company email.');
+        },
+        error: (error: any) => {
+          this.reportEmailSending = false;
+          this.toastr.error(error?.error?.errorMessage || error?.message || 'Failed to send the report email.');
+        }
+      });
+    } catch (error) {
+      this.reportEmailSending = false;
+      console.error('Purchase report PDF generation failed:', error);
+      this.toastr.error('Unable to generate the report PDF.');
+    }
+  }
+
+  private get currentReportTitle(): string {
+    return ['Purchase Register', 'Vendor Outstanding', 'Vendor Ledger', 'Stock Summary'][this.activeTab]
+      || 'Purchase Report';
+  }
+
+  private createCurrentReportPdf(): jsPDF {
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const margin = 12;
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const report = this.currentReportData();
+    let y = 16;
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(17);
+    pdf.setTextColor(31, 48, 78);
+    pdf.text(this.currentReportTitle, margin, y);
+    y += 7;
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(8);
+    pdf.setTextColor(95, 105, 120);
+    pdf.text(`${report.subtitle}  |  Generated ${new Date().toLocaleString('en-GB')}`, margin, y);
+    y += 7;
+
+    if (report.summary.length > 0) {
+      pdf.setFontSize(9);
+      pdf.setTextColor(40, 48, 60);
+      for (const summaryLine of report.summary) {
+        const wrapped = pdf.splitTextToSize(summaryLine, pageWidth - margin * 2) as string[];
+        pdf.text(wrapped, margin, y);
+        y += wrapped.length * 4.5;
+      }
+      y += 2;
+    }
+
+    if (report.rows.length === 0) {
+      pdf.setFontSize(11);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(report.emptyMessage, margin, y + 4);
+    } else {
+      const columnWidth = (pageWidth - margin * 2) / report.headers.length;
+      const lineHeight = 4;
+      const drawHeader = (): number => {
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(8);
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFillColor(40, 71, 125);
+        pdf.rect(margin, y, pageWidth - margin * 2, 8, 'F');
+        report.headers.forEach((header, index) => {
+          pdf.text(header, margin + index * columnWidth + 2, y + 5.3, {
+            maxWidth: columnWidth - 4
+          });
+        });
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(35, 42, 52);
+        pdf.setFontSize(7.5);
+        return y + 8;
+      };
+
+      y = drawHeader();
+      for (const [rowIndex, row] of report.rows.entries()) {
+        const cellLines = row.map(cell => pdf.splitTextToSize(cell || '-', columnWidth - 4) as string[]);
+        const rowHeight = Math.max(7, ...cellLines.map(lines => lines.length * lineHeight + 3));
+        if (y + rowHeight > pageHeight - 12) {
+          pdf.addPage();
+          y = 12;
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(9);
+          pdf.setTextColor(65, 75, 90);
+          pdf.text(this.currentReportTitle, margin, y);
+          y += 4;
+          y = drawHeader();
+        }
+
+        if (rowIndex % 2 === 0) {
+          pdf.setFillColor(245, 247, 250);
+          pdf.rect(margin, y, pageWidth - margin * 2, rowHeight, 'F');
+        }
+        pdf.setDrawColor(220, 225, 232);
+        pdf.setLineWidth(0.15);
+        pdf.rect(margin, y, pageWidth - margin * 2, rowHeight);
+        for (let index = 1; index < report.headers.length; index++) {
+          pdf.line(margin + index * columnWidth, y, margin + index * columnWidth, y + rowHeight);
+        }
+        cellLines.forEach((lines, index) => {
+          pdf.text(lines, margin + index * columnWidth + 2, y + 4.5, {
+            maxWidth: columnWidth - 4
+          });
+        });
+        y += rowHeight;
+      }
+    }
+
+    const pageCount = pdf.getNumberOfPages();
+    for (let page = 1; page <= pageCount; page++) {
+      pdf.setPage(page);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7);
+      pdf.setTextColor(125, 130, 140);
+      pdf.text(`Page ${page} of ${pageCount}`, pageWidth - margin, pageHeight - 5, { align: 'right' });
+    }
+    return pdf;
+  }
+
+  private currentReportData(): {
+    subtitle: string;
+    summary: string[];
+    headers: string[];
+    rows: string[][];
+    emptyMessage: string;
+  } {
+    const currency = (value: number | undefined): string =>
+      `INR ${(Number(value) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const quantity = (value: number | undefined): string =>
+      (Number(value) || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+    const date = (value?: string | Date): string => {
+      if (!value) return '-';
+      const parsed = value instanceof Date ? value : new Date(value);
+      return Number.isNaN(parsed.getTime()) ? '-' : parsed.toLocaleDateString('en-GB');
+    };
+
+    switch (this.activeTab) {
+      case 0: {
+        const { from, to } = this.registerForm.value;
+        return {
+          subtitle: `Period: ${date(from)} to ${date(to)}`,
+          summary: [
+            `Total purchases: ${currency(this.regTotalGrand)}  |  GST: ${currency(this.regTotalGst)}  |  Paid: ${currency(this.regTotalPaid)}  |  Outstanding: ${currency(this.regTotalDue)}`
+          ],
+          headers: ['Invoice #', 'Date', 'Vendor', 'Taxable', 'GST', 'Total', 'Paid', 'Outstanding', 'Status'],
+          rows: this.registerRows.map(row => [
+            row.piNumber || '-', date(row.invoiceDate), row.vendorName || '-', currency(row.subtotal),
+            currency(row.totalGstAmount), currency(row.grandTotal), currency(row.paidAmount),
+            currency(row.outstandingAmount), row.status || '-'
+          ]),
+          emptyMessage: 'No purchase register rows are available for the selected period.'
+        };
+      }
+      case 1:
+        return {
+          subtitle: 'Current vendor payables and overdue balances',
+          summary: [
+            `Vendors with dues: ${this.outstanding.length}  |  Total outstanding: ${currency(this.outTotalDue)}  |  Overdue: ${currency(this.outTotalOverdue)}`
+          ],
+          headers: ['Vendor', 'GSTIN', 'Purchased', 'Paid', 'Outstanding', 'Overdue', 'Overdue Bills', 'Oldest Due'],
+          rows: this.outstanding.map(row => [
+            row.vendorName || row.vendorId, row.gstin || '-', currency(row.totalPurchased), currency(row.totalPaid),
+            currency(row.outstandingAmount), currency(row.overdueAmount), String(row.overdueInvoices || 0),
+            date(row.oldestDueDate)
+          ]),
+          emptyMessage: 'No outstanding vendor balances are available.'
+        };
+      case 2:
+        return {
+          subtitle: `Vendor: ${this.ledgerVendorName || 'Not selected'}`,
+          summary: this.ledgerRows.length > 0
+            ? [`Balance payable: ${currency(this.runningBalance)}`]
+            : [],
+          headers: ['Date', 'Type', 'Reference', 'Debit (Payment)', 'Credit (Invoice)', 'Outstanding', 'Due Date'],
+          rows: this.ledgerRows.map(row => [
+            date(row.referenceDate), row.referenceType || '-', row.referenceNumber || '-',
+            currency(row.debitAmount), currency(row.creditAmount), currency(row.outstandingAmount), date(row.dueDate)
+          ]),
+          emptyMessage: this.ledgerForm.get('vendorId')?.value
+            ? 'No ledger entries are available for this vendor.'
+            : 'Select a vendor and load the ledger to view its entries.'
+        };
+      default:
+        return {
+          subtitle: 'Current stock position',
+          summary: [
+            `Products: ${this.stockTotalItems}  |  Below reorder: ${this.stockBelowReorder}  |  Out of stock: ${this.stockOutOfStock}`
+          ],
+          headers: ['Product', 'Stock Qty', 'Min Qty', 'Reorder Level', 'Last Purchase Rate', 'Last Purchase', 'Status'],
+          rows: this.stockRows.map(row => [
+            row.productName || row.productId, quantity(row.stockQty), quantity(row.minStockQty),
+            quantity(row.reorderLevel), row.lastPurchaseRate ? currency(row.lastPurchaseRate) : '-',
+            date(row.lastPurchaseDate), row.isOutOfStock ? 'Out of Stock' : row.isBelowReorder ? 'Low Stock' : 'OK'
+          ]),
+          emptyMessage: 'No stock summary rows are available.'
+        };
+    }
+  }
 
   onTabChange(idx: number): void {
     this.activeTab = idx;

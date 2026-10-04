@@ -2,6 +2,18 @@
 <div class="pu-page">
   <div class="pu-page-header">
     <h1 class="pu-page-title"><mat-icon class="pu-title-icon">bar_chart</mat-icon> Purchase Reports</h1>
+    <div class="rpt-actions">
+      <button mat-stroked-button type="button" (click)="printCurrentReport()"
+        [disabled]="isReportLoading || reportEmailSending" aria-label="Print current report">
+        <mat-icon>print</mat-icon>
+        <span>Print</span>
+      </button>
+      <button mat-flat-button color="primary" type="button" (click)="sendCurrentReportEmail()"
+        [disabled]="isReportLoading || reportEmailSending" aria-label="Send current report to company email">
+        <mat-icon>{{ reportEmailSending ? 'hourglass_top' : 'mail' }}</mat-icon>
+        <span>{{ reportEmailSending ? 'Sending…' : 'Send to Company Email' }}</span>
+      </button>
+    </div>
   </div>
 
   <mat-tab-group class="pu-tab-group" [selectedIndex]="activeTab" (selectedIndexChange)="onTabChange($event)" animationDuration="200ms">
