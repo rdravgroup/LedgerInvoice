@@ -17,7 +17,7 @@
       </article>
       <article class="pr-summary-card">
         <span>Total Return Amount</span>
-        <strong>₹{{ totalReturnAmount | number:'1.2-2' }}</strong>
+        <strong>₹{{ totalReturnAmount | companyNumber:'1.2-2' }}</strong>
       </article>
       <article class="pr-summary-card pr-summary-pending">
         <span>Pending</span>
@@ -73,7 +73,7 @@
               </div>
               <span class="pu-status-badge {{ row.status }}">{{ row.status | titlecase }}</span>
             </div>
-            <div class="pr-total">₹{{ row.grandTotal | number:'1.2-2' }}</div>
+            <div class="pr-total">₹{{ row.grandTotal | companyNumber:'1.2-2' }}</div>
             @if (row.status?.toLowerCase() === 'pending' || row.status?.toLowerCase() === 'approved') {
               <div class="pu-vc-actions pr-return-actions">
                 @if (row.status?.toLowerCase() === 'pending') {
@@ -114,7 +114,7 @@
           </ng-container>
           <ng-container matColumnDef="grandTotal">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Amount</th>
-            <td mat-cell *matCellDef="let row" class="pu-amount">₹{{ row.grandTotal | number:'1.2-2' }}</td>
+            <td mat-cell *matCellDef="let row" class="pu-amount">₹{{ row.grandTotal | companyNumber:'1.2-2' }}</td>
           </ng-container>
           <ng-container matColumnDef="status">
             <th mat-header-cell *matHeaderCellDef>Status</th>
@@ -198,7 +198,7 @@
               @if (invoicesLoading) { <mat-option disabled>Loading invoices…</mat-option> }
               @for (invoice of invoices; track invoice.piNumber) {
                 <mat-option [value]="invoice.piNumber">
-                  {{ invoice.piNumber }} · {{ invoice.invoiceDate | date:'dd MMM yyyy' }} · ₹{{ invoice.outstandingAmount | number:'1.2-2' }} due
+                  {{ invoice.piNumber }} · {{ invoice.invoiceDate | date:'dd MMM yyyy' }} · ₹{{ invoice.outstandingAmount | companyNumber:'1.2-2' }} due
                 </mat-option>
               }
               @if (!invoicesLoading && returnForm.get('vendorId')?.value && invoices.length === 0) {
@@ -231,8 +231,8 @@
             <div class="pr-review-heading">
               <div><span>Invoice</span><strong>{{ invoiceDetails.piNumber }}</strong></div>
               <div><span>Invoice date</span><strong>{{ invoiceDetails.invoiceDate | date:'dd MMM yyyy' }}</strong></div>
-              <div><span>Invoice total</span><strong>₹{{ invoiceDetails.grandTotal | number:'1.2-2' }}</strong></div>
-              <div><span>Outstanding</span><strong>₹{{ invoiceDetails.outstandingAmount | number:'1.2-2' }}</strong></div>
+              <div><span>Invoice total</span><strong>₹{{ invoiceDetails.grandTotal | companyNumber:'1.2-2' }}</strong></div>
+              <div><span>Outstanding</span><strong>₹{{ invoiceDetails.outstandingAmount | companyNumber:'1.2-2' }}</strong></div>
             </div>
 
             <div class="pr-items-heading">
@@ -249,9 +249,9 @@
                   </mat-checkbox>
                   <div class="pr-item-name">
                     <strong>{{ line.get('productName')?.value }}</strong>
-                    <span>Invoice qty {{ line.get('invoiceQuantity')?.value | number:'1.0-3' }} · Available {{ line.get('availableQuantity')?.value | number:'1.0-3' }}</span>
+                    <span>Invoice qty {{ line.get('invoiceQuantity')?.value | companyNumber:'1.0-3' }} · Available {{ line.get('availableQuantity')?.value | companyNumber:'1.0-3' }}</span>
                   </div>
-                  <div class="pr-item-rate"><span>Rate</span><strong>₹{{ line.get('rate')?.value | number:'1.2-4' }}</strong></div>
+                  <div class="pr-item-rate"><span>Rate</span><strong>₹{{ line.get('rate')?.value | companyNumber:'1.2-4' }}</strong></div>
                   <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pr-qty-field">
                     <mat-label>Return qty</mat-label>
                     <input matInput type="number" min="0.001" step="0.001"
@@ -260,7 +260,7 @@
                       [disabled]="!line.get('selected')?.value || saving"
                       (input)="onLineChange(i)" />
                   </mat-form-field>
-                  <div class="pr-item-total">₹{{ line.get('totalAmount')?.value | number:'1.2-2' }}</div>
+                  <div class="pr-item-total">₹{{ line.get('totalAmount')?.value | companyNumber:'1.2-2' }}</div>
                 </article>
               }
               @if (items.length === 0) {
@@ -278,9 +278,9 @@
         </mat-form-field>
 
         <div class="pu-totals pr-totals">
-          <div class="pu-totals-row"><span class="pu-totals-label">Subtotal</span><span class="pu-totals-val">₹{{ subtotal | number:'1.2-2' }}</span></div>
-          <div class="pu-totals-row"><span class="pu-totals-label">GST</span><span class="pu-totals-val">₹{{ totalGst | number:'1.2-2' }}</span></div>
-          <div class="pu-totals-row total"><span class="pu-totals-label">Return Total</span><span class="pu-totals-val">₹{{ grandTotal | number:'1.2-2' }}</span></div>
+          <div class="pu-totals-row"><span class="pu-totals-label">Subtotal</span><span class="pu-totals-val">₹{{ subtotal | companyNumber:'1.2-2' }}</span></div>
+          <div class="pu-totals-row"><span class="pu-totals-label">GST</span><span class="pu-totals-val">₹{{ totalGst | companyNumber:'1.2-2' }}</span></div>
+          <div class="pu-totals-row total"><span class="pu-totals-label">Return Total</span><span class="pu-totals-val">₹{{ grandTotal | companyNumber:'1.2-2' }}</span></div>
         </div>
 
         <div class="pu-form-actions pr-actions">

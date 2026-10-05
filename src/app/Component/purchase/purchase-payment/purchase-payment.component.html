@@ -3,17 +3,20 @@
   <div class="pu-page-header">
     <div>
       <h1 class="pu-page-title">
-        <mat-icon class="pu-title-icon">payments</mat-icon> Purchase Payments
+        <mat-icon class="pu-title-icon">payments</mat-icon> Purchase Payments &amp; Vendor Refunds
       </h1>
       <p class="pu-page-sub">
         {{ dataSource.data.length }} records
         @if (dataSource.data.length > 0) {
-          · Total Paid: ₹{{ totalPaid | number:'1.2-2' }}
+          · Total Paid: ₹{{ totalPaid | companyNumber:'1.2-2' }}
         }
       </p>
     </div>
     <button mat-flat-button color="primary" class="pu-add-btn" (click)="openNew()">
       <mat-icon>add</mat-icon> Record Payment
+    </button>
+    <button mat-stroked-button color="primary" class="pu-add-btn" (click)="openRefund()">
+      <mat-icon>currency_exchange</mat-icon> Record Refund
     </button>
   </div>
 
@@ -28,11 +31,15 @@
         </div>
         <div class="pu-summary-card">
           <div class="label">Total amount</div>
-          <div class="value primary">₹{{ totalPaid | number:'1.2-2' }}</div>
+          <div class="value primary">₹{{ totalPaid | companyNumber:'1.2-2' }}</div>
         </div>
         <div class="pu-summary-card">
           <div class="label">Net paid</div>
-          <div class="value success">₹{{ totalNetPaid | number:'1.2-2' }}</div>
+          <div class="value success">₹{{ totalNetPaid | companyNumber:'1.2-2' }}</div>
+        </div>
+        <div class="pu-summary-card">
+          <div class="label">Refunds recorded</div>
+          <div class="value">{{ refunds.length }}</div>
         </div>
       </div>
 
@@ -78,12 +85,12 @@
                       @else if (isAdvancePayment(p)) { <span class="pp-advance-label">Advance</span> }
                     </div>
                   </div>
-                  <div class="pp-card-amount">₹{{ p.amount | number:'1.2-2' }}</div>
+                  <div class="pp-card-amount">₹{{ p.amount | companyNumber:'1.2-2' }}</div>
                 </div>
                 @if ((p.tdsDeducted || 0) > 0) {
                   <div class="pp-tds">
-                    TDS: ₹{{ p.tdsDeducted | number:'1.2-2' }}
-                    · Net: ₹{{ p.netPaid | number:'1.2-2' }}
+                    TDS: ₹{{ p.tdsDeducted | companyNumber:'1.2-2' }}
+                    · Net: ₹{{ p.netPaid | companyNumber:'1.2-2' }}
                   </div>
                 }
                 @if (p.chequeNo) {
@@ -94,7 +101,7 @@
                 }
                 @if (isAdvancePayment(p)) {
                   <div class="pp-advance-balance">
-                    Available advance: <strong>₹{{ availableAdvance(p) | number:'1.2-2' }}</strong>
+                    Available advance: <strong>₹{{ availableAdvance(p) | companyNumber:'1.2-2' }}</strong>
                   </div>
                 }
                 <div class="pu-vc-actions">
@@ -155,12 +162,12 @@
 
             <ng-container matColumnDef="amount">
               <th mat-header-cell *matHeaderCellDef mat-sort-header>Amount</th>
-              <td mat-cell *matCellDef="let r" class="pu-amount">₹{{ r.amount | number:'1.2-2' }}</td>
+              <td mat-cell *matCellDef="let r" class="pu-amount">₹{{ r.amount | companyNumber:'1.2-2' }}</td>
             </ng-container>
 
             <ng-container matColumnDef="netPaid">
               <th mat-header-cell *matHeaderCellDef>Net Paid</th>
-              <td mat-cell *matCellDef="let r" class="pp-net-paid">₹{{ r.netPaid | number:'1.2-2' }}</td>
+              <td mat-cell *matCellDef="let r" class="pp-net-paid">₹{{ r.netPaid | companyNumber:'1.2-2' }}</td>
             </ng-container>
 
             <ng-container matColumnDef="action">
@@ -187,6 +194,42 @@
         </mat-card>
 
       }
+
+      @if (refunds.length > 0) {
+        <section class="pu-table-card pp-refunds-section" aria-label="Vendor refunds">
+          <h2>Vendor refunds</h2>
+          <div class="pp-refunds-table-wrap">
+            <table class="pp-refunds-table">
+              <thead>
+                <tr>
+                  <th>Refund #</th>
+                  <th>Date</th>
+                  <th>Vendor</th>
+                  <th>Reference</th>
+                  <th>Refund amount</th>
+                  <th>Mode</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (refund of refunds; track refund.refundId || refund.refundNo) {
+                  <tr>
+                    <td><code>{{ refund.refundNo || '—' }}</code></td>
+                    <td>{{ refund.refundDate | date:'dd MMM yyyy' }}</td>
+                    <td>{{ getVendorName(refund.vendorId) }}</td>
+                    <td>
+                      @if (refund.piNumber) { {{ refund.piNumber }} }
+                      @else if (refund.returnNo) { {{ refund.returnNo }} }
+                      @else { <span class="pp-advance-label">Advance / General</span> }
+                    </td>
+                    <td class="pu-amount">₹{{ refund.refundAmount | companyNumber:'1.2-2' }}</td>
+                    <td><span class="pp-mode-chip">{{ refund.paymentMode | titlecase }}</span></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
     </div><!-- end list panel -->
 
     <!-- ── Record payment modal ────────────────────────────── -->
@@ -194,8 +237,8 @@
         <section class="pp-modal" role="dialog" aria-modal="true" aria-labelledby="pp-modal-title">
         <div class="pu-form-header pp-modal-header">
           <div>
-            <h2 id="pp-modal-title">Record a payment</h2>
-            <p>Enter the payment details and allocation information.</p>
+            <h2 id="pp-modal-title">{{ entryKind === 'refund' ? 'Record a vendor refund' : 'Record a payment' }}</h2>
+            <p>{{ entryKind === 'refund' ? 'Record money received back from a vendor.' : 'Enter the payment details and allocation information.' }}</p>
           </div>
           <button mat-icon-button type="button" (click)="close()" matTooltip="Close" aria-label="Close payment form"
             [disabled]="saving">
@@ -207,7 +250,7 @@
           <div class="pp-form-intro">
             <mat-icon>payments</mat-icon>
             <div>
-              <strong>Payment details</strong>
+              <strong>{{ entryKind === 'refund' ? 'Refund details' : 'Payment details' }}</strong>
               <span>Fields marked * are required.</span>
             </div>
           </div>
@@ -239,46 +282,95 @@
           </mat-form-field>
 
           <!-- Invoice options are loaded and filtered for the selected vendor only -->
-          <mat-form-field appearance="outline" class="pu-field-full" subscriptSizing="dynamic">
-            <mat-label>Invoice (optional for advance payment)</mat-label>
-            <mat-icon matPrefix>receipt_long</mat-icon>
-            <mat-select formControlName="piNumber"
-              [disabled]="!payForm.get('vendorId')?.value || invoicesLoading"
-              (selectionChange)="onInvoiceSelect($event.value)"
-              (openedChange)="onInvoiceDropdownChange($event)">
-              @if (payForm.get('vendorId')?.value) {
-                <mat-option class="pp-search-option">
-                  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pp-dropdown-search">
-                    <mat-icon matPrefix>search</mat-icon>
-                    <input matInput placeholder="Search invoice, vendor, or year…" [value]="invoiceSearch"
-                      (input)="invoiceSearch = $any($event.target).value"
-                      (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()"
-                      aria-label="Search invoices" />
-                  </mat-form-field>
-                </mat-option>
-                <mat-option [value]="null">Advance payment (no invoice)</mat-option>
-                @for (inv of filteredInvoices; track inv.piNumber) {
-                  <mat-option [value]="inv.piNumber">
-                    {{ inv.piNumber }} · {{ inv.invoiceDate | date:'dd MMM yyyy' }}
-                    · Due: ₹{{ inv.outstandingAmount | number:'1.2-2' }}
-                  </mat-option>
-                }
-                @if (!invoicesLoading && filteredInvoices.length === 0) {
-                  <mat-option disabled>No open invoices for this vendor</mat-option>
-                }
-              }
-            </mat-select>
-            @if (!payForm.get('vendorId')?.value) {
-              <mat-hint>Select a vendor first to view its invoices</mat-hint>
-            } @else if (invoicesLoading) {
-              <mat-hint>Loading this vendor’s invoices…</mat-hint>
+          @if (entryKind === 'refund') {
+            <mat-form-field appearance="outline" class="pu-field-full" subscriptSizing="dynamic">
+              <mat-label>Refund type *</mat-label>
+              <mat-select formControlName="refundType" (selectionChange)="onRefundTypeChange($event.value)">
+                <mat-option value="against_invoice">Against Invoice</mat-option>
+                <mat-option value="against_debit_note">Against Debit Note</mat-option>
+                <mat-option value="advance">Advance / Refund</mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            @if (selectedRefundType === 'against_invoice') {
+              <mat-form-field appearance="outline" class="pu-field-full" subscriptSizing="dynamic">
+                <mat-label>Purchase Invoice *</mat-label>
+                <mat-icon matPrefix>receipt_long</mat-icon>
+                <mat-select formControlName="piNumber" [disabled]="!payForm.get('vendorId')?.value || invoicesLoading">
+                  @for (inv of filteredInvoices; track inv.piNumber) {
+                    <mat-option [value]="inv.piNumber">
+                      {{ inv.piNumber }} · Outstanding: ₹{{ inv.outstandingAmount | companyNumber:'1.2-2' }}
+                    </mat-option>
+                  }
+                  @if (!invoicesLoading && filteredInvoices.length === 0) {
+                    <mat-option disabled>No open invoices for this vendor</mat-option>
+                  }
+                </mat-select>
+                @if (invoicesLoading) { <mat-hint>Loading this vendor’s invoices…</mat-hint> }
+                <mat-error>Purchase invoice is required</mat-error>
+              </mat-form-field>
             }
-          </mat-form-field>
+
+            @if (selectedRefundType === 'against_debit_note') {
+              <mat-form-field appearance="outline" class="pu-field-full" subscriptSizing="dynamic">
+                <mat-label>Purchase Return / Debit Note *</mat-label>
+                <mat-icon matPrefix>assignment_return</mat-icon>
+                <mat-select formControlName="returnNo" [disabled]="!payForm.get('vendorId')?.value || debitNotesLoading">
+                  @for (note of debitNotes; track note.returnNo) {
+                    <mat-option [value]="note.returnNo">
+                      {{ note.returnNo }} · Refundable: ₹{{ debitNoteRefundableAmount(note) | companyNumber:'1.2-2' }}
+                    </mat-option>
+                  }
+                  @if (!debitNotesLoading && debitNotes.length === 0) {
+                    <mat-option disabled>No approved debit notes for this vendor</mat-option>
+                  }
+                </mat-select>
+                @if (debitNotesLoading) { <mat-hint>Loading approved debit notes…</mat-hint> }
+                <mat-error>Debit note is required</mat-error>
+              </mat-form-field>
+            }
+          } @else {
+            <mat-form-field appearance="outline" class="pu-field-full" subscriptSizing="dynamic">
+              <mat-label>Invoice (optional for advance payment)</mat-label>
+              <mat-icon matPrefix>receipt_long</mat-icon>
+              <mat-select formControlName="piNumber"
+                [disabled]="!payForm.get('vendorId')?.value || invoicesLoading"
+                (selectionChange)="onInvoiceSelect($event.value)"
+                (openedChange)="onInvoiceDropdownChange($event)">
+                @if (payForm.get('vendorId')?.value) {
+                  <mat-option class="pp-search-option">
+                    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pp-dropdown-search">
+                      <mat-icon matPrefix>search</mat-icon>
+                      <input matInput placeholder="Search invoice, vendor, or year…" [value]="invoiceSearch"
+                        (input)="invoiceSearch = $any($event.target).value"
+                        (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()"
+                        aria-label="Search invoices" />
+                    </mat-form-field>
+                  </mat-option>
+                  <mat-option [value]="null">Advance payment (no invoice)</mat-option>
+                  @for (inv of filteredInvoices; track inv.piNumber) {
+                    <mat-option [value]="inv.piNumber">
+                      {{ inv.piNumber }} · {{ inv.invoiceDate | date:'dd MMM yyyy' }}
+                      · Due: ₹{{ inv.outstandingAmount | companyNumber:'1.2-2' }}
+                    </mat-option>
+                  }
+                  @if (!invoicesLoading && filteredInvoices.length === 0) {
+                    <mat-option disabled>No open invoices for this vendor</mat-option>
+                  }
+                }
+              </mat-select>
+              @if (!payForm.get('vendorId')?.value) {
+                <mat-hint>Select a vendor first to view its invoices</mat-hint>
+              } @else if (invoicesLoading) {
+                <mat-hint>Loading this vendor’s invoices…</mat-hint>
+              }
+            </mat-form-field>
+          }
 
           <!-- Date + Mode -->
           <div class="pu-form-row2">
             <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
-              <mat-label>Payment Date *</mat-label>
+              <mat-label>{{ entryKind === 'refund' ? 'Refund Date *' : 'Payment Date *' }}</mat-label>
               <mat-icon matPrefix>calendar_today</mat-icon>
               <input matInput [matDatepicker]="paymentDatePicker" formControlName="paymentDate"
                 placeholder="dd/MM/yyyy" />
@@ -288,7 +380,7 @@
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
-              <mat-label>Payment Mode *</mat-label>
+              <mat-label>{{ entryKind === 'refund' ? 'Refund Mode *' : 'Payment Mode *' }}</mat-label>
               <mat-select formControlName="paymentMode">
                 @for (m of payModes; track m) {
                   <mat-option [value]="m">{{ m | titlecase }}</mat-option>
@@ -300,17 +392,23 @@
 
           <!-- Type + Amount -->
           <div class="pu-form-row2">
-            <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
-              <mat-label>Payment Type</mat-label>
-              <mat-select formControlName="paymentType">
-                @for (t of payTypes; track t) {
-                  <mat-option [value]="t">{{ t | titlecase }}</mat-option>
-                }
-              </mat-select>
-            </mat-form-field>
+            @if (entryKind === 'payment') {
+              <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
+                <mat-label>Payment Type</mat-label>
+                <mat-select formControlName="paymentType">
+                  @for (t of payTypes; track t) {
+                    <mat-option [value]="t">{{ t | titlecase }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            } @else {
+              <div class="pp-refund-reference-hint">
+                {{ selectedRefundType === 'advance' ? 'Standalone refund; no invoice or debit note is linked.' : 'Select the reference above to link this refund for traceability.' }}
+              </div>
+            }
 
             <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
-              <mat-label>Amount (₹) *</mat-label>
+              <mat-label>{{ entryKind === 'refund' ? 'Refund amount (₹) *' : 'Amount (₹) *' }}</mat-label>
               <span matPrefix>₹&nbsp;</span>
               <!--
                 FIX-BUG-4: placeholder shows hint so user knows to enter amount;
@@ -371,20 +469,23 @@
           }
 
           <!-- TDS + Net Paid -->
-          <div class="pu-form-row2">
-            <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
-              <mat-label>TDS Deducted (₹)</mat-label>
-              <span matPrefix>₹&nbsp;</span>
-              <input matInput type="number" formControlName="tdsDeducted" min="0" step="0.01" placeholder="0.00" />
-              <mat-hint>Leave 0 if no TDS deducted</mat-hint>
-            </mat-form-field>
-            <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
-              <mat-label>Net Paid (₹)</mat-label>
-              <span matPrefix>₹&nbsp;</span>
-              <input matInput formControlName="netPaid" readonly />
-              <mat-hint>Auto = Amount − TDS</mat-hint>
-            </mat-form-field>
-          </div>
+          @if (entryKind === 'payment') {
+            <div class="pu-form-row2">
+              <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
+                <mat-label>TDS Deducted (₹)</mat-label>
+                <span matPrefix>₹&nbsp;</span>
+                <input matInput type="number" formControlName="tdsDeducted" min="0"
+                  [max]="payForm.get('amount')?.value || 0" step="0.01" placeholder="0.00" />
+                <mat-hint>Leave 0 if no TDS deducted</mat-hint>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="pu-field" subscriptSizing="dynamic">
+                <mat-label>Net Paid (₹)</mat-label>
+                <span matPrefix>₹&nbsp;</span>
+                <input matInput formControlName="netPaid" readonly />
+                <mat-hint>Auto = Amount − TDS</mat-hint>
+              </mat-form-field>
+            </div>
+          }
 
           <!-- Notes -->
           <mat-form-field appearance="outline" class="pu-field-full" subscriptSizing="dynamic">
@@ -399,7 +500,7 @@
             </button>
             <button mat-flat-button color="primary" type="submit" [disabled]="saving">
               <mat-icon [class.pp-saving-icon]="saving">{{ saving ? 'hourglass_top' : 'save' }}</mat-icon>
-              {{ saving ? 'Saving…' : 'Record Payment' }}
+              {{ saving ? 'Saving…' : (entryKind === 'refund' ? 'Record Refund' : 'Record Payment') }}
             </button>
           </div>
 
@@ -430,15 +531,15 @@
               </div>
               <div>
                 <span>Advance available</span>
-                <strong>₹{{ availableAdvance(allocationPayment) | number:'1.2-2' }}</strong>
+                <strong>₹{{ availableAdvance(allocationPayment) | companyNumber:'1.2-2' }}</strong>
               </div>
               <div>
                 <span>To allocate</span>
-                <strong>₹{{ selectedAllocationTotal | number:'1.2-2' }}</strong>
+                <strong>₹{{ selectedAllocationTotal | companyNumber:'1.2-2' }}</strong>
               </div>
               <div [class.pp-overallocated]="remainingAdvanceAfterSelection < 0">
                 <span>Advance remaining</span>
-                <strong>₹{{ remainingAdvanceAfterSelection | number:'1.2-2' }}</strong>
+                <strong>₹{{ remainingAdvanceAfterSelection | companyNumber:'1.2-2' }}</strong>
               </div>
             </div>
           }
@@ -472,7 +573,7 @@
                   </div>
                   <div class="pp-invoice-outstanding">
                     <span>Outstanding</span>
-                    <strong>₹{{ invoice.outstandingAmount | number:'1.2-2' }}</strong>
+                    <strong>₹{{ invoice.outstandingAmount | companyNumber:'1.2-2' }}</strong>
                   </div>
                   <mat-form-field appearance="outline" subscriptSizing="dynamic" class="pp-allocation-amount">
                     <mat-label>Adjust amount</mat-label>
@@ -483,7 +584,7 @@
                       [value]="invoice.allocationAmount || ''"
                       (input)="invoice.allocationAmount = +$any($event.target).value"
                       [attr.aria-label]="'Amount to adjust for ' + invoice.piNumber" />
-                    <mat-hint>Max ₹{{ invoice.outstandingAmount | number:'1.2-2' }}</mat-hint>
+                    <mat-hint>Max ₹{{ invoice.outstandingAmount | companyNumber:'1.2-2' }}</mat-hint>
                   </mat-form-field>
                 </article>
               }

@@ -9,6 +9,8 @@ import {
   PurchaseOrder,
   PurchaseInvoice,
   PurchasePayment,
+  PurchaseRefund,
+  PurchaseCashBankLedgerEntry,
   PurchaseReturn,
   PurchaseRegisterRow,
   VendorOutstanding,
@@ -127,8 +129,13 @@ export class PurchaseService {
     return this.http.put<ApiResponse>(`${this.base}invoices`, dto);
   }
 
-  cancelInvoice(piNumber: string): Observable<ApiResponse> {
-    return this.http.post<ApiResponse>(`${this.base}invoices/${encodeURIComponent(piNumber)}/cancel`, {});
+  cancelInvoice(piNumber: string, companyId: string): Observable<ApiResponse> {
+    const params = new HttpParams().set('companyId', companyId);
+    return this.http.post<ApiResponse>(
+      `${this.base}invoices/${encodeURIComponent(piNumber)}/cancel`,
+      {},
+      { params }
+    );
   }
 
   // ── Purchase Payments ────────────────────────────────────────────────
@@ -159,6 +166,31 @@ export class PurchaseService {
     const params = new HttpParams().set('companyId', companyId);
     return this.http.delete<ApiResponse>(
       `${this.base}payments/${encodeURIComponent(String(paymentId))}`,
+      { params }
+    );
+  }
+
+  // ── Vendor Refunds ─────────────────────────────────────────────────────
+  getRefunds(companyId: string): Observable<ApiResponse<PurchaseRefund[]>> {
+    const params = new HttpParams().set('companyId', companyId);
+    return this.http.get<ApiResponse<PurchaseRefund[]>>(`${this.base}refunds`, { params });
+  }
+
+  recordRefund(dto: PurchaseRefund, companyId: string): Observable<ApiResponse> {
+    const params = new HttpParams().set('companyId', companyId);
+    return this.http.post<ApiResponse>(`${this.base}refunds`, dto, { params });
+  }
+
+  getCashBankLedger(
+    companyId: string,
+    paymentMode?: string,
+    bankName?: string
+  ): Observable<ApiResponse<PurchaseCashBankLedgerEntry[]>> {
+    let params = new HttpParams().set('companyId', companyId);
+    if (paymentMode) params = params.set('paymentMode', paymentMode);
+    if (bankName) params = params.set('bankName', bankName);
+    return this.http.get<ApiResponse<PurchaseCashBankLedgerEntry[]>>(
+      `${this.base}cash-bank-ledger`,
       { params }
     );
   }

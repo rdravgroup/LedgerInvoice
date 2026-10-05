@@ -4,6 +4,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { MaterialModule } from '../../../material.module';
 import { PurchaseService } from '../../../_service/purchase.service';
 import { PurchaseLedgerEntry } from '../../../_model/purchase.model';
+import { CompanyNumberPipe } from '../../../_pipe/company-number.pipe';
 
 export interface VendorLedgerDialogData {
   vendorId: string; companyId: string; vendorName: string; creditLimit: number;
@@ -16,7 +17,7 @@ interface VendorLedgerRow extends PurchaseLedgerEntry {
 @Component({
   selector: 'app-vendor-ledger-dialog',
   standalone: true,
-  imports: [CommonModule, MaterialModule],
+  imports: [CommonModule, MaterialModule, CompanyNumberPipe],
   templateUrl: './vendor-ledger-dialog.component.html',
   styleUrls: ['./vendor-ledger-dialog.component.css']
 })
@@ -24,7 +25,10 @@ export class VendorLedgerDialogComponent implements OnInit {
   loading = true;
   errorMsg = '';
   ledgerRows: VendorLedgerRow[] = [];
-  ledgerColumns = ['referenceDate', 'referenceType', 'referenceNumber', 'debitAmount', 'creditAmount', 'outstandingAmount', 'description'];
+  ledgerColumns = [
+    'referenceDate', 'referenceType', 'referenceNumber', 'refundAmount',
+    'paymentMode', 'debitAmount', 'creditAmount', 'outstandingAmount', 'description'
+  ];
 
   constructor(
     public dialogRef: MatDialogRef<VendorLedgerDialogComponent>,
@@ -51,6 +55,12 @@ export class VendorLedgerDialogComponent implements OnInit {
 
   get ledgerBalance(): number {
     return this.ledgerRows.length ? this.ledgerRows[0].runningBalance : 0;
+  }
+
+  getRefundAmount(row: PurchaseLedgerEntry): number {
+    return row.refundAmount || ((row.referenceType || '').toLowerCase().includes('refund')
+      ? row.debitAmount || row.creditAmount
+      : 0);
   }
 
   private withRunningBalances(rows: PurchaseLedgerEntry[]): VendorLedgerRow[] {

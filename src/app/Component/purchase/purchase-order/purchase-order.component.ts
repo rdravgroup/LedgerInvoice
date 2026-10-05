@@ -13,12 +13,13 @@ import { PurchaseService } from '../../../_service/purchase.service';
 import { AuthService } from '../../../_service/authentication.service';
 import { SelectedCompanyService } from '../../../_service/selected-company.service';
 import { MasterService } from '../../../_service/master.service';
+import { CompanyNumberPipe } from '../../../_pipe/company-number.pipe';
 import { PurchaseOrder, PurchaseOrderLine, Vendor, GST_RATES, PO_STATUSES } from '../../../_model/purchase.model';
 
 @Component({
   selector: 'app-purchase-order',
   standalone: true,
-  imports: [CommonModule, MaterialModule, ReactiveFormsModule],
+  imports: [CommonModule, MaterialModule, ReactiveFormsModule, CompanyNumberPipe],
   templateUrl: './purchase-order.component.html',
   styleUrls: ['../purchase-shared.css', './purchase-order.component.css']
 })

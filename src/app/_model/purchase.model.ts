@@ -163,6 +163,41 @@ export interface PurchasePayment {
   isReconciled?: boolean;
 }
 
+export type PurchaseRefundType = 'against_invoice' | 'against_debit_note' | 'advance';
+
+export interface PurchaseRefund {
+  refundId?: number;
+  refundNo?: string;
+  companyId?: string;
+  vendorId?: string;
+  vendorName?: string;
+  refundType: PurchaseRefundType;
+  piNumber?: string | null;
+  returnNo?: string | null;
+  refundDate?: string;
+  paymentMode?: string;
+  refundAmount: number;
+  bankRef?: string | null;
+  chequeNo?: string | null;
+  chequeDate?: string | null;
+  bankName?: string | null;
+  notes?: string;
+}
+
+export interface PurchaseCashBankLedgerEntry {
+  ledgerId: number;
+  transactionType: string;
+  referenceNumber: string;
+  transactionDate: string;
+  paymentMode: string;
+  bankName?: string;
+  accountName: string;
+  bankRef?: string;
+  debitAmount: number;
+  creditAmount: number;
+  description?: string;
+}
+
 export interface PurchaseReturnItem {
   productId: string;
   productName: string;
@@ -191,6 +226,8 @@ export interface PurchaseReturn {
   totalGstAmount: number;
   grandTotal: number;
   status?: string;
+  refundedAmount?: number;
+  outstandingAmount?: number;
 }
 
 export interface PurchaseRegisterRow {
@@ -228,6 +265,9 @@ export interface PurchaseLedgerEntry {
   outstandingAmount: number;
   dueDate?: string;
   description?: string;
+  relatedReference?: string;
+  paymentMode?: string;
+  refundAmount?: number;
   isOverdue?: boolean;
   daysOverdue?: number;
 }

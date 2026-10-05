@@ -10,6 +10,8 @@ import { takeUntil } from 'rxjs/operators';
 import { PurchaseService } from '../../../_service/purchase.service';
 import { AuthService } from '../../../_service/authentication.service';
 import { SelectedCompanyService } from '../../../_service/selected-company.service';
+import { CompanyNumberPipe } from '../../../_pipe/company-number.pipe';
+import { CompanyNumberFormatService } from '../../../_service/company-number-format.service';
 import { jsPDF } from 'jspdf';
 import {
   PurchaseRegisterRow, VendorOutstanding, PurchaseLedgerEntry, StockSummary, Vendor
@@ -48,7 +50,7 @@ class ReportDateAdapter extends NativeDateAdapter {
 @Component({
   selector: 'app-purchase-reports',
   standalone: true,
-  imports: [CommonModule, MaterialModule, ReactiveFormsModule],
+  imports: [CommonModule, MaterialModule, ReactiveFormsModule, CompanyNumberPipe],
   providers: [
     { provide: MAT_DATE_LOCALE, useValue: 'en-GB' },
     { provide: DateAdapter, useClass: ReportDateAdapter },
@@ -93,7 +95,8 @@ export class PurchaseReportsComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private toastr: ToastrService,
     private auth: AuthService,
-    private selectedCo: SelectedCompanyService
+    private selectedCo: SelectedCompanyService,
+    private numberFormat: CompanyNumberFormatService
   ) {}
 
   ngOnInit(): void {
@@ -450,9 +453,9 @@ export class PurchaseReportsComponent implements OnInit, OnDestroy {
     emptyMessage: string;
   } {
     const currency = (value: number | undefined): string =>
-      `INR ${(Number(value) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      `INR ${this.numberFormat.format(value)}`;
     const quantity = (value: number | undefined): string =>
-      (Number(value) || 0).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+      this.numberFormat.format(value, '1.0-3');
     const date = (value?: string | Date): string => {
       if (!value) return '-';
       const parsed = value instanceof Date ? value : new Date(value);

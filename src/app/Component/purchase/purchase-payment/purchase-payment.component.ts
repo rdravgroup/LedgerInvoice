@@ -15,7 +15,12 @@ import { takeUntil } from 'rxjs/operators';
 import { PurchasePaymentAllocation, PurchaseService } from '../../../_service/purchase.service';
 import { AuthService } from '../../../_service/authentication.service';
 import { SelectedCompanyService } from '../../../_service/selected-company.service';
-import { PurchasePayment, PurchaseInvoice, Vendor, PAYMENT_MODES, PAYMENT_TYPES } from '../../../_model/purchase.model';
+import { CompanyNumberPipe } from '../../../_pipe/company-number.pipe';
+import { CompanyNumberFormatService } from '../../../_service/company-number-format.service';
+import {
+  PurchasePayment, PurchaseRefund, PurchaseRefundType, PurchaseInvoice, PurchaseReturn, Vendor,
+  PAYMENT_MODES, PAYMENT_TYPES
+} from '../../../_model/purchase.model';
 
 const PAYMENT_DATE_FORMATS = {
   parse: { dateInput: { day: '2-digit', month: '2-digit', year: 'numeric' } },
@@ -58,7 +63,7 @@ class PaymentDateAdapter extends NativeDateAdapter {
 @Component({
   selector: 'app-purchase-payment',
   standalone: true,
-  imports: [CommonModule, MaterialModule, OverlayModule, ReactiveFormsModule],
+  imports: [CommonModule, MaterialModule, OverlayModule, ReactiveFormsModule, CompanyNumberPipe],
   templateUrl: './purchase-payment.component.html',
   styleUrls: ['../purchase-shared.css', './purchase-payment.component.css'],
   providers: [
@@ -84,6 +89,10 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
   payForm!:  FormGroup;
   vendors:   Vendor[]          = [];
   invoices:  PurchaseInvoice[] = [];
+  refunds: PurchaseRefund[] = [];
+  debitNotes: PurchaseReturn[] = [];
+  entryKind: 'payment' | 'refund' = 'payment';
+  debitNotesLoading = false;
 
   /** FIX-BUG-3: Keep original full invoice list separate so vendor filtering is non-destructive */
   private allInvoices: PurchaseInvoice[] = [];
@@ -95,6 +104,7 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
   private modalOverlay?: OverlayRef;
   private allocationOverlay?: OverlayRef;
   private invoiceLoadRequest = 0;
+  private debitNoteLoadRequest = 0;
   private allocationRequestId = 0;
   vendorSearch = '';
   invoiceSearch = '';
@@ -110,7 +120,8 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
     private auth:       AuthService,
     private selectedCo: SelectedCompanyService,
     private overlay: Overlay,
-    private viewContainerRef: ViewContainerRef
+    private viewContainerRef: ViewContainerRef,
+    private numberFormat: CompanyNumberFormatService
   ) {}
 
   @HostListener('window:resize')
@@ -133,6 +144,7 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         this.loadList();
+        this.loadRefunds();
         this.loadVendors();
         this.loadInvoices();
       });
@@ -160,6 +172,8 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
       companyId:   [this.cid()],
       vendorId:    ['', Validators.required],
       piNumber:    [null],
+      refundType:  ['advance' as PurchaseRefundType],
+      returnNo:    [null],
       paymentDate: [today, Validators.required],
       paymentMode: ['cash', Validators.required],
       paymentType: ['regular'],
@@ -241,12 +255,14 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
   }
 
   onVendorChange(vendorId: string): void {
-    this.payForm.patchValue({ piNumber: null, amount: null }, { emitEvent: false });
+    this.payForm.patchValue({ piNumber: null, returnNo: null, amount: null }, { emitEvent: false });
     this.calcNet();
     this.invoiceSearch = '';
     this.allInvoices = [];
     this.invoices = [];
+    this.debitNotes = [];
     this.loadInvoices(vendorId);
+    this.loadDebitNotes(vendorId);
   }
 
   loadList(): void {
@@ -263,6 +279,49 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
     this.svc.getVendors(this.cid())
       .pipe(takeUntil(this.destroy$))
       .subscribe({ next: (r: any) => this.vendors = r?.data || [] });
+  }
+
+  loadRefunds(): void {
+    this.svc.getRefunds(this.cid()).pipe(takeUntil(this.destroy$)).subscribe({
+      next: response => {
+        if (response.result !== 'pass') {
+          this.toastr.error(response.errorMessage || 'Failed to load vendor refunds');
+          return;
+        }
+        this.refunds = response.data || [];
+      },
+      error: (error: any) => this.toastr.error(
+        error?.error?.errorMessage || error?.message || 'Failed to load vendor refunds'
+      )
+    });
+  }
+
+  loadDebitNotes(vendorId: string): void {
+    const requestId = ++this.debitNoteLoadRequest;
+    if (!vendorId) {
+      this.debitNotes = [];
+      this.debitNotesLoading = false;
+      return;
+    }
+    this.debitNotesLoading = true;
+    this.svc.getReturns(this.cid()).pipe(takeUntil(this.destroy$)).subscribe({
+      next: response => {
+        if (requestId !== this.debitNoteLoadRequest) return;
+        this.debitNotesLoading = false;
+        if (response.result !== 'pass') {
+          this.toastr.error(response.errorMessage || 'Failed to load purchase debit notes');
+          return;
+        }
+        this.debitNotes = (response.data || []).filter(note =>
+          this.sameId(note.vendorId, vendorId) && note.status?.toLowerCase() === 'approved'
+        );
+      },
+      error: (error: any) => {
+        if (requestId !== this.debitNoteLoadRequest) return;
+        this.debitNotesLoading = false;
+        this.toastr.error(error?.error?.errorMessage || error?.message || 'Failed to load purchase debit notes');
+      }
+    });
   }
 
   loadInvoices(vendorId?: string): void {
@@ -303,8 +362,17 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
   }
 
   openNew(): void {
+    this.openEntryForm('payment');
+  }
+
+  openRefund(): void {
+    this.openEntryForm('refund');
+  }
+
+  private openEntryForm(kind: 'payment' | 'refund'): void {
     if (this.modalOverlay?.hasAttached()) return;
     this.buildForm();
+    this.entryKind = kind;
     // FIX-BUG-6: set companyId again after buildForm() in case cid() now resolves correctly
     this.payForm.get('companyId')!.setValue(this.cid());
     this.showForm = true;
@@ -323,6 +391,33 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.close());
     this.modalOverlay.attach(new TemplatePortal(this.paymentModal, this.viewContainerRef));
+  }
+
+  onRefundTypeChange(type: PurchaseRefundType): void {
+    this.payForm.patchValue({ piNumber: null, returnNo: null }, { emitEvent: false });
+    if (type === 'against_invoice') {
+      this.payForm.get('piNumber')?.setValidators(Validators.required);
+    } else {
+      this.payForm.get('piNumber')?.clearValidators();
+    }
+    if (type === 'against_debit_note') {
+      this.payForm.get('returnNo')?.setValidators(Validators.required);
+    } else {
+      this.payForm.get('returnNo')?.clearValidators();
+    }
+    this.payForm.get('piNumber')?.updateValueAndValidity();
+    this.payForm.get('returnNo')?.updateValueAndValidity();
+  }
+
+  get selectedRefundType(): PurchaseRefundType {
+    return this.payForm.get('refundType')?.value as PurchaseRefundType;
+  }
+
+  debitNoteRefundableAmount(note: PurchaseReturn): number {
+    const refunded = note.refundedAmount ?? this.refunds
+      .filter(refund => refund.returnNo === note.returnNo)
+      .reduce((total, refund) => total + (refund.refundAmount || 0), 0);
+    return Math.max(0, note.outstandingAmount ?? (note.grandTotal - refunded));
   }
 
   close(): void {
@@ -393,6 +488,68 @@ export class PurchasePaymentComponent implements OnInit, OnDestroy {
     }
 
     const raw = this.payForm.getRawValue();
+
+    if (this.entryKind === 'refund') {
+      const selectedInvoice = this.allInvoices.find(invoice => invoice.piNumber === raw.piNumber);
+      const selectedNote = this.debitNotes.find(note => note.returnNo === raw.returnNo);
+      const refundAmount = Number(raw.amount);
+      if (raw.refundType === 'against_invoice' && !selectedInvoice) {
+        this.payForm.get('piNumber')?.setErrors({ required: true });
+        this.payForm.markAllAsTouched();
+        return;
+      }
+      if (raw.refundType === 'against_debit_note' && !selectedNote) {
+        this.payForm.get('returnNo')?.setErrors({ required: true });
+        this.payForm.markAllAsTouched();
+        return;
+      }
+      const maxRefund = raw.refundType === 'against_invoice'
+        ? Number(selectedInvoice?.outstandingAmount || 0)
+        : raw.refundType === 'against_debit_note' && selectedNote
+          ? this.debitNoteRefundableAmount(selectedNote)
+          : Number.POSITIVE_INFINITY;
+      if (refundAmount > maxRefund) {
+        this.toastr.error(`Refund cannot exceed the available balance of ₹${this.numberFormat.format(maxRefund)}`);
+        return;
+      }
+
+      const dto: PurchaseRefund = {
+        companyId: this.cid() || raw.companyId,
+        vendorId: raw.vendorId,
+        refundType: raw.refundType,
+        piNumber: raw.refundType === 'against_invoice' ? raw.piNumber : null,
+        returnNo: raw.refundType === 'against_debit_note' ? raw.returnNo : null,
+        refundDate: this.asDateOnly(raw.paymentDate),
+        paymentMode: raw.paymentMode,
+        refundAmount,
+        chequeDate: (this.isCheque && raw.chequeDate) ? raw.chequeDate : null,
+        chequeNo: this.isCheque ? raw.chequeNo : null,
+        bankName: this.isCheque || this.needsBankRef ? raw.bankName : null,
+        bankRef: this.needsBankRef ? raw.bankRef : null,
+        notes: raw.notes
+      };
+      this.saving = true;
+      this.svc.recordRefund(dto, this.cid()).pipe(takeUntil(this.destroy$)).subscribe({
+        next: response => {
+          this.saving = false;
+          if (response.result !== 'pass') {
+            this.toastr.error(response.errorMessage || 'Failed to record refund');
+            return;
+          }
+          this.toastr.success(`Refund ${response.data?.refundNo || ''} recorded successfully`);
+          const vendorId = raw.vendorId as string;
+          this.close();
+          this.loadRefunds();
+          this.loadInvoices(vendorId);
+          this.loadDebitNotes(vendorId);
+        },
+        error: (error: any) => {
+          this.saving = false;
+          this.toastr.error(error?.error?.errorMessage || error?.message || 'Failed to record refund');
+        }
+      });
+      return;
+    }
 
     // FIX-BUG-2: strip mode-irrelevant fields so backend never gets empty string for DateTime?
     // chequeDate: only send when mode is cheque AND a value was entered

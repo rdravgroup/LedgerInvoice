@@ -12,6 +12,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MaterialModule } from '../../../material.module';
 import { AuthService } from '../../../_service/authentication.service';
 import { SelectedCompanyService } from '../../../_service/selected-company.service';
+import { CompanyNumberPipe } from '../../../_pipe/company-number.pipe';
 import { PurchaseService } from '../../../_service/purchase.service';
 import { VendorList, Vendor } from '../../../_model/purchase.model';
 import { VendorFormDialogComponent, VendorFormDialogData } from './vendor-form-dialog.component';
@@ -31,7 +32,7 @@ import { VendorLedgerDialogComponent, VendorLedgerDialogData } from './vendor-le
 @Component({
   selector: 'app-vendor',
   standalone: true,
-  imports: [CommonModule, FormsModule, MaterialModule],
+  imports: [CommonModule, FormsModule, MaterialModule, CompanyNumberPipe],
   templateUrl: './vendor.component.html',
   styleUrls: ['./vendor.component.css']
 })

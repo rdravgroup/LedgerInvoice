@@ -61,9 +61,9 @@
                 <span class="pu-status-badge {{ inv.status }}">{{ inv.status | titlecase }}</span>
               </div>
               <div class="pi-amounts-row">
-                <div class="pi-amt-item"><div class="pi-amt-label">Total</div><div class="pi-amt-val">₹{{ inv.grandTotal | number:'1.2-2' }}</div></div>
-                <div class="pi-amt-item"><div class="pi-amt-label">Paid</div><div class="pi-amt-val success">₹{{ inv.paidAmount | number:'1.2-2' }}</div></div>
-                <div class="pi-amt-item"><div class="pi-amt-label">Due</div><div class="pi-amt-val" [class.pu-overdue]="inv.outstandingAmount > 0">₹{{ inv.outstandingAmount | number:'1.2-2' }}</div></div>
+                <div class="pi-amt-item"><div class="pi-amt-label">Total</div><div class="pi-amt-val">₹{{ inv.grandTotal | companyNumber:'1.2-2' }}</div></div>
+                <div class="pi-amt-item"><div class="pi-amt-label">Paid</div><div class="pi-amt-val success">₹{{ inv.paidAmount | companyNumber:'1.2-2' }}</div></div>
+                <div class="pi-amt-item"><div class="pi-amt-label">Due</div><div class="pi-amt-val" [class.pu-overdue]="inv.outstandingAmount > 0">₹{{ inv.outstandingAmount | companyNumber:'1.2-2' }}</div></div>
               </div>
               <div class="pu-vc-actions">
                 <button mat-stroked-button (click)="openDetail(inv)"><mat-icon>visibility</mat-icon> View</button>
@@ -96,16 +96,16 @@
           </ng-container>
           <ng-container matColumnDef="grandTotal">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Total</th>
-            <td mat-cell *matCellDef="let r" class="pu-amount">₹{{ r.grandTotal | number:'1.2-2' }}</td>
+            <td mat-cell *matCellDef="let r" class="pu-amount">₹{{ r.grandTotal | companyNumber:'1.2-2' }}</td>
           </ng-container>
           <ng-container matColumnDef="paidAmount">
             <th mat-header-cell *matHeaderCellDef>Paid</th>
-            <td mat-cell *matCellDef="let r" class="success">₹{{ r.paidAmount | number:'1.2-2' }}</td>
+            <td mat-cell *matCellDef="let r" class="success">₹{{ r.paidAmount | companyNumber:'1.2-2' }}</td>
           </ng-container>
           <ng-container matColumnDef="outstandingAmount">
             <th mat-header-cell *matHeaderCellDef>Outstanding</th>
             <td mat-cell *matCellDef="let r" [class.pu-overdue]="r.outstandingAmount > 0" class="pu-amount">
-              ₹{{ r.outstandingAmount | number:'1.2-2' }}
+              ₹{{ r.outstandingAmount | companyNumber:'1.2-2' }}
             </td>
           </ng-container>
           <ng-container matColumnDef="status">
@@ -267,7 +267,7 @@
                     <td><mat-form-field appearance="outline" class="pi-item-field pi-number-field"><mat-label>Qty</mat-label><input matInput formControlName="quantity" type="number" min="0.001" step="0.001" (input)="onLineChange(i)" /></mat-form-field></td>
                     <td><mat-form-field appearance="outline" class="pi-item-field pi-number-field"><mat-label>Rate</mat-label><span matTextPrefix>₹&nbsp;</span><input matInput formControlName="rate" type="number" min="0" step="0.01" (input)="onLineChange(i)" /></mat-form-field></td>
                     <td><mat-form-field appearance="outline" class="pi-item-field pi-number-field"><mat-label>Disc %</mat-label><input matInput formControlName="discountPct" type="number" min="0" max="100" step="0.01" (input)="onLineChange(i)" /><span matTextSuffix>%</span></mat-form-field></td>
-                    <td class="num">{{ line.get('taxableAmount')?.value | number:'1.2-2' }}</td>
+                    <td class="num">{{ line.get('taxableAmount')?.value | companyNumber:'1.2-2' }}</td>
                     <td>
                       <mat-form-field appearance="outline" class="pi-item-field pi-number-field">
                         <mat-label>{{ isInterState ? 'IGST' : 'GST' }}</mat-label>
@@ -278,13 +278,13 @@
                       </mat-form-field>
                     </td>
                     @if (!isInterState) {
-                      <td class="num">{{ line.get('cgstAmount')?.value | number:'1.2-2' }}</td>
-                      <td class="num">{{ line.get('sgstAmount')?.value | number:'1.2-2' }}</td>
+                      <td class="num">{{ line.get('cgstAmount')?.value | companyNumber:'1.2-2' }}</td>
+                      <td class="num">{{ line.get('sgstAmount')?.value | companyNumber:'1.2-2' }}</td>
                     }
                     @if (isInterState) {
-                      <td class="num">{{ line.get('igstAmount')?.value | number:'1.2-2' }}</td>
+                      <td class="num">{{ line.get('igstAmount')?.value | companyNumber:'1.2-2' }}</td>
                     }
-                    <td class="num pi-line-total">{{ line.get('totalAmount')?.value | number:'1.2-2' }}</td>
+                    <td class="num pi-line-total">{{ line.get('totalAmount')?.value | companyNumber:'1.2-2' }}</td>
                     <td>
                       <button mat-icon-button color="warn" type="button" (click)="removeLine(i)" [disabled]="items.length === 1" matTooltip="Remove">
                         <mat-icon style="font-size:18px">delete</mat-icon>
@@ -328,29 +328,29 @@
 
             <!-- Totals -->
             <div class="pu-totals">
-              <div class="pu-totals-row"><span class="pu-totals-label">Subtotal (Taxable)</span><span class="pu-totals-val">₹{{ subtotal | number:'1.2-2' }}</span></div>
+              <div class="pu-totals-row"><span class="pu-totals-label">Subtotal (Taxable)</span><span class="pu-totals-val">₹{{ subtotal | companyNumber:'1.2-2' }}</span></div>
               @if (!isInterState) {
-                <div class="pu-totals-row"><span class="pu-totals-label">CGST</span><span class="pu-totals-val">₹{{ totalCgst | number:'1.2-2' }}</span></div>
-                <div class="pu-totals-row"><span class="pu-totals-label">SGST</span><span class="pu-totals-val">₹{{ totalSgst | number:'1.2-2' }}</span></div>
+                <div class="pu-totals-row"><span class="pu-totals-label">CGST</span><span class="pu-totals-val">₹{{ totalCgst | companyNumber:'1.2-2' }}</span></div>
+                <div class="pu-totals-row"><span class="pu-totals-label">SGST</span><span class="pu-totals-val">₹{{ totalSgst | companyNumber:'1.2-2' }}</span></div>
               }
               @if (isInterState) {
-                <div class="pu-totals-row"><span class="pu-totals-label">IGST</span><span class="pu-totals-val">₹{{ totalIgst | number:'1.2-2' }}</span></div>
+                <div class="pu-totals-row"><span class="pu-totals-label">IGST</span><span class="pu-totals-val">₹{{ totalIgst | companyNumber:'1.2-2' }}</span></div>
               }
               @if (freightCharges > 0) {
-                <div class="pu-totals-row"><span class="pu-totals-label">Freight</span><span class="pu-totals-val">₹{{ freightCharges | number:'1.2-2' }}</span></div>
+                <div class="pu-totals-row"><span class="pu-totals-label">Freight</span><span class="pu-totals-val">₹{{ freightCharges | companyNumber:'1.2-2' }}</span></div>
               }
               @if (otherCharges > 0) {
-                <div class="pu-totals-row"><span class="pu-totals-label">Other Charges</span><span class="pu-totals-val">₹{{ otherCharges | number:'1.2-2' }}</span></div>
+                <div class="pu-totals-row"><span class="pu-totals-label">Other Charges</span><span class="pu-totals-val">₹{{ otherCharges | companyNumber:'1.2-2' }}</span></div>
               }
               @if (discountAmount > 0) {
-                <div class="pu-totals-row"><span class="pu-totals-label">Discount</span><span class="pu-totals-val" style="color:#c62828">- ₹{{ discountAmount | number:'1.2-2' }}</span></div>
+                <div class="pu-totals-row"><span class="pu-totals-label">Discount</span><span class="pu-totals-val" style="color:#c62828">- ₹{{ discountAmount | companyNumber:'1.2-2' }}</span></div>
               }
               @if (roundOff !== 0) {
-                <div class="pu-totals-row"><span class="pu-totals-label">Round Off</span><span class="pu-totals-val">₹{{ roundOff | number:'1.2-2' }}</span></div>
+                <div class="pu-totals-row"><span class="pu-totals-label">Round Off</span><span class="pu-totals-val">₹{{ roundOff | companyNumber:'1.2-2' }}</span></div>
               }
               <div class="pu-totals-row total">
                 <span class="pu-totals-label">Grand Total</span>
-                <span class="pu-totals-val">₹{{ grandTotal | number:'1.2-2' }}</span>
+                <span class="pu-totals-val">₹{{ grandTotal | companyNumber:'1.2-2' }}</span>
               </div>
               <div class="pu-aiw">{{ amountInWords }}</div>
             </div>
@@ -405,26 +405,26 @@
                   <td>{{ item.productName || item.productId }}</td>
                   <td>{{ item.hsnSac || '—' }}</td>
                   <td>{{ item.quantity }} {{ item.measurement }}</td>
-                  <td class="num">₹{{ item.rate | number:'1.4-4' }}</td>
-                  <td class="num">₹{{ item.taxableAmount | number:'1.2-2' }}</td>
-                  <td class="num">₹{{ (item.cgstAmount + item.sgstAmount + item.igstAmount) | number:'1.2-2' }}</td>
-                  <td class="num pi-line-total">₹{{ item.totalAmount | number:'1.2-2' }}</td>
+                  <td class="num">₹{{ item.rate | companyNumber:'1.4-4' }}</td>
+                  <td class="num">₹{{ item.taxableAmount | companyNumber:'1.2-2' }}</td>
+                  <td class="num">₹{{ (item.cgstAmount + item.sgstAmount + item.igstAmount) | companyNumber:'1.2-2' }}</td>
+                  <td class="num pi-line-total">₹{{ item.totalAmount | companyNumber:'1.2-2' }}</td>
                 </tr>
               }
             </tbody>
           </table>
           <!-- Totals -->
           <div class="pu-totals">
-            <div class="pu-totals-row"><span class="pu-totals-label">Subtotal</span><span class="pu-totals-val">₹{{ selectedInvoice.subtotal | number:'1.2-2' }}</span></div>
-            <div class="pu-totals-row"><span class="pu-totals-label">GST</span><span class="pu-totals-val">₹{{ selectedInvoice.totalGstAmount | number:'1.2-2' }}</span></div>
-            <div class="pu-totals-row total"><span class="pu-totals-label">Grand Total</span><span class="pu-totals-val">₹{{ selectedInvoice.grandTotal | number:'1.2-2' }}</span></div>
+            <div class="pu-totals-row"><span class="pu-totals-label">Subtotal</span><span class="pu-totals-val">₹{{ selectedInvoice.subtotal | companyNumber:'1.2-2' }}</span></div>
+            <div class="pu-totals-row"><span class="pu-totals-label">GST</span><span class="pu-totals-val">₹{{ selectedInvoice.totalGstAmount | companyNumber:'1.2-2' }}</span></div>
+            <div class="pu-totals-row total"><span class="pu-totals-label">Grand Total</span><span class="pu-totals-val">₹{{ selectedInvoice.grandTotal | companyNumber:'1.2-2' }}</span></div>
             <div class="pu-aiw">{{ selectedInvoice.amountInWords }}</div>
           </div>
           <!-- Payment summary -->
           <div class="pi-payment-summary">
-            <div class="pi-ps-item"><div class="pi-ps-label">Total</div><div class="pi-ps-val">₹{{ selectedInvoice.grandTotal | number:'1.2-2' }}</div></div>
-            <div class="pi-ps-item"><div class="pi-ps-label">Paid</div><div class="pi-ps-val success">₹{{ selectedInvoice.paidAmount | number:'1.2-2' }}</div></div>
-            <div class="pi-ps-item"><div class="pi-ps-label">Outstanding</div><div class="pi-ps-val" [class.pu-overdue]="selectedInvoice.outstandingAmount > 0">₹{{ selectedInvoice.outstandingAmount | number:'1.2-2' }}</div></div>
+            <div class="pi-ps-item"><div class="pi-ps-label">Total</div><div class="pi-ps-val">₹{{ selectedInvoice.grandTotal | companyNumber:'1.2-2' }}</div></div>
+            <div class="pi-ps-item"><div class="pi-ps-label">Paid</div><div class="pi-ps-val success">₹{{ selectedInvoice.paidAmount | companyNumber:'1.2-2' }}</div></div>
+            <div class="pi-ps-item"><div class="pi-ps-label">Outstanding</div><div class="pi-ps-val" [class.pu-overdue]="selectedInvoice.outstandingAmount > 0">₹{{ selectedInvoice.outstandingAmount | companyNumber:'1.2-2' }}</div></div>
           </div>
           <!-- Payments list -->
           @if (selectedInvoice.payments && selectedInvoice.payments.length > 0) {
@@ -435,7 +435,7 @@
                 <span>{{ p.paymentNo }}</span>
                 <span>{{ p.paymentDate | date:'dd MMM yyyy' }}</span>
                 <span class="pu-code">{{ p.paymentMode | titlecase }}</span>
-                <span class="pi-pay-amt">₹{{ p.amount | number:'1.2-2' }}</span>
+                <span class="pi-pay-amt">₹{{ p.amount | companyNumber:'1.2-2' }}</span>
               </div>
             }
           }

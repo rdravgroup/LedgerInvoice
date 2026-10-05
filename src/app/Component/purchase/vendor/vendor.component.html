@@ -34,7 +34,7 @@
     }
     <span class="stat-chip amount">
       <mat-icon>account_balance_wallet</mat-icon>
-      &#8377;{{ summaryStats.totalOut | number:'1.0-0' }} Outstanding
+      &#8377;{{ summaryStats.totalOut | companyNumber:'1.0-0' }} Outstanding
     </span>
     @if (summaryStats.overLimit > 0) {
       <span class="stat-chip warn">
@@ -116,10 +116,10 @@
               </div>
               <div class="vendor-mobile-facts">
                 <div><span>Outstanding</span><strong [class.amount-warn]="v.creditLimit > 0 && v.outstandingBalance > v.creditLimit">
-                  &#8377;{{ v.outstandingBalance | number:'1.2-2' }}
+                  &#8377;{{ v.outstandingBalance | companyNumber:'1.2-2' }}
                 </strong></div>
                 @if (v.creditLimit > 0) {
-                  <div><span>Credit limit</span><strong>&#8377;{{ v.creditLimit | number:'1.0-0' }}</strong></div>
+                  <div><span>Credit limit</span><strong>&#8377;{{ v.creditLimit | companyNumber:'1.0-0' }}</strong></div>
                 }
                 <div><span>Rating</span><strong>{{ v.rating || 0 }}/5</strong></div>
               </div>
@@ -206,11 +206,11 @@
               <td mat-cell *matCellDef="let v">
                 <span [class.amount-warn]="v.creditLimit > 0 && v.outstandingBalance > v.creditLimit"
                       [class.amount-ok]="v.outstandingBalance === 0">
-                  &#8377;{{ v.outstandingBalance | number:'1.2-2' }}
+                  &#8377;{{ v.outstandingBalance | companyNumber:'1.2-2' }}
                 </span>
                 @if (v.creditLimit > 0) {
                   <div class="text-muted text-sm">
-                    Limit: &#8377;{{ v.creditLimit | number:'1.0-0' }}
+                    Limit: &#8377;{{ v.creditLimit | companyNumber:'1.0-0' }}
                   </div>
                 }
               </td>

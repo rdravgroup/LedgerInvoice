@@ -58,6 +58,23 @@
   font-size: 12px;
 }
 .pp-advance-balance strong { color: var(--md-sys-color-primary); }
+.pp-refunds-section { margin-top: 20px; padding: 20px; }
+.pp-refunds-section h2 { margin: 0 0 14px; font-size: 18px; }
+.pp-refunds-table-wrap { overflow-x: auto; }
+.pp-refunds-table { width: 100%; border-collapse: collapse; min-width: 680px; }
+.pp-refunds-table th, .pp-refunds-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--md-sys-color-outline-variant);
+  text-align: left;
+  white-space: nowrap;
+}
+.pp-refunds-table th { color: var(--md-sys-color-on-surface-variant); font-size: 12px; }
+.pp-refunds-table tr:last-child td { border-bottom: 0; }
+.pp-refund-reference-hint {
+  align-self: center;
+  color: var(--md-sys-color-on-surface-variant);
+  font-size: 13px;
+}
 
 .pp-modal {
   display: flex;

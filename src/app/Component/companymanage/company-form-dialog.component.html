@@ -164,6 +164,26 @@
 
         <section class="cfd-section">
           <div class="cfd-section-title">
+            <mat-icon>format_list_numbered</mat-icon>
+            <div>
+              <h3>Currency Number Format</h3>
+              <p>Choose how amounts are grouped in purchase screens, reports, and exports.</p>
+            </div>
+          </div>
+          <div class="cfd-grid">
+            <mat-form-field appearance="outline" class="cfd-col-2">
+              <mat-label>Currency Number Format</mat-label>
+              <mat-select formControlName="currencyNumberFormat">
+                <mat-option value="en-IN">Indian Format (en-IN)</mat-option>
+                <mat-option value="en-US">International Format (en-US)</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>format_list_numbered</mat-icon>
+            </mat-form-field>
+          </div>
+        </section>
+
+        <section class="cfd-section">
+          <div class="cfd-section-title">
             <mat-icon>touch_app</mat-icon>
             <div><h3>Invoice Actions</h3><p>Choose which actions appear in the invoice list.</p></div>
           </div>
@@ -229,5 +249,4 @@
     </button>
   </mat-dialog-actions>
 </div>
-
 

@@ -24,6 +24,7 @@ export interface Company {
   discountMode?: 'none' | 'itemwise' | 'invoicewise' | 'both' | string;
   discountType?: 'percentage' | 'manual' | string;
   discountValue?: number;
+  currencyNumberFormat?: 'en-IN' | 'en-US' | string;
   showActionPreview?: boolean;
   showActionPdf?: boolean;
   showActionPosPrint?: boolean;
@@ -40,4 +41,3 @@ export interface MapCompanyCodeRequest {
   companyId: string;
   username: string;
 }
-

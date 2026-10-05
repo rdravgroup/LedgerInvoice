@@ -17,6 +17,8 @@ import { jsPDF } from 'jspdf';
 import { PurchaseService } from '../../../_service/purchase.service';
 import { AuthService } from '../../../_service/authentication.service';
 import { SelectedCompanyService } from '../../../_service/selected-company.service';
+import { CompanyNumberPipe } from '../../../_pipe/company-number.pipe';
+import { CompanyNumberFormatService } from '../../../_service/company-number-format.service';
 import { PurchaseInvoice, PurchaseReturn, PurchaseReturnItem, Vendor } from '../../../_model/purchase.model';
 
 const RETURN_DATE_FORMATS = {
@@ -63,7 +65,7 @@ interface ReturnInvoiceLine {
 @Component({
   selector: 'app-purchase-return',
   standalone: true,
-  imports: [CommonModule, MaterialModule, OverlayModule, ReactiveFormsModule],
+  imports: [CommonModule, MaterialModule, OverlayModule, ReactiveFormsModule, CompanyNumberPipe],
   providers: [
     { provide: MAT_DATE_LOCALE, useValue: 'en-GB' },
     { provide: DateAdapter, useClass: ReturnDateAdapter },
@@ -103,7 +105,8 @@ export class PurchaseReturnComponent implements OnInit, OnDestroy {
     private auth: AuthService,
     private selectedCo: SelectedCompanyService,
     private overlay: Overlay,
-    private viewContainerRef: ViewContainerRef
+    private viewContainerRef: ViewContainerRef,
+    private numberFormat: CompanyNumberFormatService
   ) {
     this.dataSource.filterPredicate = (row, filter) => [
       row.returnNo, row.vendorName, row.vendorId, row.piNumber, row.status, row.reason
@@ -436,7 +439,7 @@ export class PurchaseReturnComponent implements OnInit, OnDestroy {
 
   getReturnItemQuantityLabel(returnRow: PurchaseReturn): string {
     const quantity = this.getReturnItemCount(returnRow);
-    return `${quantity.toLocaleString('en-IN', { maximumFractionDigits: 3 })} ${quantity === 1 ? 'unit' : 'units'}`;
+    return `${this.numberFormat.format(quantity, '1.0-3')} ${quantity === 1 ? 'unit' : 'units'}`;
   }
 
   returnIsOverdue(returnRow: PurchaseReturn): boolean {
@@ -566,8 +569,7 @@ export class PurchaseReturnComponent implements OnInit, OnDestroy {
       const rows = this.dataSource.filteredData;
       const headers = ['Return #', 'Vendor', 'Invoice', 'Return Date', 'Returned Qty', 'Amount', 'Status', 'Overdue'];
       const columnWidth = (width - margin * 2) / headers.length;
-      const currency = (amount: number): string =>
-        `INR ${(Number(amount) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      const currency = (amount: number): string => `INR ${this.numberFormat.format(amount)}`;
       const formatDate = (value?: string): string => {
         if (!value) return '-';
         const date = new Date(value);

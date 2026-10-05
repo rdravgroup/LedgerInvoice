@@ -9,12 +9,12 @@
     <div class="ledger-summary-item">
       <span class="ledger-summary-label">Net Outstanding</span>
       <span class="ledger-summary-value" [class.amount-warn]="ledgerBalance > 0" [class.amount-ok]="ledgerBalance <= 0">
-        &#8377;{{ ledgerBalance | number:'1.2-2' }}
+        &#8377;{{ ledgerBalance | companyNumber:'1.2-2' }}
       </span>
     </div>
     <div class="ledger-summary-item">
       <span class="ledger-summary-label">Credit Limit</span>
-      <span class="ledger-summary-value">&#8377;{{ data.creditLimit | number:'1.2-2' }}</span>
+      <span class="ledger-summary-value">&#8377;{{ data.creditLimit | companyNumber:'1.2-2' }}</span>
     </div>
   </div>
 
@@ -43,23 +43,35 @@
           </ng-container>
           <ng-container matColumnDef="referenceNumber">
             <th mat-header-cell *matHeaderCellDef>Reference</th>
-            <td mat-cell *matCellDef="let r"><code>{{ r.referenceNumber }}</code></td>
+            <td mat-cell *matCellDef="let r"><code>{{ r.relatedReference || r.referenceNumber }}</code></td>
+          </ng-container>
+          <ng-container matColumnDef="refundAmount">
+            <th mat-header-cell *matHeaderCellDef class="text-right">Refund</th>
+            <td mat-cell *matCellDef="let r" class="text-right">
+              @if (getRefundAmount(r) > 0) {
+                <span class="amount-credit">&#8377;{{ getRefundAmount(r) | companyNumber:'1.2-2' }}</span>
+              } @else { — }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="paymentMode">
+            <th mat-header-cell *matHeaderCellDef>Mode</th>
+            <td mat-cell *matCellDef="let r">{{ r.paymentMode | titlecase }}</td>
           </ng-container>
           <ng-container matColumnDef="debitAmount">
             <th mat-header-cell *matHeaderCellDef class="text-right">Debit</th>
             <td mat-cell *matCellDef="let r" class="text-right">
-              @if (r.debitAmount > 0) { <span class="amount-debit">&#8377;{{ r.debitAmount | number:'1.2-2' }}</span> } @else { — }
+              @if (r.debitAmount > 0) { <span class="amount-debit">&#8377;{{ r.debitAmount | companyNumber:'1.2-2' }}</span> } @else { — }
             </td>
           </ng-container>
           <ng-container matColumnDef="creditAmount">
             <th mat-header-cell *matHeaderCellDef class="text-right">Credit</th>
             <td mat-cell *matCellDef="let r" class="text-right">
-              @if (r.creditAmount > 0) { <span class="amount-credit">&#8377;{{ r.creditAmount | number:'1.2-2' }}</span> } @else { — }
+              @if (r.creditAmount > 0) { <span class="amount-credit">&#8377;{{ r.creditAmount | companyNumber:'1.2-2' }}</span> } @else { — }
             </td>
           </ng-container>
           <ng-container matColumnDef="outstandingAmount">
             <th mat-header-cell *matHeaderCellDef class="text-right">Balance</th>
-            <td mat-cell *matCellDef="let r" class="text-right fw-600">&#8377;{{ r.runningBalance | number:'1.2-2' }}</td>
+            <td mat-cell *matCellDef="let r" class="text-right fw-600">&#8377;{{ r.runningBalance | companyNumber:'1.2-2' }}</td>
           </ng-container>
           <ng-container matColumnDef="description">
             <th mat-header-cell *matHeaderCellDef>Description</th>

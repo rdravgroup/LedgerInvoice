@@ -90,7 +90,7 @@
                 <mat-progress-bar mode="determinate" [value]="getReceiptProgress(po)" class="po-progress-bar"></mat-progress-bar>
               </div>
               <div class="po-card-footer">
-                <div class="po-card-amount">₹{{ po.grandTotal | number:'1.2-2' }}</div>
+                <div class="po-card-amount">₹{{ po.grandTotal | companyNumber:'1.2-2' }}</div>
                 <div class="po-card-actions" (click)="$event.stopPropagation()">
                   @if (po.status === 'draft' || po.status === 'submitted') {
                     <button mat-icon-button class="po-action-btn" (click)="openEdit(po)" matTooltip="Edit"><mat-icon>edit</mat-icon></button>
@@ -139,7 +139,7 @@
             </ng-container>
             <ng-container matColumnDef="grandTotal">
               <th mat-header-cell *matHeaderCellDef mat-sort-header class="po-th-right">Total</th>
-              <td mat-cell *matCellDef="let r" class="po-td-amount">₹{{ r.grandTotal | number:'1.2-2' }}</td>
+              <td mat-cell *matCellDef="let r" class="po-td-amount">₹{{ r.grandTotal | companyNumber:'1.2-2' }}</td>
             </ng-container>
             <ng-container matColumnDef="status">
               <th mat-header-cell *matHeaderCellDef>Status</th>
@@ -312,16 +312,16 @@
                   </mat-form-field>
                   <div class="po-line-total-display">
                     <span class="po-line-total-label">Line Total</span>
-                    <span class="po-line-total-val">₹{{ line.get('totalAmount')?.value | number:'1.2-2' }}</span>
+                    <span class="po-line-total-val">₹{{ line.get('totalAmount')?.value | companyNumber:'1.2-2' }}</span>
                   </div>
                 </div>
                 <div class="po-line-tax-row">
-                  <span class="po-tax-chip">Taxable: ₹{{ line.get('taxableAmount')?.value | number:'1.2-2' }}</span>
+                  <span class="po-tax-chip">Taxable: ₹{{ line.get('taxableAmount')?.value | companyNumber:'1.2-2' }}</span>
                   @if (!isInterState) {
-                    <span class="po-tax-chip">CGST: ₹{{ line.get('cgstAmount')?.value | number:'1.2-2' }}</span>
-                    <span class="po-tax-chip">SGST: ₹{{ line.get('sgstAmount')?.value | number:'1.2-2' }}</span>
+                    <span class="po-tax-chip">CGST: ₹{{ line.get('cgstAmount')?.value | companyNumber:'1.2-2' }}</span>
+                    <span class="po-tax-chip">SGST: ₹{{ line.get('sgstAmount')?.value | companyNumber:'1.2-2' }}</span>
                   } @else {
-                    <span class="po-tax-chip">IGST: ₹{{ line.get('igstAmount')?.value | number:'1.2-2' }}</span>
+                    <span class="po-tax-chip">IGST: ₹{{ line.get('igstAmount')?.value | companyNumber:'1.2-2' }}</span>
                   }
                 </div>
               </div>
@@ -356,7 +356,7 @@
                       <td><input formControlName="orderedQty" type="number" min="0.001" class="po-inline-input po-input-num" (input)="onLineChange(i)" /></td>
                       <td><input formControlName="rate" type="number" min="0" class="po-inline-input po-input-num" (input)="onLineChange(i)" /></td>
                       <td><input formControlName="discountPct" type="number" min="0" max="100" class="po-inline-input po-input-num" (input)="onLineChange(i)" /></td>
-                      <td class="po-td-num po-td-computed">{{ line.get('taxableAmount')?.value | number:'1.2-2' }}</td>
+                      <td class="po-td-num po-td-computed">{{ line.get('taxableAmount')?.value | companyNumber:'1.2-2' }}</td>
                       <td>
                         <mat-select [value]="isInterState ? line.get('igstRate')?.value : (line.get('cgstRate')?.value || 0) * 2"
                           (selectionChange)="onGstRateChange(i, $event.value)" class="po-inline-select po-select-sm">
@@ -364,12 +364,12 @@
                         </mat-select>
                       </td>
                       @if (!isInterState) {
-                        <td class="po-td-num po-td-computed">{{ line.get('cgstAmount')?.value | number:'1.2-2' }}</td>
-                        <td class="po-td-num po-td-computed">{{ line.get('sgstAmount')?.value | number:'1.2-2' }}</td>
+                        <td class="po-td-num po-td-computed">{{ line.get('cgstAmount')?.value | companyNumber:'1.2-2' }}</td>
+                        <td class="po-td-num po-td-computed">{{ line.get('sgstAmount')?.value | companyNumber:'1.2-2' }}</td>
                       } @else {
-                        <td class="po-td-num po-td-computed">{{ line.get('igstAmount')?.value | number:'1.2-2' }}</td>
+                        <td class="po-td-num po-td-computed">{{ line.get('igstAmount')?.value | companyNumber:'1.2-2' }}</td>
                       }
-                      <td class="po-td-num po-td-total">{{ line.get('totalAmount')?.value | number:'1.2-2' }}</td>
+                      <td class="po-td-num po-td-total">{{ line.get('totalAmount')?.value | companyNumber:'1.2-2' }}</td>
                       <td>
                         <button mat-icon-button type="button" class="po-del-line-btn" (click)="removeLine(i)" [disabled]="items.length === 1">
                           <mat-icon>delete_outline</mat-icon>
@@ -423,20 +423,20 @@
             <div class="po-totals-card">
               <div class="po-totals-title">Order Summary</div>
               <div class="po-totals-grid">
-                <div class="po-totals-row"><span class="po-totals-label">Taxable Amount</span><span class="po-totals-val">₹{{ subtotal | number:'1.2-2' }}</span></div>
+                <div class="po-totals-row"><span class="po-totals-label">Taxable Amount</span><span class="po-totals-val">₹{{ subtotal | companyNumber:'1.2-2' }}</span></div>
                 @if (!isInterState) {
-                  <div class="po-totals-row"><span class="po-totals-label">CGST</span><span class="po-totals-val">₹{{ totalCgst | number:'1.2-2' }}</span></div>
-                  <div class="po-totals-row"><span class="po-totals-label">SGST</span><span class="po-totals-val">₹{{ totalSgst | number:'1.2-2' }}</span></div>
+                  <div class="po-totals-row"><span class="po-totals-label">CGST</span><span class="po-totals-val">₹{{ totalCgst | companyNumber:'1.2-2' }}</span></div>
+                  <div class="po-totals-row"><span class="po-totals-label">SGST</span><span class="po-totals-val">₹{{ totalSgst | companyNumber:'1.2-2' }}</span></div>
                 } @else {
-                  <div class="po-totals-row"><span class="po-totals-label">IGST</span><span class="po-totals-val">₹{{ totalIgst | number:'1.2-2' }}</span></div>
+                  <div class="po-totals-row"><span class="po-totals-label">IGST</span><span class="po-totals-val">₹{{ totalIgst | companyNumber:'1.2-2' }}</span></div>
                 }
-                @if (freight > 0) { <div class="po-totals-row"><span class="po-totals-label">Freight</span><span class="po-totals-val">₹{{ freight | number:'1.2-2' }}</span></div> }
-                @if (other > 0)   { <div class="po-totals-row"><span class="po-totals-label">Other Charges</span><span class="po-totals-val">₹{{ other | number:'1.2-2' }}</span></div> }
-                @if (discount > 0){ <div class="po-totals-row po-totals-discount"><span class="po-totals-label">Discount</span><span class="po-totals-val">− ₹{{ discount | number:'1.2-2' }}</span></div> }
+                @if (freight > 0) { <div class="po-totals-row"><span class="po-totals-label">Freight</span><span class="po-totals-val">₹{{ freight | companyNumber:'1.2-2' }}</span></div> }
+                @if (other > 0)   { <div class="po-totals-row"><span class="po-totals-label">Other Charges</span><span class="po-totals-val">₹{{ other | companyNumber:'1.2-2' }}</span></div> }
+                @if (discount > 0){ <div class="po-totals-row po-totals-discount"><span class="po-totals-label">Discount</span><span class="po-totals-val">− ₹{{ discount | companyNumber:'1.2-2' }}</span></div> }
                 <div class="po-totals-divider"></div>
                 <div class="po-totals-row po-totals-grand">
                   <span class="po-totals-label">Grand Total</span>
-                  <span class="po-totals-val">₹{{ grandTotal | number:'1.2-2' }}</span>
+                  <span class="po-totals-val">₹{{ grandTotal | companyNumber:'1.2-2' }}</span>
                 </div>
               </div>
             </div>
@@ -482,7 +482,7 @@
         <div class="po-meta-card"><span class="po-meta-label">Vendor</span><span class="po-meta-val">{{ selectedPO.vendorName || selectedPO.vendorId }}</span></div>
         <div class="po-meta-card"><span class="po-meta-label">PO Date</span><span class="po-meta-val">{{ selectedPO.poDate | date:'dd MMM yyyy' }}</span></div>
         <div class="po-meta-card"><span class="po-meta-label">Expected Delivery</span><span class="po-meta-val">{{ selectedPO.expectedDate ? (selectedPO.expectedDate | date:'dd MMM yyyy') : '—' }}</span></div>
-        <div class="po-meta-card"><span class="po-meta-label">Grand Total</span><span class="po-meta-val po-meta-amount">₹{{ selectedPO.grandTotal | number:'1.2-2' }}</span></div>
+        <div class="po-meta-card"><span class="po-meta-label">Grand Total</span><span class="po-meta-val po-meta-amount">₹{{ selectedPO.grandTotal | companyNumber:'1.2-2' }}</span></div>
         @if (selectedPO.paymentTerms) { <div class="po-meta-card"><span class="po-meta-label">Payment Terms</span><span class="po-meta-val">{{ selectedPO.paymentTerms }}</span></div> }
         @if (selectedPO.referenceNo)  { <div class="po-meta-card"><span class="po-meta-label">Reference</span><span class="po-meta-val"><code>{{ selectedPO.referenceNo }}</code></span></div> }
       </div>
@@ -508,9 +508,9 @@
                 <div class="po-detail-item-name">{{ item.productName || item.productId }}</div>
                 <div class="po-detail-item-meta">{{ item.orderedQty }} {{ item.measurement }}@if (item.hsnSac) { · HSN: {{ item.hsnSac }} }</div>
                 <div class="po-detail-item-row2">
-                  <div><span class="po-detail-item-label">Rate</span><span>₹{{ item.rate | number:'1.2-2' }}</span></div>
+                  <div><span class="po-detail-item-label">Rate</span><span>₹{{ item.rate | companyNumber:'1.2-2' }}</span></div>
                   <div><span class="po-detail-item-label">Received</span><span [class.po-received-full]="item.receivedQty >= item.orderedQty">{{ item.receivedQty || 0 }}</span></div>
-                  <div class="po-detail-item-total">₹{{ item.totalAmount | number:'1.2-2' }}</div>
+                  <div class="po-detail-item-total">₹{{ item.totalAmount | companyNumber:'1.2-2' }}</div>
                 </div>
               </div>
             }
@@ -530,9 +530,9 @@
                     <td class="po-td-hsn">{{ item.hsnSac || '—' }}</td>
                     <td class="po-td-num">{{ item.orderedQty }} {{ item.measurement }}</td>
                     <td class="po-td-num" [class.po-received-full]="item.receivedQty >= item.orderedQty">{{ item.receivedQty || 0 }}</td>
-                    <td class="po-td-num">₹{{ item.rate | number:'1.4-4' }}</td>
-                    <td class="po-td-num">₹{{ (item.cgstAmount + item.sgstAmount + item.igstAmount) | number:'1.2-2' }}</td>
-                    <td class="po-td-num po-td-total">₹{{ item.totalAmount | number:'1.2-2' }}</td>
+                    <td class="po-td-num">₹{{ item.rate | companyNumber:'1.4-4' }}</td>
+                    <td class="po-td-num">₹{{ (item.cgstAmount + item.sgstAmount + item.igstAmount) | companyNumber:'1.2-2' }}</td>
+                    <td class="po-td-num po-td-total">₹{{ item.totalAmount | companyNumber:'1.2-2' }}</td>
                   </tr>
                 }
               </tbody>
@@ -540,15 +540,15 @@
           </div>
           <div class="po-detail-totals">
             <div class="po-detail-totals-inner">
-              <div class="po-totals-row"><span class="po-totals-label">Subtotal</span><span class="po-totals-val">₹{{ selectedPO.subtotal | number:'1.2-2' }}</span></div>
-              <div class="po-totals-row"><span class="po-totals-label">Total GST</span><span class="po-totals-val">₹{{ selectedPO.totalGstAmount | number:'1.2-2' }}</span></div>
+              <div class="po-totals-row"><span class="po-totals-label">Subtotal</span><span class="po-totals-val">₹{{ selectedPO.subtotal | companyNumber:'1.2-2' }}</span></div>
+              <div class="po-totals-row"><span class="po-totals-label">Total GST</span><span class="po-totals-val">₹{{ selectedPO.totalGstAmount | companyNumber:'1.2-2' }}</span></div>
               @if (selectedPO.freightCharges > 0) {
-                <div class="po-totals-row"><span class="po-totals-label">Freight</span><span class="po-totals-val">₹{{ selectedPO.freightCharges | number:'1.2-2' }}</span></div>
+                <div class="po-totals-row"><span class="po-totals-label">Freight</span><span class="po-totals-val">₹{{ selectedPO.freightCharges | companyNumber:'1.2-2' }}</span></div>
               }
               <div class="po-totals-divider"></div>
               <div class="po-totals-row po-totals-grand">
                 <span class="po-totals-label">Grand Total</span>
-                <span class="po-totals-val">₹{{ selectedPO.grandTotal | number:'1.2-2' }}</span>
+                <span class="po-totals-val">₹{{ selectedPO.grandTotal | companyNumber:'1.2-2' }}</span>
               </div>
             </div>
           </div>

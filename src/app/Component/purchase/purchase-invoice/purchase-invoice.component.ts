@@ -13,6 +13,7 @@ import { PurchaseService } from '../../../_service/purchase.service';
 import { AuthService } from '../../../_service/authentication.service';
 import { SelectedCompanyService } from '../../../_service/selected-company.service';
 import { MasterService } from '../../../_service/master.service';
+import { CompanyNumberPipe } from '../../../_pipe/company-number.pipe';
 import {
   PurchaseInvoice, PurchaseInvoiceLine, Vendor, GST_RATES, PI_STATUSES
 } from '../../../_model/purchase.model';
@@ -20,7 +21,7 @@ import {
 @Component({
   selector: 'app-purchase-invoice',
   standalone: true,
-  imports: [CommonModule, MaterialModule, ReactiveFormsModule],
+  imports: [CommonModule, MaterialModule, ReactiveFormsModule, CompanyNumberPipe],
   templateUrl: './purchase-invoice.component.html',
   styleUrls: ['../purchase-shared.css', './purchase-invoice.component.css']
 })
@@ -341,9 +342,16 @@ export class PurchaseInvoiceComponent implements OnInit, OnDestroy {
 
   cancel(piNumber: string): void {
     if (!confirm(`Cancel invoice ${piNumber}? This will reverse stock.`)) return;
-    this.svc.cancelInvoice(piNumber).pipe(takeUntil(this.destroy$)).subscribe({
-      next: () => { this.toastr.success('Invoice cancelled'); this.loadList(); },
-      error: (e: any) => this.toastr.error(e?.message || 'Cancel failed')
+    this.svc.cancelInvoice(piNumber, this.cid()).pipe(takeUntil(this.destroy$)).subscribe({
+      next: response => {
+        if (response.result === 'pass') {
+          this.toastr.success('Invoice cancelled');
+          this.loadList();
+        } else {
+          this.toastr.error(response.errorMessage || 'Cancel failed');
+        }
+      },
+      error: (e: any) => this.toastr.error(e?.error?.errorMessage || e?.message || 'Cancel failed')
     });
   }
 

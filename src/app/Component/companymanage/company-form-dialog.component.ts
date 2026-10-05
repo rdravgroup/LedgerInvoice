@@ -9,6 +9,7 @@ import { UserService } from '../../_service/user.service';
 import { AuthService } from '../../_service/authentication.service';
 import { ToastrService } from 'ngx-toastr';
 import { Company } from '../../_model/company.model';
+import { CompanyNumberFormatService } from '../../_service/company-number-format.service';
 import { Country, State } from '../../_model/location.model';
 import { MasterService } from '../../_service/master.service';
 
@@ -39,6 +40,7 @@ export class CompanyFormDialogComponent implements OnInit {
     private masterService: MasterService,
     private userService: UserService,
     private auth: AuthService,
+    private numberFormat: CompanyNumberFormatService,
     private toastr: ToastrService
   ) {
     this.mode = data?.mode === 'settings' ? 'settings' : 'identity';
@@ -66,6 +68,7 @@ export class CompanyFormDialogComponent implements OnInit {
       ,discountMode: ['none', Validators.required]
       ,discountType: ['percentage', Validators.required]
       ,discountValue: [0, [Validators.min(0)]]
+      ,currencyNumberFormat: ['en-IN', Validators.required]
       ,showActionPreview: [true]
       ,showActionPdf: [true]
       ,showActionPosPrint: [true]
@@ -139,6 +142,7 @@ export class CompanyFormDialogComponent implements OnInit {
       ,discountMode: this.normalizeDiscountMode(this.pick(company, 'discountMode', 'DiscountMode'))
       ,discountType: this.normalizeDiscountType(this.pick(company, 'discountType', 'DiscountType'))
       ,discountValue: Number(this.pick(company, 'discountValue', 'DiscountValue') ?? 0)
+      ,currencyNumberFormat: this.normalizeCurrencyNumberFormat(this.pick(company, 'currencyNumberFormat', 'CurrencyNumberFormat'))
       ,showActionPreview: this.pickBoolean(company, 'showActionPreview', 'ShowActionPreview')
       ,showActionPdf: this.pickBoolean(company, 'showActionPdf', 'ShowActionPdf')
       ,showActionPosPrint: this.pickBoolean(company, 'showActionPosPrint', 'ShowActionPosPrint')
@@ -163,6 +167,9 @@ export class CompanyFormDialogComponent implements OnInit {
   }
   private normalizeDiscountType(value: any): 'percentage' | 'manual' {
     return String(value || '').toLowerCase() === 'manual' ? 'manual' : 'percentage';
+  }
+  private normalizeCurrencyNumberFormat(value: any): 'en-IN' | 'en-US' {
+    return String(value || '').toLowerCase() === 'en-us' ? 'en-US' : 'en-IN';
   }
   private pickBoolean(source: any, ...keys: string[]): boolean {
     const value = this.pick(source, ...keys);
@@ -212,6 +219,7 @@ export class CompanyFormDialogComponent implements OnInit {
       ,discountMode: this.normalizeDiscountMode(normalized.discountMode)
       ,discountType: this.normalizeDiscountType(normalized.discountType)
       ,discountValue: Number(normalized.discountValue ?? 0)
+      ,currencyNumberFormat: this.normalizeCurrencyNumberFormat(normalized.currencyNumberFormat)
       ,showActionPreview: normalized.showActionPreview
       ,showActionPdf: normalized.showActionPdf
       ,showActionPosPrint: normalized.showActionPosPrint
@@ -220,6 +228,10 @@ export class CompanyFormDialogComponent implements OnInit {
       ,showActionWhatsApp: normalized.showActionWhatsApp
       ,showActionStatement: normalized.showActionStatement
     };
+
+    if (this.isEdit && !this.isSettingsMode) {
+      delete payload.currencyNumberFormat;
+    }
 
     // Admin can update settings freely, but identity values must never be sent in the settings dialog.
     if (this.isEdit && this.isAdmin && !this.isSuperAdmin) {
@@ -342,6 +354,10 @@ export class CompanyFormDialogComponent implements OnInit {
         .subscribe({
           next: (r: any) => {
             if (this.isSuccess(r)) {
+              this.numberFormat.setCompanyFormat(
+                payload.companyId,
+                payload.currencyNumberFormat
+              );
               this.toastr.success('Company updated successfully', 'Success');
               // Return updated data so parent refreshes list without a second GET
               this.dialogRef.close(r?.data ?? r?.Data ?? true);
@@ -399,7 +415,5 @@ export class CompanyFormDialogComponent implements OnInit {
     this.dialogRef.close(false);
   }
 }
-
-
 
 
