@@ -14,8 +14,30 @@
     </button>
   </div>
 
+  @if (completedReturn) {
+    <section class="sr-success" role="status">
+      <mat-icon>check_circle</mat-icon>
+      <h3>Sales return created</h3>
+      <p>Return <code>{{ completedReturn.returnNo }}</code></p>
+      <p>Credit Note <code>{{ completedReturn.creditNoteNo }}</code></p>
+      @if (completedReturn.returnType === 'refund') {
+        <p>Refund recorded: {{ (completedReturn.paymentMode || form.get('paymentMode')?.value) | titlecase }}
+          — ₹{{ formatAmount(completedReturn.grandTotal) }}</p>
+      }
+      <div class="sr-actions">
+        <button mat-stroked-button type="button" (click)="printReturnSlip()">
+          <mat-icon>print</mat-icon> Print return slip
+        </button>
+        <button mat-stroked-button type="button" (click)="downloadReturnSlip()">
+          <mat-icon>download</mat-icon> Download PDF
+        </button>
+        <button mat-flat-button color="primary" type="button" (click)="close()">Done</button>
+      </div>
+    </section>
+  }
+
   <!-- Loading -->
-  @if (loading) {
+  @if (!completedReturn && loading) {
     <div class="sr-loading">
       <mat-progress-bar mode="indeterminate"></mat-progress-bar>
       <p>Loading invoice items&hellip;</p>
@@ -23,7 +45,7 @@
   }
 
   <!-- Error -->
-  @if (!loading && errorMsg) {
+  @if (!completedReturn && !loading && errorMsg) {
     <div class="sr-error">
       <mat-icon>error_outline</mat-icon>
       <span>{{ errorMsg }}</span>
@@ -31,7 +53,7 @@
   }
 
   <!-- Form -->
-  @if (!loading && !errorMsg && items.length > 0) {
+  @if (!completedReturn && !loading && !errorMsg && items.length > 0) {
     <form [formGroup]="form" (ngSubmit)="submit()" class="sr-form">
 
       <!-- Return type radio group -->
@@ -41,17 +63,59 @@
           <mat-radio-button value="credit">
             <div class="sr-radio-option">
               <span class="sr-radio-title">Credit Note</span>
-              <span class="sr-radio-hint">Creates a credit note &mdash; reduces customer outstanding</span>
+              <span class="sr-radio-hint">Credit Note (adjust balance)</span>
             </div>
           </mat-radio-button>
           <mat-radio-button value="refund">
             <div class="sr-radio-option">
               <span class="sr-radio-title">Refund</span>
-              <span class="sr-radio-hint">Creates credit note and records a refund payment</span>
+              <span class="sr-radio-hint">Refund (adjust balance + record payment)</span>
             </div>
           </mat-radio-button>
         </mat-radio-group>
       </div>
+
+      @if (form.get('returnType')?.value === 'refund') {
+        <div class="sr-refund-details">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Refund Date</mat-label>
+            <input matInput type="date" formControlName="refundDate" />
+            <mat-error>Refund date is required</mat-error>
+          </mat-form-field>
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Payment Mode</mat-label>
+            <mat-select formControlName="paymentMode">
+              @for (mode of refundPaymentModes; track mode) {
+                <mat-option [value]="mode">{{ mode | titlecase }}</mat-option>
+              }
+            </mat-select>
+            <mat-error>Payment mode is required</mat-error>
+          </mat-form-field>
+          @if (form.get('paymentMode')?.value === 'bank_transfer' || form.get('paymentMode')?.value === 'cheque') {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Bank Name</mat-label>
+              <input matInput formControlName="bankName" />
+              <mat-error>Bank name is required for this payment mode</mat-error>
+            </mat-form-field>
+          }
+          @if (form.get('paymentMode')?.value === 'bank_transfer' || form.get('paymentMode')?.value === 'upi') {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>{{ form.get('paymentMode')?.value === 'upi' ? 'UPI Transaction ID' : 'Transaction / UTR Reference' }}</mat-label>
+              <input matInput formControlName="bankRef" />
+            </mat-form-field>
+          }
+          @if (form.get('paymentMode')?.value === 'cheque') {
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Cheque Number</mat-label>
+              <input matInput formControlName="chequeNo" />
+            </mat-form-field>
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
+              <mat-label>Cheque Date</mat-label>
+              <input matInput type="date" formControlName="chequeDate" />
+            </mat-form-field>
+          }
+        </div>
+      }
 
       <!-- Items table -->
       <div class="sr-section">
@@ -68,7 +132,7 @@
                 <th class="sr-th-product">Product</th>
                 <th class="sr-th-num">Sold Qty</th>
                 <th class="sr-th-num">Return Qty</th>
-                <th class="sr-th-num">Rate &#8377;</th>
+                <th class="sr-th-num">Rate (excl. GST) &#8377;</th>
                 <th class="sr-th-num">Line Total</th>
               </tr>
             </thead>
@@ -82,7 +146,7 @@
                     <div class="sr-prod-name">{{ items[i].productName }}</div>
                     <div class="sr-prod-id">{{ items[i].productId }}</div>
                   </td>
-                  <td class="sr-td-num">{{ items[i].quantity }}</td>
+                  <td class="sr-td-num">{{ items[i].soldQuantity }}</td>
                   <td class="sr-td-num">
                     <!-- FIX: No [disabled] attribute — FormControl disabled state handles this -->
                     <input
@@ -94,12 +158,12 @@
                       step="0.001"
                     />
                     @if (line.get('quantity')?.invalid && isLineIncluded(i)) {
-                      <div class="sr-qty-err">Max: {{ getMaxReturnable(i) }}</div>
+                      <div class="sr-qty-err">Available: {{ getMaxReturnable(i) }}</div>
                     }
                   </td>
-                  <td class="sr-td-num">&#8377;{{ items[i].rateWithTax | number:'1.2-2' }}</td>
+                  <td class="sr-td-num">&#8377;{{ formatAmount(items[i].rate) }}</td>
                   <td class="sr-td-num sr-td-total">
-                    &#8377;{{ getLineReturnTotal(i) | number:'1.2-2' }}
+                    &#8377;{{ formatAmount(getLineReturnTotal(i)) }}
                   </td>
                 </tr>
               }
@@ -118,7 +182,7 @@
       <!-- Grand total -->
       <div class="sr-total-bar">
         <span class="sr-total-label">Total Return Amount</span>
-        <span class="sr-total-val">&#8377;{{ grandTotal | number:'1.2-2' }}</span>
+        <span class="sr-total-val">&#8377;{{ formatAmount(grandTotal) }}</span>
       </div>
 
       <!-- Actions -->

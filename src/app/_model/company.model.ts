@@ -25,6 +25,7 @@ export interface Company {
   discountType?: 'percentage' | 'manual' | string;
   discountValue?: number;
   currencyNumberFormat?: 'en-IN' | 'en-US' | string;
+  invoicePdfFileNameFormat?: 'company_year_display' | 'company_invoice_unique' | string;
   showActionPreview?: boolean;
   showActionPdf?: boolean;
   showActionPosPrint?: boolean;

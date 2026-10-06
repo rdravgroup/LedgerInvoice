@@ -21,7 +21,25 @@ export interface SalesReturnRequest {
   returnType:    'credit' | 'refund';
   reason?:       string;
   remark?:       string;
+  refundDate?:   string;
+  paymentMode?:  'cash' | 'bank_transfer' | 'upi' | 'card' | 'cheque';
+  bankName?:     string;
+  bankRef?:      string;
+  chequeNo?:     string;
+  chequeDate?:   string;
   items:         SalesReturnItem[];
+}
+
+export interface SalesReportEmailRequest {
+  companyId: string;
+  reportName: string;
+  pdfBase64: string;
+}
+
+export interface SalesReportEmailResponse {
+  result: string;
+  message?: string;
+  errorMessage?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -64,6 +82,13 @@ export class InvoiceService {
   createReturn(req: SalesReturnRequest): Observable<any> {
     return this.http.post(`${this.base}Return/Create`, req)
       .pipe(catchError(e => this.handleError(e, 'createReturn')));
+  }
+
+  getReturnableItems(invoiceNumber: string, companyId?: string): Observable<any> {
+    let params = new HttpParams();
+    if (companyId) params = params.set('companyId', companyId);
+    return this.http.get(`${this.base}Return/Items/${encodeURIComponent(invoiceNumber)}`, { params })
+      .pipe(catchError(e => this.handleError(e, 'getReturnableItems')));
   }
 
   // ── Get invoice items (for return modal line population) ───────────────
@@ -109,5 +134,12 @@ export class InvoiceService {
       params: p,
       responseType: 'blob'
     }).pipe(catchError(e => this.handleError(e, 'exportSalesCsv')));
+  }
+
+  emailSalesReport(request: SalesReportEmailRequest): Observable<SalesReportEmailResponse> {
+    return this.http.post<SalesReportEmailResponse>(
+      `${environment.apiUrl}Purchase/reports/email`,
+      request
+    ).pipe(catchError(e => this.handleError(e, 'emailSalesReport')));
   }
 }

@@ -69,6 +69,7 @@ export class CompanyFormDialogComponent implements OnInit {
       ,discountType: ['percentage', Validators.required]
       ,discountValue: [0, [Validators.min(0)]]
       ,currencyNumberFormat: ['en-IN', Validators.required]
+      ,invoicePdfFileNameFormat: ['company_year_display', Validators.required]
       ,showActionPreview: [true]
       ,showActionPdf: [true]
       ,showActionPosPrint: [true]
@@ -143,6 +144,7 @@ export class CompanyFormDialogComponent implements OnInit {
       ,discountType: this.normalizeDiscountType(this.pick(company, 'discountType', 'DiscountType'))
       ,discountValue: Number(this.pick(company, 'discountValue', 'DiscountValue') ?? 0)
       ,currencyNumberFormat: this.normalizeCurrencyNumberFormat(this.pick(company, 'currencyNumberFormat', 'CurrencyNumberFormat'))
+      ,invoicePdfFileNameFormat: this.normalizeInvoicePdfFileNameFormat(this.pick(company, 'invoicePdfFileNameFormat', 'InvoicePdfFileNameFormat'))
       ,showActionPreview: this.pickBoolean(company, 'showActionPreview', 'ShowActionPreview')
       ,showActionPdf: this.pickBoolean(company, 'showActionPdf', 'ShowActionPdf')
       ,showActionPosPrint: this.pickBoolean(company, 'showActionPosPrint', 'ShowActionPosPrint')
@@ -170,6 +172,11 @@ export class CompanyFormDialogComponent implements OnInit {
   }
   private normalizeCurrencyNumberFormat(value: any): 'en-IN' | 'en-US' {
     return String(value || '').toLowerCase() === 'en-us' ? 'en-US' : 'en-IN';
+  }
+  private normalizeInvoicePdfFileNameFormat(value: any): 'company_year_display' | 'company_invoice_unique' {
+    return String(value || '').toLowerCase() === 'company_invoice_unique'
+      ? 'company_invoice_unique'
+      : 'company_year_display';
   }
   private pickBoolean(source: any, ...keys: string[]): boolean {
     const value = this.pick(source, ...keys);
@@ -220,6 +227,7 @@ export class CompanyFormDialogComponent implements OnInit {
       ,discountType: this.normalizeDiscountType(normalized.discountType)
       ,discountValue: Number(normalized.discountValue ?? 0)
       ,currencyNumberFormat: this.normalizeCurrencyNumberFormat(normalized.currencyNumberFormat)
+      ,invoicePdfFileNameFormat: this.normalizeInvoicePdfFileNameFormat(normalized.invoicePdfFileNameFormat)
       ,showActionPreview: normalized.showActionPreview
       ,showActionPdf: normalized.showActionPdf
       ,showActionPosPrint: normalized.showActionPosPrint
@@ -231,6 +239,7 @@ export class CompanyFormDialogComponent implements OnInit {
 
     if (this.isEdit && !this.isSettingsMode) {
       delete payload.currencyNumberFormat;
+      delete payload.invoicePdfFileNameFormat;
     }
 
     // Admin can update settings freely, but identity values must never be sent in the settings dialog.
@@ -415,5 +424,4 @@ export class CompanyFormDialogComponent implements OnInit {
     this.dialogRef.close(false);
   }
 }
-
 

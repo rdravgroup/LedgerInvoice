@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, OnDestroy } from '@angular/core';
+import { Component, OnInit, ViewChild, OnDestroy, HostListener, Injectable } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { OverlayModule, ConnectedPosition } from '@angular/cdk/overlay';
 import { MaterialModule } from '../../material.module';
@@ -10,6 +10,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
+import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE, NativeDateAdapter } from '@angular/material/core';
 import { PreviewDialogComponent } from './preview-dialog.component';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
@@ -25,6 +26,37 @@ import {
 } from '../confirm-dialog/confirm-destructive-action-dialog.component';
 // NEW: Invoice service for approve / lock / return
 import { InvoiceService } from '../../_service/invoice.service';
+
+const INVOICE_LIST_DATE_FORMATS = {
+  parse: { dateInput: { day: '2-digit', month: '2-digit', year: 'numeric' } },
+  display: {
+    dateInput: { day: '2-digit', month: '2-digit', year: 'numeric' },
+    monthYearLabel: { month: 'short', year: 'numeric' },
+    dateA11yLabel: { day: 'numeric', month: 'long', year: 'numeric' },
+    monthYearA11yLabel: { month: 'long', year: 'numeric' }
+  }
+};
+
+@Injectable()
+class InvoiceListDateAdapter extends NativeDateAdapter {
+  override format(date: Date, _displayFormat: unknown): string {
+    return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+  }
+
+  override parse(value: unknown): Date | null {
+    if (typeof value !== 'string') return super.parse(value, '');
+    const match = value.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (!match) return null;
+
+    const day = Number(match[1]);
+    const month = Number(match[2]) - 1;
+    const year = Number(match[3]);
+    const date = new Date(year, month, day);
+    return date.getFullYear() === year && date.getMonth() === month && date.getDate() === day
+      ? date
+      : null;
+  }
+}
 
 interface Invoice {
   invNum: string;
@@ -56,12 +88,23 @@ interface Invoice {
     // CHANGE: New shared components
     CompanyContextBannerComponent,
   ],
+  providers: [
+    { provide: MAT_DATE_LOCALE, useValue: 'en-GB' },
+    { provide: DateAdapter, useClass: InvoiceListDateAdapter },
+    { provide: MAT_DATE_FORMATS, useValue: INVOICE_LIST_DATE_FORMATS }
+  ],
   templateUrl: './listinvoice.component.html',
   styleUrls: ['./listinvoice.component.css'],
 })
 export class ListinvoiceComponent implements OnInit, OnDestroy {
-  displayedColumns: string[] = ['invoiceNumber', 'invDate', 'cuName', 'totalAmt', 'status', 'actions'];
+  displayedColumns: string[] = ['serialNumber', 'invoiceNumber', 'invDate', 'cuName', 'totalAmt', 'status', 'actions'];
   dataSource = new MatTableDataSource<Invoice>();
+  readonly pageSizeOptions = [10, 20, 50, 100, 200, 500, 1000];
+  fromDate: Date | null = null;
+  toDate: Date | null = null;
+  appliedFromDate = '';
+  appliedToDate = '';
+  dateRangeError = '';
 
   loading = false;
   isMobile = false;
@@ -90,6 +133,7 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
   }
 
   private destroy$ = new Subject<void>();
+  private invoiceLoad$ = new Subject<void>();
   activeActionInvoiceNumber: string | null = null;
 
   // FIX: Actions popover rendered via CDK Overlay (attached to <body>) instead of an
@@ -116,7 +160,15 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
     private selectedCompanyService: SelectedCompanyService
   ) {
     this.checkMobile();
-    window.addEventListener('resize', () => this.checkMobile());
+    const assessmentYearStart = new Date();
+    if (assessmentYearStart.getMonth() < 3) assessmentYearStart.setFullYear(assessmentYearStart.getFullYear() - 1);
+    assessmentYearStart.setMonth(3, 1);
+    assessmentYearStart.setHours(0, 0, 0, 0);
+    const assessmentYearEnd = new Date(assessmentYearStart.getFullYear() + 1, 2, 31);
+    this.fromDate = assessmentYearStart;
+    this.toDate = assessmentYearEnd;
+    this.appliedFromDate = this.formatDateInput(assessmentYearStart);
+    this.appliedToDate = this.formatDateInput(assessmentYearEnd);
     const role = (this.auth.getUserRole() || '').toLowerCase().replace(/-/g, '_');
     this.isSuperAdmin = role === 'super_admin' || role === 'superadmin' || role === 'super_duper_admin';
     this.isSuperDuper = role === 'super_duper_admin';
@@ -128,10 +180,15 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
     this.isMobile = window.innerWidth <= 768;
   }
 
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.checkMobile();
+  }
+
   ngOnInit(): void {
-    this.LoadInvoice();
     // CHANGE: reload when super_admin switches company
     this.selectedCompanyService.selectedCompanyId$.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.loadActionConfiguration();
       this.LoadInvoice();
     });
   }
@@ -162,6 +219,97 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+    this.invoiceLoad$.complete();
+  }
+
+  private formatDateInput(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  get mobilePageRows(): Invoice[] {
+    const pageSize = this.paginator?.pageSize || 20;
+    const start = (this.paginator?.pageIndex || 0) * pageSize;
+    return this.dataSource.filteredData.slice(start, start + pageSize);
+  }
+
+  getMobileSerialNumber(index: number): number {
+    return (this.paginator?.pageIndex || 0) * (this.paginator?.pageSize || 20) + index + 1;
+  }
+
+  getSerialNumber(index: number): number {
+    return this.getMobileSerialNumber(index);
+  }
+
+  runDateFilter(): void {
+    this.dateRangeError = '';
+    if (!this.fromDate || !this.toDate) {
+      this.dateRangeError = 'Select both a From Date and a To Date.';
+      return;
+    }
+    const fromDate = this.formatDateInput(this.fromDate);
+    const toDate = this.formatDateInput(this.toDate);
+    if (fromDate > toDate) {
+      this.dateRangeError = 'From Date must be on or before To Date.';
+      return;
+    }
+
+    this.appliedFromDate = fromDate;
+    this.appliedToDate = toDate;
+    this.LoadInvoice();
+  }
+
+  printInvoices(): void {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      this.alert.error('Allow pop-ups to print the invoice list.', 'Print unavailable');
+      return;
+    }
+
+    const escapeHtml = (value: unknown): string => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+    const formatDate = (value: string | undefined): string => {
+      if (!value) return '';
+      const dateOnly = value.slice(0, 10);
+      const match = dateOnly.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (match) return `${match[3]}/${match[2]}/${match[1]}`;
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? '' : this.formatDateInput(date).split('-').reverse().join('/');
+    };
+    const rows = this.dataSource.filteredData.map((invoice, index) => `
+      <tr>
+        <td>${index + 1}</td>
+        <td>${escapeHtml(invoice.invNum || invoice.invoiceNumber)}</td>
+        <td>${escapeHtml(formatDate(invoice.invDate))}</td>
+        <td>${escapeHtml(invoice.cuName)}</td>
+        <td class="amount">₹${Number(invoice.totalAmt || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+      </tr>`).join('');
+
+    printWindow.document.write(`<!doctype html>
+      <html><head><title>Invoice List</title><meta charset="utf-8">
+      <style>
+        body{font:14px Arial,sans-serif;color:#222;padding:24px}
+        h1{font-size:20px;margin:0 0 8px}
+        p{margin:0 0 18px;color:#555}
+        table{border-collapse:collapse;width:100%}
+        th,td{border:1px solid #bbb;padding:8px;text-align:left}
+        th{background:#eee}
+        .amount{text-align:right;white-space:nowrap}
+        @media print{body{padding:0}}
+      </style></head><body>
+      <h1>Invoice List</h1>
+      <p>From ${escapeHtml(formatDate(this.appliedFromDate))} to ${escapeHtml(formatDate(this.appliedToDate))} · ${this.dataSource.filteredData.length} invoices</p>
+      <table><thead><tr><th>#</th><th>Invoice #</th><th>Date</th><th>Customer</th><th>Amount</th></tr></thead>
+      <tbody>${rows}</tbody></table>
+      <script>window.onload=()=>{window.print();window.onafterprint=()=>window.close()}</script>
+      </body></html>`);
+    printWindow.document.close();
   }
 
   private attachTableControls(): void {
@@ -176,22 +324,24 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
     }
   }
 
-  private sortInvoicesByCreateDate(data: Invoice[]): Invoice[] {
-    return [...data].sort((a: any, b: any) => this.getInvoiceSortTime(b) - this.getInvoiceSortTime(a));
-  }
-
   private getInvoiceSortTime(item: any): number {
-    const dateVal = item?.createDate || item?.create_date || item?.createdAt || item?.CreateDate || item?.invDate || item?.inv_date || item?.invdate;
+    const dateVal = item?.invDate || item?.inv_date || item?.invdate
+      || item?.createDate || item?.create_date || item?.createdAt || item?.CreateDate;
     const time = dateVal ? new Date(dateVal).getTime() : 0;
     return Number.isFinite(time) ? time : 0;
   }
   LoadInvoice(): void {
+    this.invoiceLoad$.next();
     this.loading = true;
+    if (this.paginator) this.paginator.firstPage();
     const performLoad = () => {
       const effectiveCompanyId = this.selectedCompanyService.getSelectedCompanyId() || this.auth.getCompanyId();
-      this.loadActionConfiguration();
-      this.service.GetAllInvoice(effectiveCompanyId ?? undefined)
-        .pipe(takeUntil(this.destroy$))
+      this.service.GetAllInvoice(
+        effectiveCompanyId ?? undefined,
+        this.appliedFromDate,
+        this.appliedToDate
+      )
+        .pipe(takeUntil(this.destroy$), takeUntil(this.invoiceLoad$))
         .subscribe({
           next: (res) => {
             // Normalise response to array
@@ -211,7 +361,6 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
                 if (!item.invDate && item.createDate) item.invDate = item.createDate;
                 return item;
               });
-              data = this.sortInvoicesByCreateDate(data);
               this.dataSource.data = data;
               this.closeActionPanel();
               this.attachTableControls();
@@ -643,6 +792,3 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
     this.router.navigate(['/sales-reports']);
   }
 }
-
-
-

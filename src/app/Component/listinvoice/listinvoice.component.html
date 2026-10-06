@@ -7,7 +7,7 @@
   <div class="page-header">
     <div>
       <h1 class="page-title">Invoices</h1>
-      <p class="page-subtitle">{{ dataSource.data.length || 0 }} invoices total</p>
+      <p class="page-subtitle">{{ dataSource.filteredData.length || 0 }} invoices in the current results</p>
     </div>
     <div class="page-header-actions">
       <!-- NEW: Reports shortcut -->
@@ -24,14 +24,40 @@
 
   <app-company-context-banner></app-company-context-banner>
 
-  <!-- Search -->
+  <!-- Search and date filters -->
   <div class="toolbar-row">
     <mat-form-field appearance="outline" class="search-field">
       <mat-label>Search invoices</mat-label>
       <input matInput (input)="applyFilter($event)" placeholder="Invoice #, customer, amount…" />
       <mat-icon matPrefix aria-hidden="true">search</mat-icon>
     </mat-form-field>
+    <mat-form-field appearance="outline" class="date-filter-field">
+      <mat-label>From Date</mat-label>
+      <input matInput [matDatepicker]="fromPicker" [value]="fromDate"
+             (dateChange)="fromDate = $event.value" aria-label="From Date" />
+      <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
+      <mat-datepicker #fromPicker></mat-datepicker>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="date-filter-field">
+      <mat-label>To Date</mat-label>
+      <input matInput [matDatepicker]="toPicker" [value]="toDate"
+             (dateChange)="toDate = $event.value" aria-label="To Date" />
+      <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
+      <mat-datepicker #toPicker></mat-datepicker>
+    </mat-form-field>
+    <button mat-flat-button color="primary" type="button" (click)="runDateFilter()" [disabled]="loading">
+      <mat-icon aria-hidden="true">filter_alt</mat-icon>
+      Run
+    </button>
+    <button mat-stroked-button type="button" (click)="printInvoices()"
+            [disabled]="loading || dataSource.filteredData.length === 0" aria-label="Print invoice list">
+      <mat-icon aria-hidden="true">print</mat-icon>
+      Print
+    </button>
   </div>
+  @if (dateRangeError) {
+    <p class="date-filter-error" role="alert">{{ dateRangeError }}</p>
+  }
 
   <!-- Loading skeleton -->
   @if (loading) {
@@ -46,8 +72,8 @@
   @if (!loading && dataSource.data.length === 0) {
     <div class="empty-state">
       <mat-icon aria-hidden="true">receipt_long</mat-icon>
-      <h3>No invoices yet</h3>
-      <p>Create your first invoice to get started</p>
+      <h3>No invoices found</h3>
+      <p>No invoices match the selected date range.</p>
       <button mat-flat-button color="primary" routerLink="/createinvoice">
         <mat-icon aria-hidden="true">add</mat-icon>
         Create Invoice
@@ -55,14 +81,23 @@
     </div>
   }
 
+  @if (!loading && dataSource.data.length > 0 && dataSource.filteredData.length === 0) {
+    <div class="empty-state">
+      <mat-icon aria-hidden="true">search_off</mat-icon>
+      <h3>No matching invoices</h3>
+      <p>Try a different search term or date range.</p>
+    </div>
+  }
+
   <!-- Mobile: card list -->
-  @if (!loading && dataSource.data.length > 0) {
+  @if (!loading && dataSource.filteredData.length > 0) {
     <div class="mobile-card-list" [class.hidden]="!isMobile">
-      @for (row of dataSource.filteredData; track row.invoiceNumber) {
+      @for (row of mobilePageRows; track row.invoiceNumber; let i = $index) {
         <mat-card class="list-card">
           <mat-card-content>
             <div class="inv-card-header">
               <div>
+                <div class="inv-card-serial">#{{ getMobileSerialNumber(i) }}</div>
                 <div class="inv-card-num">{{ row.invNum || row.invoiceNumber }}</div>
                 <div class="inv-card-date">{{ row.invDate | date:'dd MMM yyyy' }}</div>
               </div>
@@ -151,10 +186,16 @@
   }
 
   <!-- Desktop: mat-table -->
-  @if (!loading && dataSource.data.length > 0) {
+  @if (!loading && dataSource.filteredData.length > 0) {
     <mat-card class="table-card" [class.hidden]="isMobile">
       <div class="table-wrap">
         <table mat-table [dataSource]="dataSource" matSort matSortActive="invDate" matSortDirection="desc" #sort="matSort" class="full-table" role="grid">
+
+        <!-- Serial Number -->
+        <ng-container matColumnDef="serialNumber">
+          <th mat-header-cell *matHeaderCellDef scope="col">#</th>
+          <td mat-cell *matCellDef="let row; let i = index">{{ getSerialNumber(i) }}</td>
+        </ng-container>
 
         <!-- Invoice Number -->
         <ng-container matColumnDef="invoiceNumber">
@@ -346,11 +387,13 @@
         <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
       </table>
       </div>
-      <mat-paginator [pageSizeOptions]="[10, 20, 50]" [pageSize]="20" showFirstLastButtons
-                     aria-label="Select page">
-      </mat-paginator>
     </mat-card>
   }
 
-</div>
+  @if (!loading && dataSource.filteredData.length > 0) {
+    <mat-paginator [pageSizeOptions]="pageSizeOptions" [pageSize]="500" showFirstLastButtons
+                   aria-label="Select invoice page">
+    </mat-paginator>
+  }
 
+</div>

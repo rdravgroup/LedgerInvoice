@@ -55,7 +55,7 @@ export class MasterService {
       .pipe(catchError(err => this.handleError(err, 'Get product')));
   }
 
-  GetAllInvoice(companyId?: string) {
+  GetAllInvoice(companyId?: string, fromDate?: string, toDate?: string) {
     // Dev-only: allow simulating a 403 subscription-expired response
     try {
       const simulate = !!environment.simulateSubscriptionExpired || (typeof window !== 'undefined' && localStorage?.getItem && localStorage.getItem('SIMULATE_SUBSCRIPTION_EXPIRED') === '1');
@@ -67,9 +67,12 @@ export class MasterService {
       // ignore localStorage access errors in non-browser envs
     }
 
-    let url = this.baseUrl + 'Invoice/InvoiceCompanyCustomerController';
-    if (companyId) url += '?companyId=' + encodeURIComponent(companyId);
-    return this.http.get(url).pipe(catchError(err => this.handleError(err, 'Get invoices')));
+    let params = new HttpParams();
+    if (companyId) params = params.set('companyId', companyId);
+    if (fromDate) params = params.set('fromDate', fromDate);
+    if (toDate) params = params.set('toDate', toDate);
+    return this.http.get(this.baseUrl + 'Invoice/InvoiceCompanyCustomerController', { params })
+      .pipe(catchError(err => this.handleError(err, 'Get invoices')));
   }
 
   GetInvHeaderbycode(invoiceno: any) {

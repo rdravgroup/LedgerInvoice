@@ -10,14 +10,25 @@
       </h1>
       <p class="page-subtitle">Credit notes and refunds issued against invoices</p>
     </div>
-    <button mat-flat-button color="accent" (click)="exportCsv()" [disabled]="exporting || loading">
-      @if (exporting) {
-        <mat-progress-spinner mode="indeterminate" diameter="18"></mat-progress-spinner>
-      } @else {
-        <mat-icon>download</mat-icon>
-      }
-      Export CSV
-    </button>
+    <div class="report-actions">
+      <button mat-stroked-button type="button" (click)="printReport()" [disabled]="loading || dataSource.filteredData.length === 0">
+        <mat-icon>print</mat-icon> Print
+      </button>
+      <button mat-stroked-button type="button" (click)="downloadPdf()" [disabled]="loading || dataSource.filteredData.length === 0">
+        <mat-icon>picture_as_pdf</mat-icon> PDF
+      </button>
+      <button mat-stroked-button type="button" (click)="exportExcel()" [disabled]="loading || dataSource.filteredData.length === 0">
+        <mat-icon>grid_on</mat-icon> Excel
+      </button>
+      <button mat-flat-button color="accent" type="button" (click)="exportCsv()" [disabled]="exporting || loading">
+        @if (exporting) {
+          <mat-progress-spinner mode="indeterminate" diameter="18"></mat-progress-spinner>
+        } @else {
+          <mat-icon>download</mat-icon>
+        }
+        CSV
+      </button>
+    </div>
   </div>
 
   <!-- Filters -->
@@ -29,8 +40,9 @@
         <mat-label>From Date</mat-label>
         <input matInput [matDatepicker]="fromPicker" formControlName="fromDate" readonly
                (click)="fromPicker.open()" />
-        <mat-datepicker-toggle matSuffix [for]="fromPicker"></mat-datepicker-toggle>
+        <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
         <mat-datepicker #fromPicker></mat-datepicker>
+        <mat-error *ngIf="filterForm.get('fromDate')?.hasError('required')">From Date is required</mat-error>
       </mat-form-field>
 
       <!-- To date -->
@@ -38,33 +50,49 @@
         <mat-label>To Date</mat-label>
         <input matInput [matDatepicker]="toPicker" formControlName="toDate" readonly
                (click)="toPicker.open()" [min]="filterForm.value.fromDate" />
-        <mat-datepicker-toggle matSuffix [for]="toPicker"></mat-datepicker-toggle>
+        <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
         <mat-datepicker #toPicker></mat-datepicker>
+        <mat-error *ngIf="filterForm.get('toDate')?.hasError('required')">To Date is required</mat-error>
       </mat-form-field>
 
       <!-- Customer filter -->
-      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+      <mat-form-field appearance="outline" class="customer-filter-field" subscriptSizing="dynamic">
         <mat-label>Customer (optional)</mat-label>
-        <mat-select formControlName="customerId">
-          <mat-option value="">All Customers</mat-option>
-          @for (c of customers; track c.uniqueKeyID) {
-            <mat-option [value]="c.uniqueKeyID">{{ c.name }}</mat-option>
+        <input matInput [formControl]="customerSearch" [matAutocomplete]="customerAutocomplete"
+               (input)="onCustomerSearchInput()" placeholder="All customers or search by name" />
+        <mat-icon matSuffix>search</mat-icon>
+        <mat-autocomplete #customerAutocomplete="matAutocomplete" [displayWith]="displayCustomer"
+                          (optionSelected)="selectCustomer($event.option.value)">
+          <mat-option [value]="allCustomersOption">All Customers</mat-option>
+          @for (c of filteredCustomers; track c.uniqueKeyID) {
+            <mat-option [value]="c">
+              <span class="customer-option-name">{{ c.name || c.customer_company || 'Unnamed customer' }}</span>
+              <span class="customer-option-meta">
+                {{ c.uniqueKeyID }}@if (c.email || c.phone || c.mobileNo) { · {{ c.email || c.phone || c.mobileNo }} }
+              </span>
+            </mat-option>
           }
-        </mat-select>
+          @if (filteredCustomers.length === 0) {
+            <mat-option disabled>No matching customers</mat-option>
+          }
+        </mat-autocomplete>
       </mat-form-field>
 
       <button mat-flat-button color="primary" type="button" (click)="runReport()" [disabled]="loading">
-        <mat-icon>refresh</mat-icon> Search
+        <mat-icon>refresh</mat-icon> Run
       </button>
     </form>
   </mat-card>
+  @if (dateRangeError) {
+    <p class="date-range-error" role="alert">{{ dateRangeError }}</p>
+  }
 
   <!-- Totals -->
   @if (dataSource.data.length > 0) {
     <div class="summary-totals">
       <div class="total-card total-returns">
         <span class="total-label">Total Returns Value</span>
-        <span class="total-val">₹{{ totalReturnsValue | number:'1.2-2' }}</span>
+        <span class="total-val">₹{{ formatAmount(totalReturnsValue) }}</span>
       </div>
       <div class="total-card">
         <span class="total-label">Return Records</span>
@@ -103,6 +131,11 @@
       <div class="table-scroll">
         <table mat-table [dataSource]="dataSource" matSort class="report-table">
 
+          <ng-container matColumnDef="serialNumber">
+            <th mat-header-cell *matHeaderCellDef scope="col">#</th>
+            <td mat-cell *matCellDef="let r; let i = index">{{ getSerialNumber(i) }}</td>
+          </ng-container>
+
           <ng-container matColumnDef="returnNo">
             <th mat-header-cell *matHeaderCellDef mat-sort-header>Return #</th>
             <td mat-cell *matCellDef="let r"><code class="mono">{{ r.returnNo }}</code></td>
@@ -133,9 +166,19 @@
             </td>
           </ng-container>
 
+          <ng-container matColumnDef="refundDate">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Refund Date</th>
+            <td mat-cell *matCellDef="let r">{{ r.refundDate ? (r.refundDate | date:'dd MMM yyyy') : '—' }}</td>
+          </ng-container>
+
+          <ng-container matColumnDef="paymentMode">
+            <th mat-header-cell *matHeaderCellDef>Payment Mode</th>
+            <td mat-cell *matCellDef="let r">{{ r.paymentMode ? (r.paymentMode | titlecase) : '—' }}</td>
+          </ng-container>
+
           <ng-container matColumnDef="grandTotal">
             <th mat-header-cell *matHeaderCellDef mat-sort-header class="col-right">Amount</th>
-            <td mat-cell *matCellDef="let r" class="col-right mono col-warn">₹{{ r.grandTotal | number:'1.2-2' }}</td>
+            <td mat-cell *matCellDef="let r" class="col-right mono col-warn">₹{{ formatAmount(r.grandTotal) }}</td>
           </ng-container>
 
           <ng-container matColumnDef="creditNoteNo">
@@ -152,7 +195,7 @@
           <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="table-row"></tr>
         </table>
       </div>
-      <mat-paginator [pageSizeOptions]="[20, 50, 100]" [pageSize]="20" showFirstLastButtons></mat-paginator>
+      <mat-paginator [pageSizeOptions]="pageSizeOptions" [pageSize]="500" showFirstLastButtons></mat-paginator>
     </mat-card>
   }
 

@@ -184,6 +184,26 @@
 
         <section class="cfd-section">
           <div class="cfd-section-title">
+            <mat-icon>picture_as_pdf</mat-icon>
+            <div>
+              <h3>Invoice PDF File Name Format</h3>
+              <p>Choose the filename used when downloading, printing, or emailing an invoice PDF.</p>
+            </div>
+          </div>
+          <div class="cfd-grid">
+            <mat-form-field appearance="outline" class="cfd-col-2">
+              <mat-label>Invoice PDF File Name Format</mat-label>
+              <mat-select formControlName="invoicePdfFileNameFormat">
+                <mat-option value="company_year_display">CompanyID + Year + DisplayInvoiceNumber (COMP1_2026_146.pdf)</mat-option>
+                <mat-option value="company_invoice_unique">CompanyID + InvoiceNumber + UniqueCode (COMP1_INV00000156_759854.pdf)</mat-option>
+              </mat-select>
+              <mat-icon matPrefix>picture_as_pdf</mat-icon>
+            </mat-form-field>
+          </div>
+        </section>
+
+        <section class="cfd-section">
+          <div class="cfd-section-title">
             <mat-icon>touch_app</mat-icon>
             <div><h3>Invoice Actions</h3><p>Choose which actions appear in the invoice list.</p></div>
           </div>
@@ -249,4 +269,3 @@
     </button>
   </mat-dialog-actions>
 </div>
-
