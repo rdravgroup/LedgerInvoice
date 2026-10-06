@@ -47,6 +47,17 @@ export class MasterService {
     return this.http.get(url)
       .pipe(catchError(err => this.handleError(err, 'Get products')));
   }
+
+  ExportProductsExcel(companyId?: string, search?: string) {
+    let params = new HttpParams();
+    if (companyId) params = params.set('companyId', companyId);
+    if (search?.trim()) params = params.set('search', search.trim());
+    return this.http.get(this.baseUrl + 'Product/ExportExcel', {
+      params,
+      observe: 'response',
+      responseType: 'blob'
+    }).pipe(catchError(err => this.handleError(err, 'Export products to Excel')));
+  }
   
   GetProductbycode(code: any, companyId?: string) {
     let url = this.baseUrl + 'Product/GetByCode?Code=' + encodeURIComponent(code);

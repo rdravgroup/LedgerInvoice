@@ -12,7 +12,7 @@ import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatDialog, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { finalize, takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-product-list-dialog',
@@ -21,9 +21,16 @@ import { takeUntil } from 'rxjs/operators';
   template: `
     <div class="dialog-header">
       <h2 mat-dialog-title>Product List</h2>
-      <button mat-icon-button mat-dialog-close class="close-button">
-        <mat-icon>close</mat-icon>
-      </button>
+      <div class="dialog-header-actions">
+        <button mat-icon-button color="primary" type="button" (click)="exportExcel()"
+                [disabled]="exporting || dataSource.filteredData.length === 0"
+                matTooltip="Export products to Excel" aria-label="Export products to Excel">
+          <mat-icon>grid_on</mat-icon>
+        </button>
+        <button mat-icon-button mat-dialog-close class="close-button" aria-label="Close product list">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
     </div>
     <mat-dialog-content>
       <mat-form-field appearance="outline" class="search-field">
@@ -123,6 +130,7 @@ import { takeUntil } from 'rxjs/operators';
       align-items: center;
       padding: 20px 24px 0;
     }
+    .dialog-header-actions { display: flex; align-items: center; gap: 8px; }
     .dialog-header h2 {
       margin: 0;
     }
@@ -156,8 +164,11 @@ import { takeUntil } from 'rxjs/operators';
     @media (max-width: 768px) { mat-dialog-content { min-width: 90vw; } }
   `],
 })
-export class ProductListDialogComponent implements OnInit {
+export class ProductListDialogComponent implements OnInit, OnDestroy {
   dataSource: any;
+  exporting = false;
+  searchValue = '';
+  private destroy$ = new Subject<void>();
   displayedColumns: string[] = ['productName', 'categoryCode', 'price', 'purchaseRate', 'purchaseRateDate', 'isActive', 'actions'];
   private categoryNames = new Map<string, string>();
   @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -165,7 +176,9 @@ export class ProductListDialogComponent implements OnInit {
 
   constructor(
     public dialogRef: MatDialogRef<ProductListDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any
+    @Inject(MAT_DIALOG_DATA) public data: any,
+    private masterService: MasterService,
+    private toastr: ToastrService
   ) {
     this.dataSource = new MatTableDataSource(data.products);
     this.categoryNames = new Map<string, string>(
@@ -185,9 +198,54 @@ export class ProductListDialogComponent implements OnInit {
     });
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   applyFilter(event: Event) {
     const filterValue = (event.target as HTMLInputElement).value;
+    this.searchValue = filterValue;
     this.dataSource.filter = filterValue.trim().toLowerCase();
+  }
+
+  exportExcel(): void {
+    if (this.exporting || this.dataSource.filteredData.length === 0) return;
+    this.exporting = true;
+    this.masterService.ExportProductsExcel(this.data.companyId, this.searchValue)
+      .pipe(
+        takeUntil(this.destroy$),
+        finalize(() => this.exporting = false)
+      )
+      .subscribe({
+        next: (response: any) => {
+          if (!response.body || response.body.size === 0) {
+            this.toastr.error('The product Excel file is empty.', 'Export failed');
+            return;
+          }
+          const disposition = response.headers.get('Content-Disposition') || '';
+          const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+          let fileName = match?.[1] || match?.[2] || this.fallbackFileName();
+          try { fileName = decodeURIComponent(fileName); } catch { /* Use the server-provided filename as-is. */ }
+          const url = URL.createObjectURL(response.body);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.style.display = 'none';
+          anchor.download = fileName;
+          document.body.appendChild(anchor);
+          anchor.click();
+          anchor.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        },
+        error: () => this.toastr.error('Failed to export products to Excel.', 'Export failed')
+      });
+  }
+
+  private fallbackFileName(): string {
+    const companyId = String(this.data.companyId || 'ALL')
+      .replace(/[^a-zA-Z0-9_-]/g, '');
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    return `Products_${companyId || 'ALL'}_${date}.xlsx`;
   }
 
   onEdit(product: any) {
@@ -412,6 +470,7 @@ export class ProductComponent implements OnInit, OnDestroy {
       data: {
         products: this.productList,
         categories: this.categoryList,
+        companyId: this.effectiveProductCompanyId(),
         onEdit: (product: any) => this.editProduct(product),
         onDelete: (product: any) => this.deleteProduct(product)
       }
@@ -520,6 +579,3 @@ export class ProductComponent implements OnInit, OnDestroy {
     this.setExtraFieldsState(this.showExtraFields);
   }
 }
-
-
-
