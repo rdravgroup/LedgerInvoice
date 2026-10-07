@@ -1,65 +1,68 @@
 <div class="customer-details-dialog">
   <div class="dialog-header">
-    <h2>Customer Details</h2>
-    <button mat-icon-button (click)="closeDialog()" class="close-button">
-      <mat-icon>close</mat-icon>
+    <div class="dialog-title">
+      <span class="dialog-title-icon"><mat-icon aria-hidden="true">account_balance</mat-icon></span>
+      <div>
+        <p>ACCOUNTS RECEIVABLE</p>
+        <h2>Customer Ledger</h2>
+      </div>
+    </div>
+    <button mat-icon-button (click)="closeDialog()" class="close-button" aria-label="Close customer ledger">
+      <mat-icon aria-hidden="true">close</mat-icon>
     </button>
   </div>
 
   <mat-dialog-content>
     <div class="content-container">
-      <!-- Customer Header -->
       <mat-card class="customer-header">
         <mat-card-content>
           <div class="header-row">
-            <div class="header-item">
-              <span class="label">Customer ID</span>
-              <span class="value">{{ customer.customerId }}</span>
+            <div class="customer-identity">
+              <span class="customer-avatar"><mat-icon aria-hidden="true">person</mat-icon></span>
+              <div class="header-item">
+                <span class="label">Customer</span>
+                <span class="value">{{ customer.customerName || 'Customer' }}</span>
+                <span class="customer-id">{{ customer.customerId }}</span>
+              </div>
             </div>
-            <div class="header-item">
-              <span class="label">Customer Name</span>
-              <span class="value">{{ customer.customerName }}</span>
+            <div class="customer-contact">
+              @if (customer.email) { <span><mat-icon aria-hidden="true">mail_outline</mat-icon>{{ customer.email }}</span> }
+              @if (customer.mobileNo || customer.phone) { <span><mat-icon aria-hidden="true">phone</mat-icon>{{ customer.mobileNo || customer.phone }}</span> }
             </div>
           </div>
         </mat-card-content>
       </mat-card>
 
-      <!-- Financial Summary -->
       <mat-card class="section-card">
         <mat-card-header>
-          <mat-card-title>Financial Summary</mat-card-title>
+          <mat-card-title>Financial overview</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <div class="summary-grid">
-            <div class="summary-item">
+            <div class="summary-item invoiced-summary">
+              <span class="summary-icon"><mat-icon aria-hidden="true">receipt_long</mat-icon></span>
               <span class="label">Total Invoiced</span>
               <span class="amount">{{ formatCurrency(customer.totalInvoiced) }}</span>
             </div>
-            <div class="summary-item">
+            <div class="summary-item paid-summary">
+              <span class="summary-icon"><mat-icon aria-hidden="true">task_alt</mat-icon></span>
               <span class="label">Total Paid</span>
               <span class="amount paid">{{ formatCurrency(customer.totalPaid) }}</span>
             </div>
-            <div class="summary-item" [class]="getBalanceStatusCss(customer.totalInvoiced, customer.totalPaid)">
+            <div class="summary-item outstanding-summary" [class]="getBalanceStatusCss(customer.totalInvoiced, customer.totalPaid)">
+              <span class="summary-icon"><mat-icon aria-hidden="true">account_balance_wallet</mat-icon></span>
               <span class="label">Outstanding Balance</span>
-              <span class="amount outstanding">{{ formatCurrency(getCalculatedBalance(customer.totalInvoiced, customer.totalPaid)) }}</span>
+              <span class="amount outstanding">{{ formatCurrency(customer.outstanding ?? customer.outstandingBalance?.outstandingAmount ?? getCalculatedBalance(customer.totalInvoiced, customer.totalPaid)) }}</span>
               <span class="balance-status-label">{{ getBalanceStatusLabel(customer.totalInvoiced, customer.totalPaid) }}</span>
             </div>
-          </div>
-          <!-- Grand Total / Net Amount -->
-          <div class="grand-total-row" [class]="getBalanceStatusCss(customer.totalInvoiced, customer.totalPaid)">
-            <span class="label">Net Amount</span>
-            <span class="amount-value">{{ formatCurrency(getCalculatedBalance(customer.totalInvoiced, customer.totalPaid)) }}</span>
-            <span class="net-label">{{ getCalculatedBalance(customer.totalInvoiced, customer.totalPaid) < 0 ? '(OverPaid)' : '(Outstanding)' }}</span>
           </div>
         </mat-card-content>
       </mat-card>
 
-      <!-- Health & Risk -->
       <div class="two-column">
-        <!-- Health Score -->
         <mat-card class="section-card">
           <mat-card-header>
-            <mat-card-title>Customer Health</mat-card-title>
+            <mat-card-title><mat-icon aria-hidden="true">favorite_border</mat-icon> Customer health</mat-card-title>
           </mat-card-header>
           <mat-card-content>
             <div class="health-section">
@@ -75,10 +78,9 @@
           </mat-card-content>
         </mat-card>
 
-        <!-- Risk Assessment -->
         <mat-card class="section-card">
           <mat-card-header>
-            <mat-card-title>Collection Risk</mat-card-title>
+            <mat-card-title><mat-icon aria-hidden="true">shield</mat-icon> Collection risk</mat-card-title>
           </mat-card-header>
           <mat-card-content>
             <div class="risk-section">
@@ -91,10 +93,9 @@
         </mat-card>
       </div>
 
-      <!-- Ageing Analysis -->
       <mat-card class="section-card">
         <mat-card-header>
-          <mat-card-title>Ageing Analysis</mat-card-title>
+          <mat-card-title><mat-icon aria-hidden="true">bar_chart</mat-icon> Ageing analysis</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <div class="ageing-grid">
@@ -122,10 +123,9 @@
         </mat-card-content>
       </mat-card>
 
-      <!-- Outstanding Invoices -->
       <mat-card class="section-card" *ngIf="customer.outstandingBalance?.outstandingInvoices?.length > 0">
         <mat-card-header>
-          <mat-card-title>Outstanding Invoices</mat-card-title>
+          <mat-card-title><mat-icon aria-hidden="true">pending_actions</mat-icon> Outstanding invoices</mat-card-title>
         </mat-card-header>
         <mat-card-content>
           <div class="invoices-container">
@@ -139,11 +139,11 @@
               <div class="invoice-details">
                 <div class="detail-row">
                   <span class="label">Invoice Date:</span>
-                  <span class="value">{{ invoice.invoiceDate | date: 'yyyy-MM-dd' }}</span>
+                  <span class="value">{{ invoice.invoiceDate | date: 'dd/MM/yyyy' }}</span>
                 </div>
                 <div class="detail-row">
                   <span class="label">Due Date:</span>
-                  <span class="value">{{ invoice.dueDate | date: 'yyyy-MM-dd' }}</span>
+                  <span class="value">{{ invoice.dueDate | date: 'dd/MM/yyyy' }}</span>
                 </div>
                 <div class="detail-row">
                   <span class="label">Original Amount:</span>

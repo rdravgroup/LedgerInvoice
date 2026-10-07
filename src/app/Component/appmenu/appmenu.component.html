@@ -79,6 +79,10 @@
     </div>
 
     <mat-menu #profile="matMenu">
+      <button mat-menu-item routerLink="/company">
+        <mat-icon>business</mat-icon><span>Company Details</span>
+      </button>
+      <mat-divider></mat-divider>
       <button mat-menu-item routerLink="/profile">
         <mat-icon>manage_accounts</mat-icon><span>Profile</span>
       </button>
@@ -214,7 +218,6 @@
 <ng-template #onlyOutlet>
   <router-outlet></router-outlet>
 </ng-template>
-
 
 
 

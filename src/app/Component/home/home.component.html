@@ -1,197 +1,385 @@
-<div class="page-content">
-  <!-- Page Header -->
-  <div class="page-header">
+<div class="page-content dashboard-page">
+  <header class="page-header dashboard-header">
     <div>
-      <!-- <h1 class="page-title">Dashboard</h1> -->
       <h1 class="page-title">Welcome back, {{ company?.name || 'Store' }}</h1>
+      <p class="dashboard-subtitle">Your business overview at a glance</p>
     </div>
+    <div class="header-actions">
+      <button mat-stroked-button [matMenuTriggerFor]="importantLinksMenu" matTooltip="Open frequently used business pages">
+        <mat-icon>apps</mat-icon> Important Links <mat-icon>expand_more</mat-icon>
+      </button>
+      <button mat-icon-button [matMenuTriggerFor]="alertsMenu" aria-label="Notifications"
+        [matBadge]="alerts.length" [matBadgeHidden]="alerts.length === 0" matBadgeColor="warn">
+        <mat-icon>notifications</mat-icon>
+      </button>
+      <mat-menu #alertsMenu="matMenu" class="dashboard-alert-menu">
+        <div class="alert-menu-heading">Notifications</div>
+        @if (alertsLoading) {
+          <div class="alert-menu-message">Loading notifications...</div>
+        } @else if (alertsError) {
+          <div class="alert-menu-message error-text">{{ alertsError }}</div>
+        } @else if (!alerts.length) {
+          <div class="alert-menu-message">You're all caught up.</div>
+        } @else {
+          @for (alert of alerts; track $index) {
+            <button mat-menu-item (click)="navigate(alert.route)">
+              <mat-icon [class.alert-warning]="alert.type === 'low-stock'"
+                [class.alert-danger]="alert.type === 'overdue'">{{ alert.type === 'low-stock' ? 'inventory_2' : alert.type === 'approval' ? 'pending_actions' : 'warning' }}</mat-icon>
+              <span class="alert-copy">
+                <strong>{{ alert.title }}</strong>
+                <small>{{ alert.detail }}<ng-container *ngIf="alert.amount != null"> · {{ formatAmount(alert.amount) }}</ng-container></small>
+              </span>
+            </button>
+          }
+        }
+      </mat-menu>
+    </div>
+  </header>
 
-    <!-- Button to open company details popup -->
-    <button mat-stroked-button color="accent" (click)="openCompanyDetails()" *ngIf="company">
-      View Company Details
+  <mat-menu #importantLinksMenu="matMenu" class="important-links-menu">
+    <div class="important-links-heading"><mat-icon>apps</mat-icon><span>Important Links</span></div>
+    <button mat-menu-item routerLink="/createinvoice" matTooltip="Create a new sales invoice">
+      <mat-icon>add_circle</mat-icon><span>New Invoice</span>
     </button>
-
-    <button mat-flat-button color="primary" routerLink="/createinvoice">
-      <mat-icon aria-hidden="true">add</mat-icon>
-      New Invoice
+    <button mat-menu-item routerLink="/sales-reports" [queryParams]="filterQueryParams" matTooltip="Net sales statistics and earnings reports">
+      <mat-icon>insights</mat-icon><span>Total Earnings</span><span class="link-stat">{{ summary ? formatCompactAmount(summary.netSales) : '—' }}</span>
     </button>
-  </div>
+    <button mat-menu-item routerLink="/listinvoice" [queryParams]="filterQueryParams" matTooltip="Sales orders and invoices">
+      <mat-icon>receipt_long</mat-icon><span>Orders</span><span class="link-stat">{{ summary?.orderCount | number:numberFormat.locale }}</span>
+    </button>
+    <button mat-menu-item routerLink="/purchase/reports" [queryParams]="filterQueryParams" matTooltip="Purchase summary and reports">
+      <mat-icon>shopping_bag</mat-icon><span>Purchases</span><span class="link-stat">{{ summary?.purchaseCount | number:numberFormat.locale }}</span>
+    </button>
+    <button mat-menu-item routerLink="/sales-reports" [queryParams]="filterQueryParams" matTooltip="Sales reports">
+      <mat-icon>point_of_sale</mat-icon><span>Sales</span><span class="link-stat">{{ summary?.invoiceCount | number:numberFormat.locale }}</span>
+    </button>
+    <button mat-menu-item routerLink="/customer/add" matTooltip="Create a customer account">
+      <mat-icon>person_add</mat-icon><span>Add Customer</span>
+    </button>
+    <button mat-menu-item routerLink="/product" matTooltip="View and manage products">
+      <mat-icon>inventory_2</mat-icon><span>Products</span>
+    </button>
+    <button mat-menu-item routerLink="/ledger-dashboard" [queryParams]="filterQueryParams" matTooltip="Customer ledger and receivables reports">
+      <mat-icon>bar_chart</mat-icon><span>Ledger Reports</span>
+    </button>
+  </mat-menu>
 
-  <!-- Loading skeleton -->
-  @if (loading) {
+  <mat-card class="filter-card">
+    <mat-card-content class="filter-row">
+      <mat-form-field appearance="outline" class="month-filter">
+        <mat-label>Month</mat-label>
+        <mat-select [(ngModel)]="selectedMonth" (selectionChange)="onMonthChange()">
+          <mat-option value="">All months</mat-option>
+          @for (month of months; track month.value) {
+            <mat-option [value]="month.value">{{ month.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>From Date</mat-label>
+        <input matInput [matDatepicker]="fromPicker" [(ngModel)]="fromDate" (dateChange)="selectedMonth = ''">
+        <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
+        <mat-datepicker #fromPicker></mat-datepicker>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>To Date</mat-label>
+        <input matInput [matDatepicker]="toPicker" [(ngModel)]="toDate" (dateChange)="selectedMonth = ''">
+        <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
+        <mat-datepicker #toPicker></mat-datepicker>
+      </mat-form-field>
+      <button mat-flat-button color="primary" class="run-filter" (click)="applyFilters()">
+        <mat-icon>filter_alt</mat-icon> Run
+      </button>
+      <mat-form-field appearance="outline" class="customer-filter">
+        <mat-label>Filter by customer</mat-label>
+        <mat-select [value]="selectedCustomerId" (openedChange)="onCustomerDropdownOpened($event)"
+          (selectionChange)="selectedCustomerId = $event.value; onCustomerChange()"
+          panelClass="customer-select-panel"
+          [disabled]="customerLoading || !!customerError || !customerOptions.length"
+          aria-label="Select a customer from this company">
+          <mat-select-trigger>{{ selectedCustomerId ? selectedCustomerName : 'All customers' }}</mat-select-trigger>
+          <mat-option class="customer-search-option" disabled>
+            <input matInput placeholder="Search name or customer ID" [ngModel]="customerSearchText"
+              [ngModelOptions]="{standalone: true}" (ngModelChange)="onCustomerSearch($event)"
+              (click)="$event.stopPropagation()" (keydown)="$event.stopPropagation()"
+              aria-label="Search customers inside dropdown">
+          </mat-option>
+          <mat-option value="">All customers (company view)</mat-option>
+          @if (customerLoading) {
+            <mat-option disabled>Loading customers…</mat-option>
+          } @else if (customerError) {
+            <mat-option disabled>{{ customerError }}</mat-option>
+          } @else if (!filteredCustomerOptions.length) {
+            <mat-option disabled>No matching customers</mat-option>
+          } @else {
+            @for (item of filteredCustomerOptions; track item.uniqueKeyID) {
+              <mat-option [value]="item.uniqueKeyID">
+                <span class="customer-option-name">{{ item.name }}</span>
+                <span class="customer-option-id">{{ item.uniqueKeyID }}</span>
+              </mat-option>
+            }
+          }
+        </mat-select>
+        <mat-icon matPrefix>person_search</mat-icon>
+      </mat-form-field>
+      @if (customerLoading) {
+        <span class="customer-filter-skeleton skeleton" aria-label="Loading customers"></span>
+      }
+      @if (customerError) {
+        <button mat-button type="button" (click)="retryCustomers()">Retry customers</button>
+      }
+    </mat-card-content>
+  </mat-card>
+  @if (selectedCustomerId) {
+    <div class="scope-note" role="status">
+      <mat-icon>filter_alt</mat-icon>
+      <span>Sales and receivable metrics are filtered to {{ selectedCustomerName }}. Purchases and stock remain company-wide.</span>
+    </div>
+  }
+
+  @if (summaryLoading) {
     <div class="kpi-grid">
-      @for (i of [1,2,3,4,5]; track i) {
-        <div class="kpi-card skeleton" style="height:100px"></div>
+      @for (i of [1,2,3,4,5,6,7,8,9,10,11]; track i) {
+        <div class="kpi-card skeleton" style="height:96px"></div>
       }
     </div>
-    <div class="skeleton" style="height:320px;border-radius:14px;margin-top:20px"></div>
   }
-
-  <!-- KPI Cards -->
-  @if (!loading) {
-    <div class="kpi-grid">
-      <mat-card class="kpi-card kpi-primary" routerLink="/ledger-dashboard" matTooltip="Total A/R: ₹{{ totalAR | number:'1.0-0' }}" matTooltipPosition="above">
-        <mat-card-content>
-          <div class="kpi-icon-wrap">
-            <mat-icon aria-hidden="true">account_balance_wallet</mat-icon>
-          </div>
-          <div class="kpi-body">
-            <div class="kpi-value" [title]="'₹' + (totalAR | number:'1.0-0')">₹{{ totalAR | number:'1.0-0' }}</div>
-            <div class="kpi-label">Total A/R</div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <mat-card class="kpi-card kpi-success" routerLink="/ledger-dashboard" matTooltip="Total Paid: ₹{{ totalPaid | number:'1.0-0' }}" matTooltipPosition="above">
-        <mat-card-content>
-          <div class="kpi-icon-wrap">
-            <mat-icon aria-hidden="true">check_circle</mat-icon>
-          </div>
-          <div class="kpi-body">
-            <div class="kpi-value" [title]="'₹' + (totalPaid | number:'1.0-0')">₹{{ totalPaid | number:'1.0-0' }}</div>
-            <div class="kpi-label">Total Paid</div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <mat-card class="kpi-card kpi-danger" routerLink="/ledger-outstanding-ar" matTooltip="Overdue Amount: ₹{{ overdueAmount | number:'1.0-0' }}" matTooltipPosition="above">
-        <mat-card-content>
-          <div class="kpi-icon-wrap">
-            <mat-icon aria-hidden="true">trending_up</mat-icon>
-          </div>
-          <div class="kpi-body">
-            <div class="kpi-value" [title]="'₹' + (overdueAmount | number:'1.0-0')">₹{{ overdueAmount | number:'1.0-0' }}</div>
-            <div class="kpi-label">Overdue Amount</div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <mat-card class="kpi-card kpi-success" routerLink="/customer" matTooltip="Active Customers: {{ customerCount }}" matTooltipPosition="above">
-        <mat-card-content>
-          <div class="kpi-icon-wrap">
-            <mat-icon aria-hidden="true">people</mat-icon>
-          </div>
-          <div class="kpi-body">
-            <div class="kpi-value" [title]="customerCount.toString()">{{ customerCount }}</div>
-            <div class="kpi-label">Active Customers</div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-
-      <mat-card class="kpi-card kpi-info" routerLink="/listinvoice" matTooltip="Invoices This Month: {{ invoiceCount }}" matTooltipPosition="above">
-        <mat-card-content>
-          <div class="kpi-icon-wrap">
-            <mat-icon aria-hidden="true">receipt_long</mat-icon>
-          </div>
-          <div class="kpi-body">
-            <div class="kpi-value" [title]="invoiceCount.toString()">{{ invoiceCount }}</div>
-            <div class="kpi-label">Invoices This Month</div>
-          </div>
-        </mat-card-content>
-      </mat-card>
-    </div>
-
-    <!-- Quick Action Row -->
-    <div class="quick-actions">
-      <button mat-stroked-button routerLink="/quick-invoice">
-        <mat-icon aria-hidden="true">calculate</mat-icon>
-        Quick Invoice
-      </button>
-      <button mat-stroked-button routerLink="/customer/add">
-        <mat-icon aria-hidden="true">person_add</mat-icon>
-        Add Customer
-      </button>
-      <button mat-stroked-button routerLink="/product">
-        <mat-icon aria-hidden="true">inventory_2</mat-icon>
-        Products
-      </button>
-      <button mat-stroked-button routerLink="/ledger-dashboard">
-        <mat-icon aria-hidden="true">bar_chart</mat-icon>
-        Ledger Report
-      </button>
-    </div>
-
-    <!-- Recent Invoices Table -->
-    <mat-card class="table-card">
-      <mat-card-header>
-        <mat-card-title>Recent Invoices</mat-card-title>
-        <div class="card-header-actions">
-          <button mat-button routerLink="/listinvoice" color="primary">
-            View all <mat-icon aria-hidden="true" style="font-size:16px;vertical-align:middle">arrow_forward</mat-icon>
-          </button>
-        </div>
-      </mat-card-header>
-
-      <mat-card-content style="padding:0">
-        <!-- Desktop table -->
-        <div class="desktop-only">
-          <table mat-table [dataSource]="recentInvoices" class="full-table">
-            <ng-container matColumnDef="customer">
-              <th mat-header-cell *matHeaderCellDef>Customer</th>
-              <td mat-cell *matCellDef="let row">
-                <div class="cell-with-avatar">
-                  <div class="cell-avatar">{{ (row.cuName || 'C').charAt(0) }}</div>
-                  <span class="cell-primary">{{ row.cuName }}</span>
-                </div>
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="invoice">
-              <th mat-header-cell *matHeaderCellDef>Invoice #</th>
-              <td mat-cell *matCellDef="let row">
-                <span class="mono-text">{{ row.invNum || row.invoiceNumber }}</span>
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="date">
-              <th mat-header-cell *matHeaderCellDef>Date</th>
-              <td mat-cell *matCellDef="let row">{{ row.invDate | date:'dd MMM yyyy' }}</td>
-            </ng-container>
-            <ng-container matColumnDef="amount">
-              <th mat-header-cell *matHeaderCellDef>Amount</th>
-              <td mat-cell *matCellDef="let row">
-                <span class="amount-text">₹{{ row.totalAmt | number:'1.2-2' }}</span>
-              </td>
-            </ng-container>
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef></th>
-              <td mat-cell *matCellDef="let row">
-                <button mat-icon-button [routerLink]="'/editinvoice/' + row.invoiceNumber" matTooltip="Edit">
-                  <mat-icon aria-hidden="true">edit</mat-icon>
-                </button>
-              </td>
-            </ng-container>
-            <tr mat-header-row *matHeaderRowDef="['customer','invoice','date','amount','actions']"></tr>
-            <tr mat-row *matRowDef="let row; columns: ['customer','invoice','date','amount','actions'];" class="table-row"></tr>
-          </table>
-        </div>
-
-        <!-- Mobile card list -->
-        <div class="mobile-only">
-          @for (row of recentInvoices; track row.invoiceNumber) {
-            <div class="mobile-invoice-row">
-              <div class="mobile-invoice-left">
-                <div class="mobile-invoice-customer">{{ row.cuName }}</div>
-                <div class="mobile-invoice-num">{{ row.invNum || row.invoiceNumber }} · {{ row.invDate | date:'dd MMM' }}</div>
-              </div>
-              <div class="mobile-invoice-right">
-                <div class="mobile-invoice-amount">₹{{ row.totalAmt | number:'1.0-0' }}</div>
-              </div>
-            </div>
-          }
-        </div>
-
-        <!-- Empty state -->
-        @if (recentInvoices.length === 0) {
-          <div class="empty-state">
-            <mat-icon aria-hidden="true">receipt_long</mat-icon>
-            <h3>No invoices yet</h3>
-            <p>Create your first invoice to get started</p>
-            <button mat-flat-button color="primary" routerLink="/createinvoice">
-              <mat-icon aria-hidden="true">add</mat-icon>
-              Create Invoice
-            </button>
-          </div>
-        }
-      </mat-card-content>
+  @if (summaryError && !summary) {
+    <mat-card class="panel-state error-state">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ summaryError }}</span>
+      <button mat-button (click)="applyFilters()">Retry</button>
     </mat-card>
   }
+  @if (summary) {
+    <section class="metric-chart-panel" aria-label="Business KPI chart">
+      <div class="metric-chart-heading">
+        <div><h2>Business performance</h2><p>Key values visualized against the largest metric in the same group</p></div>
+        @if (selectedCustomerId) { <span class="metric-customer-tag"><mat-icon>person</mat-icon>{{ selectedCustomerName }}</span> }
+      </div>
+      <div class="metric-chart-grid">
+        @for (metric of kpiMetrics; track metric.label) {
+          <article class="metric-chart-item" [class]="'metric-chart-item tone-' + metric.tone"
+            [matTooltip]="metric.kind === 'amount' ? metric.tooltip + ' · ' + formatAmount(metric.value) : metric.tooltip + ' · ' + metric.value">
+            <div class="metric-chart-top">
+                  <span class="metric-label">{{ metric.label }}</span>
+                  <strong class="metric-value">{{ metric.kind === 'amount'
+                ? (metric.label === 'Current Stock Value' && stockLoading ? 'Loading…' : formatCompactAmount(metric.value))
+                : (metric.label === 'Active Customers' && customerLoading ? 'Loading…' : (metric.value | number:numberFormat.locale)) }}</strong>
+            </div>
+            <div class="metric-bar-track" role="img"
+              [attr.aria-label]="metric.label + ': ' + (metric.kind === 'amount' ? formatAmount(metric.value) : metric.value)">
+              <span class="metric-bar-fill" [style.width.%]="metricWidth(metric)"></span>
+            </div>
+          </article>
+        }
+      </div>
+      @if (selectedCustomerId) {
+            <p class="metric-scope-note">Purchases and stock are company-wide; sales and receivable metrics use the selected customer.</p>
+      }
+    </section>
+  }
+
+  @if (analyticsLoading) {
+    <div class="chart-grid">
+      <div class="dashboard-panel skeleton" style="height:300px"></div>
+      <div class="dashboard-panel skeleton" style="height:300px"></div>
+      <div class="dashboard-panel skeleton monthly-panel" style="height:300px"></div>
+    </div>
+  } @else if (analyticsError && !analytics) {
+    <mat-card class="panel-state error-state">
+      <mat-icon>error_outline</mat-icon><span>{{ analyticsError }}</span>
+      <button mat-button (click)="applyFilters()">Retry</button>
+    </mat-card>
+  } @else if (analytics) {
+    <section class="chart-grid">
+      <mat-card class="dashboard-panel">
+        <mat-card-header><mat-card-title>Assessment year: purchases vs sales</mat-card-title>
+          <button mat-button class="panel-link" routerLink="/purchase/reports" [queryParams]="filterQueryParams">Reports <mat-icon>arrow_forward</mat-icon></button>
+        </mat-card-header>
+        <mat-card-content>
+          @if (!assessmentYearRows.length) {
+            <div class="chart-empty">No sales or purchase trend data for this range.</div>
+          } @else {
+            <div class="bar-chart">
+              @for (row of assessmentYearRows; track row.assessmentYear) {
+                <div class="bar-group" [matTooltip]="'Sales ' + formatAmount(row.sales) + ' · Purchases ' + formatAmount(row.purchases)">
+                  <div class="bars">
+                    <button class="bar sales-bar" [style.height.%]="row.sales / row.max * 100" aria-label="View sales report"
+                      (click)="navigate('/sales-reports')"></button>
+                    <button class="bar purchase-bar" [style.height.%]="row.purchases / row.max * 100" aria-label="View purchase report"
+                      (click)="navigate('/purchase/reports')"></button>
+                  </div>
+                  <span>FY {{ row.assessmentYear }}-{{ (row.assessmentYear + 1) % 100 | number:'2.0-0' }}</span>
+                </div>
+              }
+            </div>
+            <div class="chart-legend"><span><i class="legend-sales"></i> Sales</span><span><i class="legend-purchase"></i> Purchases</span></div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="dashboard-panel">
+        <mat-card-header><mat-card-title>{{ selectedCustomerId ? 'Top products · customer sales mix' : 'Top products by sales' }}</mat-card-title>
+          <button mat-button class="panel-link" routerLink="/product">Products <mat-icon>arrow_forward</mat-icon></button>
+        </mat-card-header>
+        <mat-card-content>
+          @if (!topProductRows.length) {
+            <div class="chart-empty">No product sales are available for this date range.</div>
+          } @else {
+            <div class="product-sales-chart" role="list" aria-label="Top products by sales value">
+              @for (product of topProductRows; track product.productId; let i = $index) {
+                <div class="product-sales-row" role="listitem"
+                  [matTooltip]="product.productName + ' · ' + product.quantitySold + ' units · ' + formatAmount(product.salesAmount)">
+                  <div class="product-sales-heading">
+                    <span class="product-sales-name"><span class="product-sales-rank">{{ i + 1 }}</span>{{ product.productName }}</span>
+                    <strong>{{ formatCompactAmount(product.salesAmount) }}</strong>
+                  </div>
+                  <div class="product-sales-track">
+                    <span [class]="'product-sales-fill product-sales-fill-' + i"
+                      [style.width.%]="topProductWidth(product.salesAmount)"></span>
+                  </div>
+                  <small>{{ product.quantitySold | number:numberFormat.locale:'1.0-2' }} units sold</small>
+                </div>
+                }
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="dashboard-panel monthly-panel">
+        <mat-card-header><mat-card-title>Monthly revenue comparison</mat-card-title>
+          <button mat-button class="panel-link" routerLink="/sales-reports" [queryParams]="filterQueryParams">Details <mat-icon>arrow_forward</mat-icon></button>
+        </mat-card-header>
+        <mat-card-content>
+          @if (!analytics.monthlyTrends.length) {
+            <div class="chart-empty">No monthly revenue data for this range.</div>
+          } @else {
+            <svg class="line-chart" viewBox="0 0 600 200" role="img" aria-label="Monthly sales and purchase trend">
+              <line x1="12" y1="184" x2="588" y2="184" class="chart-axis"></line>
+              <polyline [attr.points]="salesLinePoints" class="sales-line"></polyline>
+              <polyline [attr.points]="purchaseLinePoints" class="purchase-line"></polyline>
+            </svg>
+            <div class="month-labels">
+              @for (row of analytics.monthlyTrends; track $index) {
+                <button (click)="navigate('/sales-reports')">{{ row.month }}/{{ row.year }}</button>
+              }
+            </div>
+            <div class="chart-legend"><span><i class="legend-sales"></i> Sales</span><span><i class="legend-purchase"></i> Purchases</span></div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </section>
+  }
+
+  <section class="dashboard-lower-grid">
+    <mat-card class="dashboard-panel transaction-panel">
+      <mat-card-header><mat-card-title>Recent Transactions</mat-card-title>
+        @if (activeTransactionTab === 'refunds') {
+          <div class="transaction-report-links">
+            <button mat-button class="panel-link" routerLink="/sales-returns" [queryParams]="filterQueryParams">Sales refunds <mat-icon>arrow_forward</mat-icon></button>
+            <button mat-button class="panel-link" routerLink="/purchase/payments" [queryParams]="filterQueryParams">Purchase refunds <mat-icon>arrow_forward</mat-icon></button>
+          </div>
+        } @else {
+          <button mat-button class="panel-link" [routerLink]="activeTransactionRoute" [queryParams]="filterQueryParams">
+            View {{ activeTransactionTab }} <mat-icon>arrow_forward</mat-icon>
+          </button>
+        }
+      </mat-card-header>
+      <nav class="transaction-tabs" aria-label="Filter recent transactions">
+        @for (tab of transactionTabs; track tab.id) {
+          <button type="button" [class.active]="activeTransactionTab === tab.id"
+            [attr.aria-pressed]="activeTransactionTab === tab.id" (click)="selectTransactionTab(tab.id)">
+            <mat-icon>{{ tab.icon }}</mat-icon>{{ tab.label }}
+          </button>
+        }
+      </nav>
+      @if (transactionsLoading) {
+        <mat-card-content><div class="skeleton transaction-skeleton"></div><div class="skeleton transaction-skeleton"></div></mat-card-content>
+      } @else if (transactionsError) {
+        <mat-card-content><div class="panel-state error-text">{{ transactionsError }} <button mat-button (click)="applyFilters()">Retry</button></div></mat-card-content>
+      } @else if (!visibleTransactions.length) {
+        <mat-card-content><div class="chart-empty">No {{ activeTransactionTab }} transactions in the selected date range.</div></mat-card-content>
+      } @else {
+        <div class="transaction-table-wrap">
+          <table mat-table [dataSource]="visibleTransactions">
+            <ng-container matColumnDef="date"><th mat-header-cell *matHeaderCellDef>Date</th><td mat-cell *matCellDef="let row">{{ row.date | date:'dd/MM/yyyy' }}</td></ng-container>
+            <ng-container matColumnDef="type"><th mat-header-cell *matHeaderCellDef>Type</th><td mat-cell *matCellDef="let row"><span class="transaction-type">{{ row.type }}</span></td></ng-container>
+            <ng-container matColumnDef="reference"><th mat-header-cell *matHeaderCellDef>Reference</th><td mat-cell *matCellDef="let row">{{ row.reference }}</td></ng-container>
+            <ng-container matColumnDef="party"><th mat-header-cell *matHeaderCellDef>Party</th><td mat-cell *matCellDef="let row">{{ row.party }}</td></ng-container>
+            <ng-container matColumnDef="amount"><th mat-header-cell *matHeaderCellDef>Amount</th><td mat-cell *matCellDef="let row" class="amount-cell">{{ formatAmount(row.amount) }}</td></ng-container>
+            <ng-container matColumnDef="status"><th mat-header-cell *matHeaderCellDef>Status</th><td mat-cell *matCellDef="let row">{{ row.status }}</td></ng-container>
+            <tr mat-header-row *matHeaderRowDef="transactionColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: transactionColumns" class="table-row"></tr>
+          </table>
+        </div>
+        <div class="transaction-cards">
+          @for (row of visibleTransactions; track $index) {
+            <article class="transaction-mobile-card">
+              <span class="transaction-mobile-heading"><strong>{{ row.reference }}</strong><span class="transaction-type">{{ row.type }}</span></span>
+              <span class="transaction-mobile-party">{{ row.party }}</span>
+              <span class="transaction-mobile-footer">
+                <small>{{ row.date | date:'dd/MM/yyyy' }} · {{ row.status }}</small>
+                <strong>{{ formatAmount(row.amount) }}</strong>
+              </span>
+            </article>
+          }
+        </div>
+      }
+    </mat-card>
+
+    <mat-card class="dashboard-panel top-products-panel">
+      <mat-card-header><mat-card-title>Top Products</mat-card-title>
+        <button mat-button class="panel-link" routerLink="/product">Products <mat-icon>arrow_forward</mat-icon></button>
+      </mat-card-header>
+      @if (analyticsLoading) {
+        <mat-card-content><div class="skeleton transaction-skeleton"></div><div class="skeleton transaction-skeleton"></div><div class="skeleton transaction-skeleton"></div></mat-card-content>
+      } @else if (analyticsError && !analytics) {
+        <mat-card-content><div class="panel-state error-text">{{ analyticsError }} <button mat-button (click)="applyFilters()">Retry</button></div></mat-card-content>
+      } @else if (analytics?.topProducts?.length) {
+        <mat-card-content class="top-products-list">
+          @for (product of (analytics?.topProducts ?? []); track product.productId; let i = $index) {
+            <div class="top-product-row" [matTooltip]="'Sales ' + formatAmount(product.salesAmount) + ' · Quantity ' + product.quantitySold">
+              <span class="top-product-rank" [class]="'top-product-rank rank-' + i"><mat-icon>inventory_2</mat-icon></span>
+              <span class="top-product-copy"><strong>{{ product.productName }}</strong><small>{{ product.quantitySold | number:numberFormat.locale:'1.0-2' }} sold</small></span>
+              <strong class="top-product-amount">{{ formatAmount(product.salesAmount) }}</strong>
+            </div>
+          }
+        </mat-card-content>
+      } @else {
+        <mat-card-content><div class="chart-empty">No product sales in the selected date range.</div></mat-card-content>
+      }
+    </mat-card>
+
+    <mat-card class="dashboard-panel stock-panel">
+      <mat-card-header><mat-card-title>Stock & alerts</mat-card-title></mat-card-header>
+      @if (stockLoading) {
+        <mat-card-content><div class="skeleton transaction-skeleton"></div><div class="skeleton transaction-skeleton"></div><div class="skeleton transaction-skeleton"></div></mat-card-content>
+      } @else if (stockError && !stock) {
+        <mat-card-content><div class="panel-state error-text">{{ stockError }} <button mat-button (click)="retryStock()">Retry</button></div></mat-card-content>
+      } @else if (stock) {
+        <mat-card-content>
+          <a class="stock-stat" routerLink="/purchase/reports" [queryParams]="filterQueryParams">
+            <span><mat-icon>payments</mat-icon> Stock value</span>
+            <strong>{{ formatAmount(stock.currentStockValue) }}</strong>
+          </a>
+          <a class="stock-stat" routerLink="/purchase/reports" [queryParams]="filterQueryParams">
+            <span><mat-icon>inventory</mat-icon> Stock quantity</span>
+            <strong>{{ stock.currentStockQuantity | number:numberFormat.locale:'1.0-2' }}</strong>
+          </a>
+          <a class="stock-stat" routerLink="/purchase/reports" [queryParams]="filterQueryParams">
+            <span><mat-icon>warning_amber</mat-icon> Low stock items</span>
+            <strong>{{ stock.lowStockCount | number:numberFormat.locale }}</strong>
+          </a>
+          <a class="stock-stat" routerLink="/purchase/orders" [queryParams]="filterQueryParams">
+            <span><mat-icon>pending_actions</mat-icon> Pending approvals</span>
+            <strong>{{ stock.pendingApprovalCount | number:numberFormat.locale }}</strong>
+          </a>
+        </mat-card-content>
+      } @else {
+        <mat-card-content><div class="chart-empty">{{ stockError || 'Stock summary is unavailable.' }}</div></mat-card-content>
+      }
+    </mat-card>
+  </section>
+
 </div>
