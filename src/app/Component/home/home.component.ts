@@ -454,6 +454,13 @@ export class HomeComponent implements OnInit, OnDestroy {
     ];
   }
 
+  metricDisplayValue(metric: { label: string; value: number; kind: 'amount' | 'count' }): string {
+    if (metric.label === 'Active Customers' && this.customerLoading) return '…';
+    if (metric.label === 'Current Stock Value' && this.stockLoading) return '…';
+    if (metric.kind === 'amount') return this.formatCompactAmount(metric.value);
+    return this.numberFormat.format(metric.value, '1.0-0');
+  }
+
   metricWidth(metric: { value: number; kind: 'amount' | 'count' }): number {
     const peers = this.kpiMetrics.filter(item => item.kind === metric.kind);
     const maximum = Math.max(...peers.map(item => Math.abs(item.value)), 1);

@@ -163,9 +163,7 @@
             [matTooltip]="metric.kind === 'amount' ? metric.tooltip + ' · ' + formatAmount(metric.value) : metric.tooltip + ' · ' + metric.value">
             <div class="metric-chart-top">
                   <span class="metric-label">{{ metric.label }}</span>
-                  <strong class="metric-value">{{ metric.kind === 'amount'
-                ? (metric.label === 'Current Stock Value' && stockLoading ? 'Loading…' : formatCompactAmount(metric.value))
-                : (metric.label === 'Active Customers' && customerLoading ? 'Loading…' : (metric.value | number:numberFormat.locale)) }}</strong>
+                  <strong class="metric-value">{{ metricDisplayValue(metric) }}</strong>
             </div>
             <div class="metric-bar-track" role="img"
               [attr.aria-label]="metric.label + ': ' + (metric.kind === 'amount' ? formatAmount(metric.value) : metric.value)">
@@ -325,29 +323,6 @@
             </article>
           }
         </div>
-      }
-    </mat-card>
-
-    <mat-card class="dashboard-panel top-products-panel">
-      <mat-card-header><mat-card-title>Top Products</mat-card-title>
-        <button mat-button class="panel-link" routerLink="/product">Products <mat-icon>arrow_forward</mat-icon></button>
-      </mat-card-header>
-      @if (analyticsLoading) {
-        <mat-card-content><div class="skeleton transaction-skeleton"></div><div class="skeleton transaction-skeleton"></div><div class="skeleton transaction-skeleton"></div></mat-card-content>
-      } @else if (analyticsError && !analytics) {
-        <mat-card-content><div class="panel-state error-text">{{ analyticsError }} <button mat-button (click)="applyFilters()">Retry</button></div></mat-card-content>
-      } @else if (analytics?.topProducts?.length) {
-        <mat-card-content class="top-products-list">
-          @for (product of (analytics?.topProducts ?? []); track product.productId; let i = $index) {
-            <div class="top-product-row" [matTooltip]="'Sales ' + formatAmount(product.salesAmount) + ' · Quantity ' + product.quantitySold">
-              <span class="top-product-rank" [class]="'top-product-rank rank-' + i"><mat-icon>inventory_2</mat-icon></span>
-              <span class="top-product-copy"><strong>{{ product.productName }}</strong><small>{{ product.quantitySold | number:numberFormat.locale:'1.0-2' }} sold</small></span>
-              <strong class="top-product-amount">{{ formatAmount(product.salesAmount) }}</strong>
-            </div>
-          }
-        </mat-card-content>
-      } @else {
-        <mat-card-content><div class="chart-empty">No product sales in the selected date range.</div></mat-card-content>
       }
     </mat-card>
 

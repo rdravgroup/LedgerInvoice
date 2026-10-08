@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, Inject, OnDestroy } from '@angular/core';
+import { AfterViewInit, Component, OnInit, ViewChild, Inject, OnDestroy, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MaterialModule } from '../../material.module';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
@@ -266,7 +266,7 @@ export class ProductListDialogComponent implements OnInit, OnDestroy {
   templateUrl: './product.component.html',
   styleUrls: ['./product.component.css']
 })
-export class ProductComponent implements OnInit, OnDestroy {
+export class ProductComponent implements OnInit, AfterViewInit, OnDestroy {
   private readonly superAdminFallbackCompanyId = 'COMP1';
   private destroy$ = new Subject<void>();
   productForm!: FormGroup;
@@ -277,8 +277,24 @@ export class ProductComponent implements OnInit, OnDestroy {
   editProductCode: string = '';
   totalProducts = 0;
   activeProducts = 0;
+  loadingProducts = false;
+  exportingProducts = false;
+  isSaving = false;
+  searchText = '';
+  categoryFilter = 'all';
+  statusFilter: 'active' | 'inactive' | 'all' = 'active';
+  mobilePageIndex = 0;
+  readonly displayedColumns = ['product', 'category', 'stock', 'actions', 'purchaseRate', 'sellingRate', 'status'];
+  dataSource = new MatTableDataSource<any>([]);
+  @ViewChild(MatSort) productSort!: MatSort;
+  @ViewChild(MatPaginator) productPaginator!: MatPaginator;
+  @ViewChild('productFormDialog') productFormDialog!: TemplateRef<any>;
+  private productDialogRef: MatDialogRef<any> | null = null;
   showExtraFields = false;
   defaultCategoryCode = '';
+  categorySearch = '';
+  measurementSearch = '';
+  allowStockQtyEdit = false;
   private readonly decimalMax = 999999999999999;
 
   private numberValidator(maxValue: number, decimals: number, minValue = 0) {
@@ -329,7 +345,12 @@ export class ProductComponent implements OnInit, OnDestroy {
     });
   }
 
+  ngAfterViewInit(): void {
+    this.connectTableControls();
+  }
+
   ngOnDestroy(): void {
+    this.productDialogRef?.close();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -381,7 +402,6 @@ export class ProductComponent implements OnInit, OnDestroy {
       'cgstRate',
       'scgstRate',
       'totalGstRate',
-      'stockQty',
       'minStockQty',
       'maxStockQty',
       'reorderLevel',
@@ -393,6 +413,11 @@ export class ProductComponent implements OnInit, OnDestroy {
       if (!c) { continue; }
       if (enabled) { c.enable({ emitEvent: false }); } else { c.disable({ emitEvent: false }); }
     }
+    const stockQty = this.productForm.get('stockQty');
+    if (stockQty) {
+      if (enabled && (!this.isEditMode || this.allowStockQtyEdit)) stockQty.enable({ emitEvent: false });
+      else stockQty.disable({ emitEvent: false });
+    }
   }
 
   onShowExtraFieldsChange(checked: boolean) {
@@ -400,9 +425,62 @@ export class ProductComponent implements OnInit, OnDestroy {
     if (this.productForm) { this.setExtraFieldsState(this.showExtraFields); }
   }
 
+  get filteredCategories(): any[] {
+    const search = this.categorySearch.trim().toLowerCase();
+    return this.categoryList.filter(category => !search ||
+      `${category.name || ''} ${category.code || ''}`.toLowerCase().includes(search));
+  }
+
+  get filteredMeasurements(): any[] {
+    const search = this.measurementSearch.trim().toLowerCase();
+    return this.measurementList.filter(measure =>
+      String(measure.name || measure).toLowerCase().includes(search));
+  }
+
+  requestStockQtyEdit(checked: boolean): void {
+    if (!checked) {
+      this.allowStockQtyEdit = false;
+      this.productForm.get('stockQty')?.disable({ emitEvent: false });
+      return;
+    }
+    if (!confirm('Changing Stock Qty directly can make inventory records inaccurate. Continue and edit the stock quantity?')) {
+      this.allowStockQtyEdit = false;
+      return;
+    }
+    this.allowStockQtyEdit = true;
+    this.productForm.get('stockQty')?.enable({ emitEvent: false });
+  }
+
+  printProducts(): void {
+    const rows = this.dataSource.filteredData;
+    if (!rows.length) return;
+    const escapeHtml = (value: any) => String(value ?? '').replace(/[&<>"']/g, char => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[char] as string));
+    const tableRows = rows.map(product => `<tr><td>${escapeHtml(product.uniqueKeyID)}</td>
+      <td>${escapeHtml(product.productName)}</td><td>${escapeHtml(this.getCategoryName(product.categoryCode))}</td>
+      <td>${escapeHtml(product.hsnSacNumber || '—')}</td><td>${escapeHtml(product.measurement || '—')}</td>
+      <td>${escapeHtml(product.stockQty ?? 0)}</td><td>${escapeHtml(product.purchaseRate ?? 0)}</td>
+      <td>${escapeHtml(product.rateWithTax ?? 0)}</td><td>${product.isActive ? 'Active' : 'Inactive'}</td></tr>`).join('');
+    const printWindow = window.open('', '_blank', 'width=1100,height=800');
+    if (!printWindow) {
+      this.toastr.warning('Allow pop-ups to print the product list.', 'Print products');
+      return;
+    }
+    printWindow.document.write(`<!doctype html><html><head><title>Products</title><style>
+      body{font:12px Arial,sans-serif;color:#222;padding:20px}h1{font-size:20px;margin:0 0 5px}
+      p{color:#555;margin:0 0 16px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:7px;text-align:left}
+      th{background:#eee}tr{break-inside:avoid}@page{size:landscape;margin:12mm}
+    </style></head><body><h1>Product List</h1><p>Printed ${new Date().toLocaleString()} · ${rows.length} products</p>
+      <table><thead><tr><th>Product ID</th><th>Product</th><th>Category</th><th>HSN/SAC</th><th>Unit</th><th>Stock Qty</th><th>Purchase Rate</th><th>Sale Rate</th><th>Status</th></tr></thead>
+      <tbody>${tableRows}</tbody></table><script>window.onload=function(){window.print();window.onafterprint=function(){window.close()}}</script></body></html>`);
+    printWindow.document.close();
+  }
+
   loadProducts() {
     const effectiveCompanyId = this.effectiveProductCompanyId();
-    this.service.GetProducts(effectiveCompanyId ?? undefined).subscribe({
+    this.loadingProducts = true;
+    this.service.GetProducts(effectiveCompanyId ?? undefined).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res: any) => {
         this.productList = res || [];
         // Sort by uniqueKeyID in descending order
@@ -413,9 +491,128 @@ export class ProductComponent implements OnInit, OnDestroy {
         });
         this.totalProducts = this.productList.length;
         this.activeProducts = this.productList.filter(p => p.isActive).length;
+        this.dataSource.data = this.productList;
+        this.loadingProducts = false;
+        this.applyProductFilter(false);
+        setTimeout(() => this.connectTableControls());
       },
-      error: () => this.toastr.error('Failed to load products', 'Error')
+      error: () => {
+        this.loadingProducts = false;
+        this.toastr.error('Failed to load products', 'Error');
+      }
     });
+  }
+
+  private connectTableControls(): void {
+    if (this.productSort) {
+      this.dataSource.sort = this.productSort;
+      this.dataSource.sortingDataAccessor = (product: any, property: string): string | number => {
+        switch (property) {
+          case 'product': return `${product.productName || ''} ${product.uniqueKeyID || ''}`.toLowerCase();
+          case 'category': return this.getCategoryName(product.categoryCode).toLowerCase();
+          case 'stock': return Number(product.stockQty || 0);
+          case 'purchaseRate': return Number(product.purchaseRate || 0);
+          case 'sellingRate': return Number(product.rateWithTax || 0);
+          case 'status': return product.isActive ? 1 : 0;
+          default: return String(product[property] ?? '').toLowerCase();
+        }
+      };
+    }
+    if (this.productPaginator) this.dataSource.paginator = this.productPaginator;
+  }
+
+  get mobileProducts(): any[] {
+    const pageSize = this.productPaginator?.pageSize || 10;
+    const start = this.mobilePageIndex * pageSize;
+    return this.dataSource.filteredData.slice(start, start + pageSize);
+  }
+
+  getCategoryName(code: string | null | undefined): string {
+    const value = String(code ?? '').trim();
+    return this.categoryList.find(category => String(category.code) === value)?.name || value || 'Uncategorized';
+  }
+
+  applyProductFilter(resetPage = true): void {
+    const search = this.searchText.trim().toLowerCase();
+    const category = this.categoryFilter;
+    const status = this.statusFilter;
+    this.dataSource.filterPredicate = (product: any): boolean => {
+      const searchFields = [
+        product.uniqueKeyID, product.productName, product.hsnSacNumber, product.measurement,
+        product.categoryCode, this.getCategoryName(product.categoryCode), product.remark
+      ].join(' ').toLowerCase();
+      return (!search || searchFields.includes(search))
+        && (category === 'all' || String(product.categoryCode || '') === category)
+        && (status === 'all' || (status === 'active' ? product.isActive === true : product.isActive !== true));
+    };
+    this.dataSource.filter = `${search}|${category}|${status}`;
+    if (resetPage) {
+      this.mobilePageIndex = 0;
+      if (this.productPaginator) this.productPaginator.firstPage();
+    }
+  }
+
+  clearProductSearch(): void {
+    this.searchText = '';
+    this.applyProductFilter();
+  }
+
+  resetProductFilters(): void {
+    this.searchText = '';
+    this.categoryFilter = 'all';
+    this.statusFilter = 'active';
+    this.applyProductFilter();
+  }
+
+  openCreateForm(): void {
+    this.resetForm();
+    this.openProductForm();
+  }
+
+  private openProductForm(): void {
+    this.productDialogRef = this.dialog.open(this.productFormDialog, {
+      width: '860px', maxWidth: '96vw', maxHeight: '92vh', autoFocus: false,
+      restoreFocus: true, panelClass: 'product-form-dialog'
+    });
+    this.productDialogRef.afterClosed().pipe(takeUntil(this.destroy$)).subscribe(result => {
+      this.productDialogRef = null;
+      if (!result?.saved) this.resetForm();
+    });
+  }
+
+  cancelProductForm(): void {
+    this.productDialogRef?.close();
+  }
+
+  exportProducts(): void {
+    if (this.exportingProducts) return;
+    this.exportingProducts = true;
+    this.service.ExportProductsExcel(
+      this.effectiveProductCompanyId(),
+      this.searchText,
+      this.categoryFilter,
+      this.statusFilter
+    )
+      .pipe(takeUntil(this.destroy$), finalize(() => this.exportingProducts = false))
+      .subscribe({
+        next: (response: any) => {
+          if (!response.body || response.body.size === 0) {
+            this.toastr.error('The product Excel file is empty.', 'Export failed');
+            return;
+          }
+          const disposition = response.headers.get('Content-Disposition') || '';
+          const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+          let fileName = match?.[1] || match?.[2] || `Products_${new Date().toISOString().slice(0, 10).replace(/-/g, '')}.xlsx`;
+          try { fileName = decodeURIComponent(fileName); } catch { /* Keep the server filename. */ }
+          const url = URL.createObjectURL(response.body);
+          const anchor = document.createElement('a');
+          anchor.href = url;
+          anchor.download = fileName;
+          anchor.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        },
+        error: () => this.toastr.error('Failed to export products to Excel.', 'Export failed')
+      });
   }
 
   loadCategories() {
@@ -463,21 +660,8 @@ export class ProductComponent implements OnInit, OnDestroy {
     });
   }
 
-  openProductList() {
-    this.dialog.open(ProductListDialogComponent, {
-      width: '900px',
-      maxWidth: '95vw',
-      data: {
-        products: this.productList,
-        categories: this.categoryList,
-        companyId: this.effectiveProductCompanyId(),
-        onEdit: (product: any) => this.editProduct(product),
-        onDelete: (product: any) => this.deleteProduct(product)
-      }
-    });
-  }
-
   onSubmit() {
+    if (this.isSaving) return;
     if (this.productForm.invalid) {
       this.productForm.markAllAsTouched();
       this.toastr.warning('Please fill all required fields', 'Validation');
@@ -504,25 +688,33 @@ export class ProductComponent implements OnInit, OnDestroy {
       return;
     }
 
+    this.isSaving = true;
     this.service.SaveProduct(payload, effectiveCompanyId).subscribe({
       next: (res: any) => {
+        this.isSaving = false;
         if (res.result === 'pass') {
           this.toastr.success(
             this.isEditMode ? 'Updated successfully' : 'Created successfully',
             'Product'
           );
-          this.resetForm();
+          this.productDialogRef?.close({ saved: true });
           this.loadProducts();
         } else {
           this.toastr.error(res.ErrorMessage || res.message || 'Failed to save', 'Error');
         }
       },
-      error: () => this.toastr.error('Failed to save product', 'Error')
+      error: () => {
+        this.isSaving = false;
+        this.toastr.error('Failed to save product', 'Error');
+      }
     });
   }
 
   editProduct(product: any) {
     this.isEditMode = true;
+    this.allowStockQtyEdit = false;
+    this.categorySearch = '';
+    this.measurementSearch = '';
     this.editProductCode = product.uniqueKeyID;
     // show extra fields when editing so values are visible
     this.showExtraFields = true;
@@ -550,6 +742,7 @@ export class ProductComponent implements OnInit, OnDestroy {
       remark: product.remark,
       isActive: product.isActive
     });
+    this.openProductForm();
   }
 
   deleteProduct(product: any) {
@@ -571,6 +764,9 @@ export class ProductComponent implements OnInit, OnDestroy {
 
   resetForm() {
     this.isEditMode = false;
+    this.allowStockQtyEdit = false;
+    this.categorySearch = '';
+    this.measurementSearch = '';
     this.editProductCode = '';
     this.showExtraFields = false;
     this.productForm.reset({ isActive: true, categoryCode: this.defaultCategoryCode, rateWithoutTax: 0, rateWithTax: 0, discountType: 'percentage', discountValue: 0, purchaseRate: null, purchaseRateDate: null, stockQty: 0, minStockQty: 0, maxStockQty: 0, reorderLevel: 0, lastPurchaseRate: 0, lastPurchaseDate: null });

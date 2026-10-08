@@ -1,5 +1,5 @@
 // src/app/Component/purchase/purchase-invoice/purchase-invoice.component.ts
-import { Component, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators } from '@angular/forms';
 import { MaterialModule } from '../../../material.module';
@@ -44,7 +44,10 @@ export class PurchaseInvoiceComponent implements OnInit, OnDestroy {
   products: any[]  = [];
   gstRates = GST_RATES;
   selectedInvoice: PurchaseInvoice | null = null;
+  detailLoading = false;
+  detailError = '';
   isInterState = false;  // IGST vs CGST+SGST toggle
+  private detailRequestVersion = 0;
 
   private destroy$ = new Subject<void>();
 
@@ -56,7 +59,6 @@ export class PurchaseInvoiceComponent implements OnInit, OnDestroy {
     private auth: AuthService,
     private selectedCo: SelectedCompanyService
   ) {
-    window.addEventListener('resize', () => this.isMobile = window.innerWidth < 768);
   }
 
   ngOnInit(): void {
@@ -67,6 +69,9 @@ export class PurchaseInvoiceComponent implements OnInit, OnDestroy {
   }
   ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
   ngAfterViewInit(): void { this.dataSource.paginator = this.paginator; this.dataSource.sort = this.sort; }
+
+  @HostListener('window:resize')
+  onWindowResize(): void { this.isMobile = window.innerWidth < 768; }
 
   private cid = () => this.selectedCo.getSelectedCompanyId() || this.auth.getCompanyId() || '';
 
@@ -302,8 +307,77 @@ export class PurchaseInvoiceComponent implements OnInit, OnDestroy {
       }
     });
   }
-  openDetail(inv: PurchaseInvoice): void { this.selectedInvoice = inv; this.view = 'detail'; }
-  backToList(): void { this.selectedInvoice = null; this.view = 'list'; this.loadList(); }
+  openDetail(inv: PurchaseInvoice): void {
+    if (!inv.piNumber) {
+      this.toastr.error('This invoice is missing its invoice number.');
+      return;
+    }
+    const requestVersion = ++this.detailRequestVersion;
+    this.selectedInvoice = { ...inv, items: [] };
+    this.detailLoading = true;
+    this.detailError = '';
+    this.view = 'detail';
+    this.svc.getInvoiceById(inv.piNumber, this.cid()).pipe(takeUntil(this.destroy$)).subscribe({
+      next: (response: any) => {
+        if (requestVersion !== this.detailRequestVersion) return;
+        const detail = response?.data ?? response?.Data;
+        if (!detail) {
+          this.detailLoading = false;
+          this.detailError = response?.errorMessage || response?.ErrorMessage || 'Could not load purchase invoice details.';
+          this.toastr.error(this.detailError);
+          return;
+        }
+        const items = detail.items ?? detail.Items ?? [];
+        this.selectedInvoice = {
+          ...detail,
+          items: Array.isArray(items) ? items.map((item: any) => ({
+            ...item,
+            productId: item.productId ?? item.ProductId ?? '',
+            productName: item.productName ?? item.ProductName ?? '',
+            hsnSac: item.hsnSac ?? item.HsnSac ?? '',
+            measurement: item.measurement ?? item.Measurement ?? '',
+            quantity: Number(item.quantity ?? item.Quantity ?? 0),
+            rate: Number(item.rate ?? item.Rate ?? 0),
+            taxableAmount: Number(item.taxableAmount ?? item.TaxableAmount ?? 0),
+            cgstAmount: Number(item.cgstAmount ?? item.CgstAmount ?? 0),
+            sgstAmount: Number(item.sgstAmount ?? item.SgstAmount ?? 0),
+            igstAmount: Number(item.igstAmount ?? item.IgstAmount ?? 0),
+            totalAmount: Number(item.totalAmount ?? item.TotalAmount ?? 0)
+          })) : []
+        };
+        this.detailLoading = false;
+
+        // The invoice detail endpoint omits payments, so enrich the view from the company payment list.
+        this.svc.getPayments(this.cid()).pipe(takeUntil(this.destroy$)).subscribe({
+          next: (paymentResponse: any) => {
+            if (requestVersion !== this.detailRequestVersion || !this.selectedInvoice) return;
+            const payments = paymentResponse?.data ?? paymentResponse?.Data ?? [];
+            this.selectedInvoice = {
+              ...this.selectedInvoice,
+              payments: Array.isArray(payments)
+                ? payments.filter((payment: any) => String(payment.piNumber ?? payment.PiNumber ?? '') === String(inv.piNumber))
+                : []
+            };
+          }
+        });
+      },
+      error: (error: any) => {
+        if (requestVersion !== this.detailRequestVersion) return;
+        this.detailLoading = false;
+        this.detailError = error?.error?.errorMessage || error?.message || 'Could not load purchase invoice details.';
+        this.toastr.error(this.detailError);
+      }
+    });
+  }
+  retryInvoiceDetails(): void { if (this.selectedInvoice) this.openDetail(this.selectedInvoice); }
+  backToList(): void {
+    this.detailRequestVersion++;
+    this.detailLoading = false;
+    this.detailError = '';
+    this.selectedInvoice = null;
+    this.view = 'list';
+    this.loadList();
+  }
 
   // ── Save ──────────────────────────────────────────────────────
   save(): void {

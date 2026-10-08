@@ -1,7 +1,12 @@
 <div class="product-container">
   <div class="hero-section">
-    <h1>Product Master</h1>
-    <p>Manage your product inventory</p>
+    <div>
+      <h1>Products</h1>
+      <p>Manage your catalogue, prices and stock in one place.</p>
+    </div>
+    <button mat-flat-button color="primary" class="btn-add" type="button" (click)="openCreateForm()">
+      <mat-icon>add</mat-icon> Add Product
+    </button>
   </div>
 
   <div class="stats-container">
@@ -28,14 +33,155 @@
     </div>
   </div>
 
-  <div class="form-card">
-    <div class="card-header">
-      <h2>{{ isEditMode ? 'Edit Product' : 'Add New Product' }}</h2>
-      <button mat-raised-button color="accent" (click)="openProductList()">
-        <mat-icon>list</mat-icon>
-        View All Products
+  <section class="product-panel" aria-label="Product register">
+    <div class="toolbar-row">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Search products</mat-label>
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput [(ngModel)]="searchText" (input)="applyProductFilter()"
+          placeholder="Name, product ID, HSN or unit" aria-label="Search products">
+        @if (searchText) {
+          <button matSuffix mat-icon-button type="button" (click)="clearProductSearch()" aria-label="Clear search">
+            <mat-icon>close</mat-icon>
+          </button>
+        }
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Category</mat-label>
+        <mat-select [(ngModel)]="categoryFilter" (selectionChange)="applyProductFilter()">
+          <mat-option value="all">All categories</mat-option>
+          @for (category of categoryList; track category.code) {
+            <mat-option [value]="category.code">{{ category.name || category.code }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field status-filter">
+        <mat-label>Status</mat-label>
+        <mat-select [(ngModel)]="statusFilter" (selectionChange)="applyProductFilter()">
+          <mat-option value="active">Active products</mat-option>
+          <mat-option value="all">All products</mat-option>
+          <mat-option value="inactive">Inactive products</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <button mat-stroked-button type="button" (click)="resetProductFilters()" class="reset-filter">
+        <mat-icon>filter_alt_off</mat-icon> Reset
+      </button>
+      <button mat-icon-button type="button" (click)="loadProducts()" matTooltip="Refresh products" aria-label="Refresh products">
+        <mat-icon [class.spin]="loadingProducts">refresh</mat-icon>
+      </button>
+      <button mat-stroked-button type="button" (click)="exportProducts()" [disabled]="exportingProducts || !productList.length">
+        <mat-icon>download</mat-icon> Export
+      </button>
+      <button mat-stroked-button type="button" (click)="printProducts()" [disabled]="!dataSource.filteredData.length">
+        <mat-icon>picture_as_pdf</mat-icon> Print / PDF
       </button>
     </div>
+
+    @if (loadingProducts) {
+      <div class="product-loading" role="status"><mat-progress-spinner mode="indeterminate" diameter="32"></mat-progress-spinner><span>Loading products…</span></div>
+    } @else {
+      <div class="product-mobile-list">
+        @for (product of mobileProducts; track product.uniqueKeyID) {
+          <article class="product-mobile-card">
+            <div class="product-mobile-head">
+              <div class="product-avatar">{{ (product.productName || '?').charAt(0).toUpperCase() }}</div>
+              <div class="product-identity">
+                <strong>{{ product.productName || 'Unnamed product' }}</strong>
+              <span>{{ product.uniqueKeyID }} · {{ getCategoryName(product.categoryCode) }} · HSN {{ product.hsnSacNumber || '—' }}</span>
+              </div>
+              <span class="status-badge" [class.active]="product.isActive" [class.inactive]="!product.isActive">
+                {{ product.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+            <div class="product-mobile-facts">
+              <div><span>Sale rate</span><strong>{{ product.rateWithTax | currency:'INR':'symbol':'1.2-2' }}</strong></div>
+              <div><span>Purchase rate</span><strong>{{ product.purchaseRate | currency:'INR':'symbol':'1.2-2' }}</strong></div>
+              <div><span>Stock</span><strong>{{ product.stockQty ?? 0 }} {{ product.measurement }}</strong></div>
+              <div><span>Category / HSN</span><strong>{{ getCategoryName(product.categoryCode) }} · {{ product.hsnSacNumber || '—' }}</strong></div>
+            </div>
+            <div class="product-mobile-actions">
+              <button mat-stroked-button type="button" (click)="editProduct(product)"><mat-icon>edit</mat-icon> Edit</button>
+              <button mat-stroked-button type="button" color="warn" (click)="deleteProduct(product)"><mat-icon>delete</mat-icon> Delete</button>
+            </div>
+          </article>
+        }
+        @if (!dataSource.filteredData.length) {
+          <div class="empty-state">
+            <mat-icon>inventory_2</mat-icon>
+            <h3>{{ productList.length ? 'No matching products' : 'No products yet' }}</h3>
+            <p>{{ productList.length ? 'Change your search or filters and try again.' : 'Add your first product to build your catalogue.' }}</p>
+            @if (!productList.length) {
+              <button mat-flat-button color="primary" type="button" (click)="openCreateForm()"><mat-icon>add</mat-icon> Add Product</button>
+            }
+          </div>
+        }
+      </div>
+
+      <div class="product-table-scroll">
+        <table mat-table [dataSource]="dataSource" matSort class="product-table">
+          <ng-container matColumnDef="product">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Product</th>
+            <td mat-cell *matCellDef="let product">
+              <div class="product-name-cell">
+                <div class="product-avatar">{{ (product.productName || '?').charAt(0).toUpperCase() }}</div>
+                <div><strong>{{ product.productName || 'Unnamed product' }}</strong><span>{{ product.uniqueKeyID }}</span></div>
+              </div>
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="category">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Category / HSN</th>
+            <td mat-cell *matCellDef="let product"><strong>{{ getCategoryName(product.categoryCode) }}</strong><small>HSN/SAC: {{ product.hsnSacNumber || '—' }} · {{ product.measurement || '—' }}</small></td>
+          </ng-container>
+          <ng-container matColumnDef="stock">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Stock</th>
+            <td mat-cell *matCellDef="let product">
+              <span [class.stock-low]="(product.stockQty ?? 0) <= (product.reorderLevel ?? 0)">{{ product.stockQty ?? 0 }} {{ product.measurement }}</span>
+              @if ((product.stockQty ?? 0) <= (product.reorderLevel ?? 0)) { <small class="stock-hint">At reorder level</small> }
+            </td>
+          </ng-container>
+          <ng-container matColumnDef="purchaseRate">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Purchase Rate</th>
+            <td mat-cell *matCellDef="let product">{{ product.purchaseRate | currency:'INR':'symbol':'1.2-2' }}</td>
+          </ng-container>
+          <ng-container matColumnDef="sellingRate">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Sale Rate</th>
+            <td mat-cell *matCellDef="let product"><strong>{{ product.rateWithTax | currency:'INR':'symbol':'1.2-2' }}</strong></td>
+          </ng-container>
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+            <td mat-cell *matCellDef="let product"><span class="status-badge" [class.active]="product.isActive" [class.inactive]="!product.isActive">{{ product.isActive ? 'Active' : 'Inactive' }}</span></td>
+          </ng-container>
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef><span class="sr-only">Actions</span></th>
+            <td mat-cell *matCellDef="let product">
+              <div class="action-btns">
+                <button mat-icon-button type="button" (click)="editProduct(product)" matTooltip="Edit product" [attr.aria-label]="'Edit ' + product.productName"><mat-icon>edit</mat-icon></button>
+                <button mat-icon-button type="button" color="warn" (click)="deleteProduct(product)" matTooltip="Delete product" [attr.aria-label]="'Delete ' + product.productName"><mat-icon>delete</mat-icon></button>
+              </div>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns; sticky: true"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns" class="product-row"></tr>
+          <tr class="mat-row" *matNoDataRow><td class="mat-cell" [attr.colspan]="displayedColumns.length">
+            <div class="empty-state small"><mat-icon>search_off</mat-icon><h3>No matching products</h3><p>Try a different search or filter.</p></div>
+          </td></tr>
+        </table>
+      </div>
+      <mat-paginator [length]="dataSource.filteredData.length" [pageSizeOptions]="[10, 25, 50, 100, 250, 500]" [pageSize]="10"
+        showFirstLastButtons aria-label="Product pages" (page)="mobilePageIndex = $event.pageIndex"></mat-paginator>
+    }
+  </section>
+
+  <ng-template #productFormDialog>
+    <h2 mat-dialog-title class="product-dialog-title">
+      <mat-icon>{{ isEditMode ? 'edit' : 'add_box' }}</mat-icon>
+      {{ isEditMode ? 'Edit Product' : 'Add Product' }}
+    </h2>
+    <mat-dialog-content class="product-dialog-content">
 
     <form [formGroup]="productForm" (ngSubmit)="onSubmit()">
       <div class="form-grid">
@@ -53,10 +199,14 @@
 
         <mat-form-field appearance="outline">
           <mat-label>Category</mat-label>
-          <mat-select formControlName="categoryCode">
-            <mat-option *ngFor="let cat of categoryList" [value]="cat.code">
+          <mat-select formControlName="categoryCode" (openedChange)="categorySearch = ''">
+            <mat-option class="product-select-search-option" (click)="$event.stopPropagation()">
+              <input matInput placeholder="Search category" aria-label="Search category" [(ngModel)]="categorySearch" [ngModelOptions]="{standalone: true}" (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()">
+            </mat-option>
+            <mat-option *ngFor="let cat of filteredCategories" [value]="cat.code">
               {{ cat.name }} ({{ cat.code }})
             </mat-option>
+            <mat-option *ngIf="!filteredCategories.length" disabled>No categories found</mat-option>
           </mat-select>
           <mat-icon matPrefix>category</mat-icon>
           <mat-error *ngIf="productForm.get('categoryCode')?.hasError('required')">
@@ -69,10 +219,14 @@
 
         <mat-form-field appearance="outline">
           <mat-label>Measurement</mat-label>
-          <mat-select formControlName="measurement">
-            <mat-option *ngFor="let measure of measurementList" [value]="measure.name">
+          <mat-select formControlName="measurement" (openedChange)="measurementSearch = ''">
+            <mat-option class="product-select-search-option" (click)="$event.stopPropagation()">
+              <input matInput placeholder="Search measurement" aria-label="Search measurement" [(ngModel)]="measurementSearch" [ngModelOptions]="{standalone: true}" (keydown)="$event.stopPropagation()" (click)="$event.stopPropagation()">
+            </mat-option>
+            <mat-option *ngFor="let measure of filteredMeasurements" [value]="measure.name || measure">
               {{ measure.name }}
             </mat-option>
+            <mat-option *ngIf="!filteredMeasurements.length" disabled>No measurements found</mat-option>
           </mat-select>
           <mat-icon matPrefix>straighten</mat-icon>
           <mat-error *ngIf="productForm.get('measurement')?.hasError('required')">
@@ -238,7 +392,7 @@
           </div>
         </div>
         <div class="section-grid">
-          <mat-form-field appearance="outline">
+          <mat-form-field appearance="outline" [class.stock-qty-locked]="isEditMode && !allowStockQtyEdit">
             <mat-label>Stock Qty</mat-label>
             <input matInput type="number" step="0.001" min="0" max="999999999999999" formControlName="stockQty" placeholder="0">
             <mat-icon matPrefix>inventory_2</mat-icon>
@@ -252,6 +406,14 @@
               Maximum 3 decimal places allowed
             </mat-error>
           </mat-form-field>
+          @if (isEditMode) {
+            <div class="stock-edit-confirmation">
+              <mat-checkbox [checked]="allowStockQtyEdit" (change)="requestStockQtyEdit($event.checked)">
+                Allow direct Stock Qty update
+              </mat-checkbox>
+              <small>Stock Qty is locked during edit. Checking this asks you to confirm first.</small>
+            </div>
+          }
 
           <mat-form-field appearance="outline">
             <mat-label>Min Stock Qty</mat-label>
@@ -340,16 +502,20 @@
       </div>
 
       <div class="form-actions">
-        <button mat-raised-button type="button" (click)="resetForm()" *ngIf="isEditMode">
+        <button mat-stroked-button type="button" (click)="cancelProductForm()">
           Cancel
         </button>
-        <button mat-raised-button color="primary" type="submit">
+        <button mat-flat-button color="primary" type="submit" [disabled]="isSaving">
+          @if (isSaving) { <mat-progress-spinner diameter="18" mode="indeterminate"></mat-progress-spinner> }
+          @else {
           <mat-icon>{{ isEditMode ? 'update' : 'add' }}</mat-icon>
-          {{ isEditMode ? 'Update Product' : 'Add Product' }}
+          }
+          {{ isSaving ? 'Saving…' : (isEditMode ? 'Update Product' : 'Create Product') }}
         </button>
       </div>
     </form>
-  </div>
+    </mat-dialog-content>
+  </ng-template>
 </div>
 
 

@@ -379,6 +379,18 @@
         </div>
         <button mat-stroked-button (click)="backToList()"><mat-icon>arrow_back</mat-icon> Back</button>
       </div>
+      @if (detailLoading) {
+        <div class="pi-detail-loading" role="status">
+          <mat-progress-spinner mode="indeterminate" diameter="32"></mat-progress-spinner>
+          <span>Loading invoice details and line items…</span>
+        </div>
+      } @else if (detailError) {
+        <div class="pi-detail-error" role="alert">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ detailError }}</span>
+          <button mat-stroked-button type="button" (click)="retryInvoiceDetails()"><mat-icon>refresh</mat-icon> Retry</button>
+        </div>
+      } @else {
       <mat-card class="pi-card">
         <mat-card-content>
           <div class="pi-detail-grid">
@@ -391,28 +403,38 @@
             }
           </div>
           <!-- Items -->
-          <div class="pu-section-label" style="margin-top:16px">Line Items</div>
-          <table class="pu-items-table">
-            <thead>
-              <tr>
-                <th>Product</th><th>HSN</th><th>Qty</th><th class="num">Rate</th>
-                <th class="num">Taxable</th><th class="num">GST</th><th class="num">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (item of selectedInvoice.items; track item.productId) {
-                <tr>
-                  <td>{{ item.productName || item.productId }}</td>
-                  <td>{{ item.hsnSac || '—' }}</td>
-                  <td>{{ item.quantity }} {{ item.measurement }}</td>
-                  <td class="num">₹{{ item.rate | companyNumber:'1.4-4' }}</td>
-                  <td class="num">₹{{ item.taxableAmount | companyNumber:'1.2-2' }}</td>
-                  <td class="num">₹{{ (item.cgstAmount + item.sgstAmount + item.igstAmount) | companyNumber:'1.2-2' }}</td>
-                  <td class="num pi-line-total">₹{{ item.totalAmount | companyNumber:'1.2-2' }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
+          <div class="pu-section-label" style="margin-top:16px">Line Items <span class="pi-line-count">({{ selectedInvoice.items.length || 0 }})</span></div>
+          @if (selectedInvoice.items.length) {
+            <div class="pi-detail-items-scroll">
+              <table class="pu-items-table pi-detail-items-table">
+                <thead>
+                  <tr>
+                    <th>Product</th><th>HSN/SAC</th><th>Quantity</th><th class="num">Rate</th>
+                    <th class="num">Discount</th><th class="num">Taxable</th><th class="num">CGST</th>
+                    <th class="num">SGST</th><th class="num">IGST</th><th class="num">Line Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of selectedInvoice.items; track $index) {
+                    <tr>
+                      <td><strong>{{ item.productName || item.productId }}</strong>@if (item.remark) { <small class="pi-item-remark">{{ item.remark }}</small> }</td>
+                      <td>{{ item.hsnSac || '—' }}</td>
+                      <td>{{ item.quantity }} {{ item.measurement }}</td>
+                      <td class="num">₹{{ item.rate | companyNumber:'1.4-4' }}</td>
+                      <td class="num">₹{{ item.discountAmt | companyNumber:'1.2-2' }}<small class="pi-item-remark">{{ item.discountPct || 0 }}%</small></td>
+                      <td class="num">₹{{ item.taxableAmount | companyNumber:'1.2-2' }}</td>
+                      <td class="num">₹{{ item.cgstAmount | companyNumber:'1.2-2' }}<small class="pi-item-remark">{{ item.cgstRate || 0 }}%</small></td>
+                      <td class="num">₹{{ item.sgstAmount | companyNumber:'1.2-2' }}<small class="pi-item-remark">{{ item.sgstRate || 0 }}%</small></td>
+                      <td class="num">₹{{ item.igstAmount | companyNumber:'1.2-2' }}<small class="pi-item-remark">{{ item.igstRate || 0 }}%</small></td>
+                      <td class="num pi-line-total">₹{{ item.totalAmount | companyNumber:'1.2-2' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="pi-no-line-items"><mat-icon>inventory_2</mat-icon><span>No line items were returned for this invoice.</span></div>
+          }
           <!-- Totals -->
           <div class="pu-totals">
             <div class="pu-totals-row"><span class="pu-totals-label">Subtotal</span><span class="pu-totals-val">₹{{ selectedInvoice.subtotal | companyNumber:'1.2-2' }}</span></div>
@@ -441,6 +463,7 @@
           }
         </mat-card-content>
       </mat-card>
+      }
     </div>
   }<!-- end detail view -->
 

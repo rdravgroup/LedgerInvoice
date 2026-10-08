@@ -48,10 +48,12 @@ export class MasterService {
       .pipe(catchError(err => this.handleError(err, 'Get products')));
   }
 
-  ExportProductsExcel(companyId?: string, search?: string) {
+  ExportProductsExcel(companyId?: string, search?: string, categoryCode?: string, status?: string) {
     let params = new HttpParams();
     if (companyId) params = params.set('companyId', companyId);
     if (search?.trim()) params = params.set('search', search.trim());
+    if (categoryCode && categoryCode !== 'all') params = params.set('categoryCode', categoryCode);
+    if (status && status !== 'all') params = params.set('status', status);
     return this.http.get(this.baseUrl + 'Product/ExportExcel', {
       params,
       observe: 'response',

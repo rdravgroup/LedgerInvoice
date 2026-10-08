@@ -16,6 +16,15 @@
 .pu-table.pi-list-table { width: 100%; min-width: 980px; }
 .pi-add-line-btn { margin-top: 10px; border-radius: 20px !important; }
 .pi-line-total { font-weight: 600; color: var(--md-sys-color-primary); }
+.pi-detail-loading { display: flex; min-height: 240px; align-items: center; justify-content: center; gap: 12px; color: var(--md-sys-color-on-surface-variant); }
+.pi-detail-error { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 180px; padding: 20px; color: var(--md-sys-color-error); text-align: center; flex-wrap: wrap; }
+.pi-detail-items-scroll { width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.pi-detail-items-table { width: 100%; min-width: 1320px; }
+.pi-detail-items-table td { white-space: nowrap; }
+.pi-detail-items-table td:first-child { min-width: 190px; white-space: normal; }
+.pi-line-count { color: var(--md-sys-color-on-surface-variant); font-size: 13px; font-weight: 500; }
+.pi-item-remark { display: block; margin-top: 3px; color: var(--md-sys-color-on-surface-variant); font-size: 11px; font-weight: 400; }
+.pi-no-line-items { display: flex; align-items: center; gap: 8px; padding: 18px; border: 1px dashed var(--md-sys-color-outline); border-radius: 10px; color: var(--md-sys-color-on-surface-variant); }
 
 .pi-items-scroll { padding-top: 4px; }
 .pu-items-table { min-width: 1280px; table-layout: auto; }
