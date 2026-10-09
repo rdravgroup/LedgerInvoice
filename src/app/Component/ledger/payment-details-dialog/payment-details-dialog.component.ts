@@ -36,13 +36,29 @@ interface PaymentDetail {
   styleUrls: ['./payment-details-dialog.component.css']
 })
 export class PaymentDetailsDialogComponent implements OnInit {
-  displayedColumns: string[] = ['paymentNumber', 'paymentDate', 'paymentAmount', 'paymentMethod', 'status', 'actions'];
+  displayedColumns: string[] = ['serialNumber', 'paymentNumber', 'paymentDate', 'paymentAmount', 'paymentMethod', 'status', 'actions'];
   dataSource = new MatTableDataSource<PaymentDetail>();
   
   @ViewChild(MatSort) sort!: MatSort;
 
   loading = true;
   error: string | null = null;
+
+  get totalPayments(): number {
+    return this.dataSource.data.length;
+  }
+
+  get totalAmount(): number {
+    return this.dataSource.data.reduce((total, payment) => total + Number(payment.paymentAmount || 0), 0);
+  }
+
+  printPayments(): void {
+    document.body.classList.add('print-customer-payments-dialog');
+    const cleanup = () => document.body.classList.remove('print-customer-payments-dialog');
+    window.addEventListener('afterprint', cleanup, { once: true });
+    window.print();
+    window.setTimeout(cleanup, 10000);
+  }
 
   constructor(
     private ledgerService: LedgerService,
@@ -81,12 +97,9 @@ export class PaymentDetailsDialogComponent implements OnInit {
           payments = Array.isArray(response.data) ? response.data : [response.data];
         }
         
-        if (payments && payments.length > 0) {
-          this.dataSource.data = payments;
-          this.dataSource.sort = this.sort;
-        } else {
-          this.error = response.errorMessage || 'No payments found';
-        }
+        this.dataSource.data = payments || [];
+        if (response?.errorMessage && payments.length === 0) this.error = response.errorMessage;
+        if (this.sort) this.dataSource.sort = this.sort;
         this.loading = false;
       },
       error: (err) => {

@@ -352,8 +352,20 @@ export class HomeComponent implements OnInit, OnDestroy {
     this.stockError = '';
     this.stock = undefined;
     this.dashboardService.getStockSummary(this.companyId).pipe(takeUntil(this.destroy$)).subscribe({
-      next: stock => {
-        this.stock = stock;
+      next: (stock: any) => {
+        let value = stock as any;
+        for (let depth = 0; depth < 3 && (value?.data || value?.Data); depth++) value = value.data ?? value.Data;
+        const numberOrZero = (...values: unknown[]): number => {
+          const candidate = values.find(item => item !== null && item !== undefined && item !== '');
+          const parsed = Number(candidate ?? 0);
+          return Number.isFinite(parsed) ? parsed : 0;
+        };
+        this.stock = {
+          currentStockValue: numberOrZero(value?.currentStockValue, value?.CurrentStockValue, value?.stockValue, value?.StockValue),
+          currentStockQuantity: numberOrZero(value?.currentStockQuantity, value?.CurrentStockQuantity, value?.totalStockQuantity, value?.TotalStockQuantity, value?.stockQty, value?.StockQty),
+          lowStockCount: numberOrZero(value?.lowStockCount, value?.LowStockCount, value?.lowStockItems, value?.LowStockItems),
+          pendingApprovalCount: numberOrZero(value?.pendingApprovalCount, value?.PendingApprovalCount, value?.pendingApprovals, value?.PendingApprovals)
+        };
         this.stockLoading = false;
       },
       error: error => {

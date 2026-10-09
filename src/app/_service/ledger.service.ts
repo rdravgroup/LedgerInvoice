@@ -337,8 +337,11 @@ export class LedgerService {
       if (filters.minLastPaymentDays != null) queryParams += `&minLastPaymentDays=${filters.minLastPaymentDays}`;
       
       // Search filters
+      if (filters.customerId) queryParams += `&customerId=${encodeURIComponent(filters.customerId)}`;
       if (filters.customerName) queryParams += `&customerName=${encodeURIComponent(filters.customerName)}`;
       if (filters.customerCompany) queryParams += `&customerCompany=${encodeURIComponent(filters.customerCompany)}`;
+      if (filters.fromDate) queryParams += `&fromDate=${encodeURIComponent(filters.fromDate)}`;
+      if (filters.toDate) queryParams += `&toDate=${encodeURIComponent(filters.toDate)}`;
       
       // Sorting
       if (filters.sortBy) queryParams += `&sortBy=${filters.sortBy}`;
@@ -360,7 +363,13 @@ export class LedgerService {
             totalInvoiced: Number(c.totalInvoiced ?? 0),
             totalPaid: Number(c.totalPaid ?? 0),
             balance: Number(c.outstandingAmount ?? c.totalOutstanding ?? c.balance ?? 0),
-            daysOutstanding: Number(c.averageDaysToPay ?? c.daysOutstanding ?? c.avgDays ?? 0),
+            daysOutstanding: Number(c.daysOutstanding ?? c.maxDaysOverdue ?? 0),
+            totalReturns: Number(c.totalReturns ?? 0),
+            totalRefunds: Number(c.totalRefunds ?? 0),
+            invoiceCount: Number(c.invoiceCount ?? 0),
+            openInvoiceCount: Number(c.openInvoiceCount ?? 0),
+            paymentCount: Number(c.paymentCount ?? 0),
+            lastTransactionDate: c.lastTransactionDate ?? null,
             lastPaymentDate: (c.lastPaymentDate === '0001-01-01T00:00:00' ? null : (c.lastPaymentDate ?? null)) || null
           } as customerOutstanding;
         });
@@ -389,6 +398,13 @@ export class LedgerService {
     return this.http.get<ledgerApiResponse>(
       `${this.baseUrl}CustomerLedger/customer/${customerId}`
     ).pipe(catchError(err => this.handleError(err, 'Get customer ledger')));
+  }
+
+  sendOutstandingReminder(customerId: string): Observable<ledgerApiResponse> {
+    return this.http.post<ledgerApiResponse>(
+      `${this.baseUrl}CustomerLedger/outstanding/reminder/${encodeURIComponent(customerId)}`,
+      {}
+    );
   }
 
   /**

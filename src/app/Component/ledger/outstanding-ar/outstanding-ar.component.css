@@ -176,6 +176,7 @@
   box-sizing: border-box;
   margin: 0 var(--space-4) var(--space-4);
 }
+.mobile-serial { display: grid; width: 30px; height: 30px; flex: 0 0 auto; place-items: center; border-radius: 50%; background: var(--md-sys-color-primary-container); color: var(--md-sys-color-on-primary-container); font-size: 12px; font-weight: 700; }
 .mobile-card:active { box-shadow: var(--md-sys-elevation-3); }
 
 .card-header {
@@ -296,3 +297,19 @@
     padding-right: var(--space-3);
   }
 }
+
+
+/* Outstanding A/R filters and printable report */
+.ar-filter-bar { display:grid; grid-template-columns:minmax(220px,2fr) repeat(2,minmax(170px,1fr)) minmax(180px,1fr) auto; gap:12px; align-items:start; padding:18px; margin:0 0 18px; border:1px solid var(--md-sys-color-outline); border-radius:12px; background:var(--md-sys-color-surface); }
+.ar-filter-bar mat-form-field { width:100%; }
+.ar-filter-actions { display:flex; gap:8px; padding-top:4px; }
+.ar-print-report { display:none; }
+.ar-filter-hint,.ar-date-error,.customer-list-error { grid-column:1/-1; margin:0; font-size:12px; color:var(--md-sys-color-on-surface-variant); }
+.ar-date-error { color:#b3261e; }
+.customer-list-error { display:flex; align-items:center; gap:8px; color:var(--md-sys-color-error); }
+.customer-option-name,.customer-option-meta { display:block; line-height:1.35; }
+.customer-option-name { font-weight:600; }
+.customer-option-meta { color:var(--md-sys-color-on-surface-variant); font-size:11px; }
+.cell-detail { display:block; margin-top:3px; color:var(--md-sys-color-on-surface-variant); font-size:11px; line-height:1.3; }
+@media(max-width:900px){.ar-filter-bar{grid-template-columns:repeat(2,minmax(0,1fr));}.ar-filter-actions{align-items:center}.ar-filter-hint,.ar-date-error,.customer-list-error{grid-column:1/-1}}
+@media(max-width:560px){.ar-filter-bar{grid-template-columns:1fr;padding:12px;}.ar-filter-actions{padding-top:0}.ar-filter-hint,.ar-date-error,.customer-list-error{grid-column:1}}

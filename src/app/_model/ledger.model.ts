@@ -64,6 +64,12 @@ export interface customerOutstanding {
   totalPaid: number;
   balance: number;
   daysOutstanding: number;
+  totalReturns?: number;
+  totalRefunds?: number;
+  invoiceCount?: number;
+  openInvoiceCount?: number;
+  paymentCount?: number;
+  lastTransactionDate?: string | null;
   lastPaymentDate: string | null;
 }
 

@@ -49,14 +49,20 @@
               <span class="label">Total Paid</span>
               <span class="amount paid">{{ formatCurrency(customer.totalPaid) }}</span>
             </div>
-            <div class="summary-item outstanding-summary" [class]="getBalanceStatusCss(customer.totalInvoiced, customer.totalPaid)">
+            <div class="summary-item outstanding-summary" [class]="getBalanceStatusCss(customer.totalInvoiced, customer.totalPaid, customer.totalReturns, customer.totalRefunds)">
               <span class="summary-icon"><mat-icon aria-hidden="true">account_balance_wallet</mat-icon></span>
               <span class="label">Outstanding Balance</span>
-              <span class="amount outstanding">{{ formatCurrency(customer.outstanding ?? customer.outstandingBalance?.outstandingAmount ?? getCalculatedBalance(customer.totalInvoiced, customer.totalPaid)) }}</span>
-              <span class="balance-status-label">{{ getBalanceStatusLabel(customer.totalInvoiced, customer.totalPaid) }}</span>
+              <span class="amount outstanding">{{ formatCurrency(customer.outstanding ?? customer.outstandingBalance?.outstandingAmount ?? getCalculatedBalance(customer.totalInvoiced, customer.totalPaid, customer.totalReturns, customer.totalRefunds)) }}</span>
+              <span class="balance-status-label">{{ getBalanceStatusLabel(customer.totalInvoiced, customer.totalPaid, customer.totalReturns, customer.totalRefunds) }}</span>
             </div>
           </div>
-        </mat-card-content>
+        <div class="ledger-breakdown">
+            <span><strong>Receipts:</strong> {{ customer.paymentCount || 0 }} payment(s)</span>
+            <span><strong>Returns / credit notes:</strong> {{ formatCurrency(customer.totalReturns) }}</span>
+            <span><strong>Refunds:</strong> {{ formatCurrency(customer.totalRefunds) }}</span>
+            <span><strong>Open invoices:</strong> {{ customer.openInvoiceCount || 0 }}</span>
+          </div>
+          </mat-card-content>
       </mat-card>
 
       <div class="two-column">
@@ -166,6 +172,9 @@
   </mat-dialog-content>
 
   <mat-dialog-actions align="end">
-    <button mat-button (click)="closeDialog()">Close</button>
+    <button mat-stroked-button type="button" class="print-action" (click)="printLedger()">
+      <mat-icon>print</mat-icon>Print
+    </button>
+    <button mat-button type="button" (click)="closeDialog()">Close</button>
   </mat-dialog-actions>
 </div>

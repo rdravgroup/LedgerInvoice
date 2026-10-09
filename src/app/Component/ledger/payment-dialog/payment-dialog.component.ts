@@ -12,6 +12,7 @@ interface DialogData {
   customerId?: string;
   customerName?: string;
   companyId: string;
+  currentOutstanding?: number;
 }
 
 @Component({
@@ -75,6 +76,10 @@ export class PaymentDialogComponent {
       this.form.get('chequeBranch')?.updateValueAndValidity();
       this.form.get('chequeDate')?.updateValueAndValidity();
     });
+  }
+
+  formatCurrency(value: number | undefined): string {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 }).format(Number(value || 0));
   }
 
   submit(): void {

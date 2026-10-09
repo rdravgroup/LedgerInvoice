@@ -1,4 +1,5 @@
 <h2 mat-dialog-title>Record Payment</h2>
+<div class="payment-context" *ngIf="data.customerName"><strong>{{ data.customerName }}</strong><span>Current outstanding: {{ formatCurrency(data.currentOutstanding) }}</span><small>Receipt will be auto-allocated to the oldest open invoices.</small></div>
 <mat-dialog-content [formGroup]="form">
     <!-- Invoice selection removed; not required for payment -->
 

@@ -67,15 +67,15 @@ export class CustomerDetailsDialogComponent implements OnInit {
    * Calculate balance: Total Invoiced - Total Paid
    * If negative, customer has overpaid
    */
-  getCalculatedBalance(totalInvoiced: number, totalPaid: number): number {
-    return totalInvoiced - totalPaid;
+  getCalculatedBalance(totalInvoiced: number, totalPaid: number, totalReturns = 0, totalRefunds = 0): number {
+    return totalInvoiced - totalPaid - totalReturns + totalRefunds;
   }
 
   /**
    * Get CSS class for balance display (green if overpaid, red if owed)
    */
-  getBalanceStatusCss(totalInvoiced: number, totalPaid: number): string {
-    const balance = this.getCalculatedBalance(totalInvoiced, totalPaid);
+  getBalanceStatusCss(totalInvoiced: number, totalPaid: number, totalReturns = 0, totalRefunds = 0): string {
+    const balance = this.getCalculatedBalance(totalInvoiced, totalPaid, totalReturns, totalRefunds);
     if (balance < 0) return 'balance-overpaid';      // Green for overpaid
     if (balance === 0) return 'balance-settled';      // Blue/neutral for settled
     return 'balance-outstanding';                     // Red for owed
@@ -84,11 +84,19 @@ export class CustomerDetailsDialogComponent implements OnInit {
   /**
    * Get label for balance status
    */
-  getBalanceStatusLabel(totalInvoiced: number, totalPaid: number): string {
-    const balance = this.getCalculatedBalance(totalInvoiced, totalPaid);
+  getBalanceStatusLabel(totalInvoiced: number, totalPaid: number, totalReturns = 0, totalRefunds = 0): string {
+    const balance = this.getCalculatedBalance(totalInvoiced, totalPaid, totalReturns, totalRefunds);
     if (balance < 0) return 'OverPaid (अतिरिक्त भुगतान)';
     if (balance === 0) return 'Settled';
     return 'Outstanding';
+  }
+
+  printLedger(): void {
+    document.body.classList.add('print-customer-ledger-dialog');
+    const cleanup = () => document.body.classList.remove('print-customer-ledger-dialog');
+    window.addEventListener('afterprint', cleanup, { once: true });
+    window.print();
+    window.setTimeout(cleanup, 10000);
   }
 
   /**

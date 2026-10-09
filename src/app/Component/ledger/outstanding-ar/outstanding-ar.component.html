@@ -1,10 +1,12 @@
 <div class="outstanding-ar-container">
   <div class="header">
-    <h1>Outstanding A/R</h1>
+    <div>
+      <h1>Outstanding A/R</h1>
+      <p class="page-subtitle">Customer balances, receipts and overdue invoices</p>
+    </div>
     <div class="header-actions">
-      <button mat-stroked-button (click)="toggleFilters()" class="filter-toggle">
-        <mat-icon>{{ showFilters ? 'expand_less' : 'expand_more' }}</mat-icon>
-        {{ showFilters ? 'Hide Filters' : 'Show Filters' }}
+      <button mat-stroked-button (click)="printOutstandingPdf()" [disabled]="loading || !dataSource.data.length">
+        <mat-icon>picture_as_pdf</mat-icon>Print to PDF
       </button>
       <button mat-raised-button color="primary" (click)="refreshData()">
         <mat-icon>refresh</mat-icon>Refresh
@@ -12,94 +14,59 @@
     </div>
   </div>
 
-  <!-- Advanced Filters Panel -->
-  <mat-card *ngIf="showFilters" class="filters-panel">
-    <mat-card-header>
-      <mat-card-title>Advanced Filters</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <div class="filters-grid">
-        
-        <!-- Search Filter -->
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Customer Name</mat-label>
-          <input matInput [(ngModel)]="filterSearchName" placeholder="Search by customer name">
-          <mat-icon matPrefix>search</mat-icon>
-        </mat-form-field>
-
-        <!-- Sorting -->
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Sort By</mat-label>
-          <mat-select [(ngModel)]="filterSortBy">
-            <mat-option *ngFor="let opt of sortOptions" [value]="opt.value">
-              {{ opt.label }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-
-        <!-- Ageing Bucket -->
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Ageing Bucket</mat-label>
-          <mat-select [(ngModel)]="filterAgeingBucket">
-            <mat-option *ngFor="let opt of ageingBucketOptions" [value]="opt.value">
-              {{ opt.label }}
-            </mat-option>
-          </mat-select>
-        </mat-form-field>
-
-        <!-- Min Outstanding Amount -->
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Min Outstanding Amount</mat-label>
-          <input matInput type="number" [(ngModel)]="filterMinOutstanding" placeholder="0">
-          <mat-icon matPrefix>currency_rupee</mat-icon>
-        </mat-form-field>
-
-        <!-- Max Outstanding Amount -->
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Max Outstanding Amount</mat-label>
-          <input matInput type="number" [(ngModel)]="filterMaxOutstanding" placeholder="999999">
-          <mat-icon matPrefix>currency_rupee</mat-icon>
-        </mat-form-field>
-
-        <!-- Min Days Overdue -->
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>Min Days Overdue</mat-label>
-          <input matInput type="number" [(ngModel)]="filterMinDaysOverdue" min="0" placeholder="0">
-          <mat-icon matPrefix>schedule</mat-icon>
-        </mat-form-field>
-
-        <!-- Min Last Payment Days -->
-        <mat-form-field appearance="outline" class="filter-field">
-          <mat-label>No Payment For (Days)</mat-label>
-          <input matInput type="number" [(ngModel)]="filterMinLastPaymentDays" placeholder="30">
-          <mat-icon matPrefix>calendar_today</mat-icon>
-        </mat-form-field>
-
-        <!-- Toggles -->
-        <div class="filter-toggles">
-          <mat-checkbox [(ngModel)]="filterShowOnlyOverdue" color="primary">
-            <span>Show Only Overdue</span>
-          </mat-checkbox>
-          <mat-checkbox [(ngModel)]="filterNeverPaid" color="primary">
-            <span>Never Paid</span>
-          </mat-checkbox>
-          <mat-checkbox [(ngModel)]="filterIncludeFullyPaid" color="primary">
-            <span>Include Fully Paid</span>
-          </mat-checkbox>
-        </div>
+  <section class="ar-filter-bar" aria-label="Outstanding report filters">
+    <mat-form-field appearance="outline" class="ar-search-field">
+      <mat-label>Customer</mat-label>
+      <input matInput [formControl]="customerSearch" [matAutocomplete]="customerAutocomplete" (input)="onCustomerSearchInput()" placeholder="All customers or search by name">
+      <mat-icon matPrefix>search</mat-icon>
+      <mat-autocomplete #customerAutocomplete="matAutocomplete" [displayWith]="displayCustomer" (optionSelected)="selectCustomer($event.option.value)">
+        <mat-option [value]="allCustomersOption">All Customers</mat-option>
+        @if (customerListLoading) {
+          <mat-option disabled>Loading customers...</mat-option>
+        } @else if (customerListError) {
+          <mat-option disabled>Customer list could not be loaded</mat-option>
+        } @else {
+        @for (customer of filteredCustomers; track customer.uniqueKeyID) {
+          <mat-option [value]="customer">
+            <span class="customer-option-name">{{ customer.name || customer.customer_company || 'Unnamed customer' }}</span>
+            <span class="customer-option-meta">{{ customer.uniqueKeyID }}@if (customer.email || customer.phone || customer.mobileNo) { · {{ customer.email || customer.phone || customer.mobileNo }} }</span>
+          </mat-option>
+        }
+        @if (filteredCustomers.length === 0) { <mat-option disabled>No matching customers</mat-option> }
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+    @if (customerListError) {
+      <div class="customer-list-error" role="alert">
+        <span>{{ customerListError }}</span>
+        <button mat-button type="button" (click)="loadCustomers()">Retry</button>
       </div>
-
-      <!-- Filter Actions -->
-      <div class="filter-actions">
-        <button mat-raised-button color="primary" (click)="applyFilters()">
-          <mat-icon>filter_list</mat-icon>Apply Filters
-        </button>
-        <button mat-stroked-button (click)="resetFilters()">
-          <mat-icon>clear_all</mat-icon>Reset Filters
-        </button>
-      </div>
-    </mat-card-content>
-  </mat-card>
+    }
+    <mat-form-field appearance="outline" class="ar-date-field">
+      <mat-label>From date</mat-label>
+      <input matInput [matDatepicker]="fromPicker" [(ngModel)]="filterFromDate" (click)="fromPicker.open()">
+      <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
+      <mat-datepicker #fromPicker></mat-datepicker>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="ar-date-field">
+      <mat-label>To date</mat-label>
+      <input matInput [matDatepicker]="toPicker" [(ngModel)]="filterToDate" (click)="toPicker.open()">
+      <mat-datepicker-toggle matIconSuffix [for]="toPicker"></mat-datepicker-toggle>
+      <mat-datepicker #toPicker></mat-datepicker>
+    </mat-form-field>
+    <mat-form-field appearance="outline" class="ar-sort-field">
+      <mat-label>Sort</mat-label>
+      <mat-select [(ngModel)]="filterSortBy">
+        <mat-option *ngFor="let opt of sortOptions" [value]="opt.value">{{ opt.label }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+    <div class="ar-filter-actions">
+      <button mat-flat-button color="primary" type="button" (click)="applyFilters()"><mat-icon>filter_list</mat-icon>Apply</button>
+      <button mat-stroked-button type="button" (click)="resetFilters()"><mat-icon>restart_alt</mat-icon>Reset</button>
+    </div>
+    <p class="ar-filter-hint">Defaults to the current financial year (1 April–31 March). Choose dates in dd/MM/yyyy format.</p>
+    <p *ngIf="dateFilterError" class="ar-date-error" role="alert">{{ dateFilterError }}</p>
+  </section>
 
   <!-- Error Alert -->
   <mat-card *ngIf="error" class="error-card">
@@ -119,6 +86,36 @@
 
   <!-- Main Content -->
   <div *ngIf="!loading" class="content">
+    <section class="ar-print-report" aria-hidden="true">
+      <h1>Outstanding A/R</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Customer Name</th>
+            <th>Total Invoiced</th>
+            <th>Total Paid</th>
+            <th>Outstanding Balance</th>
+            <th>Days</th>
+            <th>Last Payment</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let element of printableCustomers; let index = index">
+            <td>{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+            <td>{{ element.customerName }}</td>
+            <td>{{ formatCurrency(element.totalInvoiced) }}</td>
+            <td>{{ formatCurrency(element.totalPaid) }}</td>
+            <td>{{ formatCurrency(getCalculatedBalance(element.totalInvoiced, element.totalPaid)) }}</td>
+            <td>{{ element.daysOutstanding }} days</td>
+            <td>{{ formatDate(element.lastPaymentDate) }}</td>
+            <td>{{ getStatusLabel(element.daysOutstanding) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
     <!-- Search Filter -->
     <mat-form-field appearance="outline" class="search-field">
       <mat-label>Search</mat-label>
@@ -129,7 +126,11 @@
     <!-- Desktop Table View -->
     <mat-card class="table-card desktop-view">
       <table mat-table [dataSource]="dataSource" matSort class="outstanding-table">
-        
+        <ng-container matColumnDef="serialNumber">
+          <th mat-header-cell *matHeaderCellDef>#</th>
+          <td mat-cell *matCellDef="let element; let index = index">{{ (currentPage - 1) * pageSize + index + 1 }}</td>
+        </ng-container>
+
         <!-- Customer Name -->
         <ng-container matColumnDef="customerName">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Customer Name</th>
@@ -141,6 +142,7 @@
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Total Invoiced</th>
           <td mat-cell *matCellDef="let element">
             <span class="invoiced-value">{{ formatCurrency(element.totalInvoiced) }}</span>
+            <small class="cell-detail">{{ element.invoiceCount || 0 }} invoice(s)</small>
           </td>
         </ng-container>
 
@@ -148,7 +150,8 @@
         <ng-container matColumnDef="totalPaid">
           <th mat-header-cell *matHeaderCellDef mat-sort-header>Total Paid</th>
           <td mat-cell *matCellDef="let element">
-            <span class="paid-value">{{ formatCurrency(element.totalPaid) }}</span>
+            <span class="paid-value" [matTooltip]="getPaidBreakdown(element)">{{ formatCurrency(element.totalPaid) }}</span>
+            <small class="cell-detail">{{ element.paymentCount || 0 }} payment(s)</small>
           </td>
         </ng-container>
 
@@ -231,9 +234,10 @@
 
     <!-- Mobile Card View -->
     <div class="mobile-list mobile-view">
-      <div class="mobile-card" *ngFor="let element of dataSource.data">
+      <div class="mobile-card" *ngFor="let element of dataSource.data; let index = index">
         <!-- Card Header: Customer Name -->
         <div class="card-header">
+          <span class="mobile-serial">{{ (currentPage - 1) * pageSize + index + 1 }}</span>
           <div class="customer-info">
             <div class="customer-name">{{ element.customerName }}</div>
             <div class="customer-id">ID: {{ element.customerId }}</div>
@@ -252,14 +256,16 @@
             </div>
             <div class="metric-item">
               <span class="metric-label">Total Paid</span>
-              <span class="metric-value paid">{{ formatCurrency(element.totalPaid) }}</span>
+              <span class="metric-value paid" [matTooltip]="getPaidBreakdown(element)">{{ formatCurrency(element.totalPaid) }}</span>
+              <small class="cell-detail">{{ element.paymentCount || 0 }} payment(s)</small>
             </div>
           </div>
 
           <div class="metric-row">
             <div class="metric-item">
               <span class="metric-label">Outstanding</span>
-              <span class="metric-value outstanding">{{ formatCurrency(getCalculatedBalance(element.totalInvoiced, element.totalPaid)) }}</span>
+              <span class="metric-value outstanding" [matTooltip]="getOutstandingBreakdown(element)">{{ formatCurrency(getCalculatedBalance(element.totalInvoiced, element.totalPaid, element.totalReturns, element.totalRefunds)) }}</span>
+              <small class="cell-detail">{{ element.openInvoiceCount || 0 }} open invoice(s)</small>
             </div>
             <div class="metric-item">
               <span class="metric-label">Days Overdue</span>
