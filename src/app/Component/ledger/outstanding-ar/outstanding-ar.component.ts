@@ -1,6 +1,7 @@
 import { Component, Injectable, OnInit, OnDestroy, ViewChild, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormControl } from '@angular/forms';
+import { ConnectedPosition, OverlayModule } from '@angular/cdk/overlay';
 import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE, NativeDateAdapter } from '@angular/material/core';
 import { MasterService } from '../../../_service/master.service';
 import { MaterialModule } from '../../../material.module';
@@ -40,7 +41,7 @@ class ArDateAdapter extends NativeDateAdapter {
 @Component({
   selector: 'app-outstanding-ar',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MaterialModule, OverlayModule],
   providers: [{ provide: MAT_DATE_LOCALE, useValue: 'en-GB' }, { provide: DateAdapter, useClass: ArDateAdapter }, { provide: MAT_DATE_FORMATS, useValue: AR_DATE_FORMATS }],
   templateUrl: './outstanding-ar.component.html',
   styleUrls: ['./outstanding-ar.component.css']
@@ -105,6 +106,14 @@ export class OutstandingARComponent implements OnInit, OnDestroy, AfterViewInit 
   private destroy$ = new Subject<void>();
   private firstCompanySub = true;
   sendingReminderCustomerIds = new Set<string>();
+  activeActionCustomerId: string | null = null;
+
+  readonly actionPopoverPositions: ConnectedPosition[] = [
+    { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 8 },
+    { originX: 'end', originY: 'top', overlayX: 'end', overlayY: 'bottom', offsetY: -8 },
+    { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 8 },
+    { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -8 }
+  ];
 
   get printableCustomers(): customerOutstanding[] {
     const filteredCustomers = this.dataSource.filteredData;
@@ -500,6 +509,19 @@ export class OutstandingARComponent implements OnInit, OnDestroy, AfterViewInit 
     });
   }
 
+  toggleCustomerActions(actionKey: string | undefined): void {
+    if (!actionKey) return;
+    this.activeActionCustomerId = this.activeActionCustomerId === actionKey ? null : actionKey;
+  }
+
+  closeCustomerActions(): void {
+    this.activeActionCustomerId = null;
+  }
+
+  isCustomerActionsOpen(actionKey: string | undefined): boolean {
+    return !!actionKey && this.activeActionCustomerId === actionKey;
+  }
+
   printOutstandingPdf(): void {
     document.body.classList.add('print-outstanding-ar');
     const cleanup = () => document.body.classList.remove('print-outstanding-ar');
@@ -515,7 +537,10 @@ export class OutstandingARComponent implements OnInit, OnDestroy, AfterViewInit 
     if (!element || !element.customerId) return;
 
     const dialogRef = this.dialog.open(PaymentDialogComponent, {
-      width: '420px',
+      width: '560px',
+      maxWidth: 'calc(100vw - 32px)',
+      maxHeight: '92vh',
+      autoFocus: false,
       data: { customerId: element.customerId, customerName: element.customerName, companyId: this.companyId, currentOutstanding: this.getCalculatedBalance(element.totalInvoiced, element.totalPaid, element.totalReturns, element.totalRefunds) }
     });
 

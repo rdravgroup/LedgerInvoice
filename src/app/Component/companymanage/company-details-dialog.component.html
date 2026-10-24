@@ -1,0 +1,47 @@
+<header class="details-header">
+  <div class="details-brand">
+    <div class="details-avatar"><mat-icon>business</mat-icon></div>
+    <div class="details-heading">
+      <span class="details-eyebrow">Company profile</span>
+      <h2 mat-dialog-title>{{ company.name }}</h2>
+      <div class="details-code">
+        <span>{{ company.companyId }}</span>
+        <span class="status-chip" [class.status-active]="company.status?.toLowerCase() === 'active'"
+          [class.status-inactive]="company.status?.toLowerCase() !== 'active'">
+          {{ company.status || 'Status unavailable' }}
+        </span>
+      </div>
+    </div>
+  </div>
+  <button mat-icon-button type="button" aria-label="Close company details" (click)="close()">
+    <mat-icon>close</mat-icon>
+  </button>
+</header>
+
+<mat-dialog-content class="details-content">
+  <div class="details-intro">
+    <mat-icon>info</mat-icon>
+    <span>Company identity, contact information, bank details and configured invoice options.</span>
+  </div>
+
+  <section class="details-section" *ngFor="let section of sections">
+    <h3><mat-icon>{{ section.icon }}</mat-icon>{{ section.title }}</h3>
+    <dl class="details-grid">
+      <div class="detail-field" *ngFor="let field of section.fields">
+        <dt>{{ field.label }}</dt>
+        <dd [class.detail-missing]="field.value === 'Not provided'">{{ field.value }}</dd>
+      </div>
+    </dl>
+  </section>
+
+  <div class="print-error" role="alert" *ngIf="printError">
+    <mat-icon>error_outline</mat-icon>{{ printError }}
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end" class="details-actions">
+  <button mat-stroked-button type="button" (click)="close()">Close</button>
+  <button mat-flat-button color="primary" type="button" (click)="printDetails()">
+    <mat-icon>print</mat-icon> Print / Save PDF
+  </button>
+</mat-dialog-actions>

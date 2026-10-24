@@ -448,21 +448,21 @@ export class HomeComponent implements OnInit, OnDestroy {
     return this.formatAmount(amount);
   }
 
-  get kpiMetrics(): { label: string; value: number; kind: 'amount' | 'count'; tone: string; tooltip: string }[] {
+  get kpiMetrics(): { label: string; value: number; kind: 'amount' | 'count'; tone: string; tooltip: string; route: string }[] {
     const summary = this.summary;
     if (!summary) return [];
     return [
-      { label: 'Total A/R', value: summary.totalAR, kind: 'amount', tone: 'receivables', tooltip: 'Current customer receivables' },
-      { label: 'Total Paid', value: summary.totalPaid, kind: 'amount', tone: 'paid', tooltip: 'Payments received in the selected period' },
-      { label: 'Overdue', value: summary.overdueAmount, kind: 'amount', tone: 'overdue', tooltip: 'Receivables in overdue aging buckets' },
-      { label: 'Active Customers', value: this.activeCustomerCount, kind: 'count', tone: 'customers', tooltip: 'Active customers in the selected company' },
-      { label: 'Invoice Count', value: summary.invoiceCount, kind: 'count', tone: 'invoices', tooltip: 'Invoices issued in the selected date range' },
-      { label: 'Total Sales', value: summary.totalSales, kind: 'amount', tone: 'sales', tooltip: 'Sales invoice totals for the selected period' },
-      { label: 'Total Purchases', value: summary.totalPurchases, kind: 'amount', tone: 'purchases', tooltip: 'Company-wide purchases for the selected period' },
-      { label: 'Sales Refunds', value: summary.salesRefunds, kind: 'amount', tone: 'refunds', tooltip: 'Sales refunds recorded during the selected period' },
-      { label: 'Purchase Refunds', value: summary.purchaseRefunds, kind: 'amount', tone: 'refunds', tooltip: 'Company-wide purchase refunds during the selected period' },
-      { label: 'Current Stock Value', value: this.stock?.currentStockValue ?? 0, kind: 'amount', tone: 'stock', tooltip: 'Current stock value using latest available purchase cost' },
-      { label: 'Total Earnings (Net Sales)', value: summary.netSales, kind: 'amount', tone: 'earnings', tooltip: 'Net sales after sales returns; not a profit calculation' }
+      { label: 'Total A/R', value: summary.totalAR, kind: 'amount', tone: 'receivables', tooltip: 'Current customer receivables', route: '/ledger-outstanding-ar' },
+      { label: 'Total Payment Received', value: summary.totalPaid, kind: 'amount', tone: 'paid', tooltip: 'Payments received in the selected period', route: '/ledger-dashboard' },
+      { label: 'Overdue', value: summary.overdueAmount, kind: 'amount', tone: 'overdue', tooltip: 'Receivables in overdue aging buckets', route: '/ledger-outstanding-ar' },
+      { label: 'Active Customers', value: this.activeCustomerCount, kind: 'count', tone: 'customers', tooltip: 'Active customers in the selected company', route: '/customer' },
+      { label: 'Invoice Count', value: summary.invoiceCount, kind: 'count', tone: 'invoices', tooltip: 'Invoices issued in the selected date range', route: '/listinvoice' },
+      { label: 'Total Sales', value: summary.totalSales, kind: 'amount', tone: 'sales', tooltip: 'Sales invoice totals for the selected period', route: '/listinvoice' },
+      { label: 'Total Purchases', value: summary.totalPurchases, kind: 'amount', tone: 'purchases', tooltip: 'Company-wide purchases for the selected period', route: '/purchase/invoices' },
+      { label: 'Sales Refunds', value: summary.salesRefunds, kind: 'amount', tone: 'refunds', tooltip: 'Sales refunds recorded during the selected period', route: '/sales-returns' },
+      { label: 'Purchase Refunds', value: summary.purchaseRefunds, kind: 'amount', tone: 'refunds', tooltip: 'Company-wide purchase refunds during the selected period', route: '/purchase/returns' },
+      { label: 'Current Stock Value', value: this.stock?.currentStockValue ?? 0, kind: 'amount', tone: 'stock', tooltip: 'Current stock value using latest available purchase cost', route: '/purchase/reports' },
+      { label: 'Total Earnings (Net Sales)', value: summary.netSales, kind: 'amount', tone: 'earnings', tooltip: 'Net sales after sales returns; not a profit calculation', route: '/sales-reports' }
     ];
   }
 

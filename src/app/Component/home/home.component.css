@@ -144,23 +144,29 @@
 .metric-customer-tag { display: inline-flex; align-items: center; gap: 5px; max-width: 42%; padding: 6px 10px; border-radius: 999px; background: #eff6ff; color: #245ca2; font-size: 12px; }
 .metric-customer-tag mat-icon { width: 16px; height: 16px; font-size: 16px; }
 .metric-chart-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-.metric-chart-item { position: relative; min-width: 0; min-height: 94px; overflow: hidden; padding: 15px 17px; border: 0; border-radius: 9px; color: #fff; background: linear-gradient(125deg, #264f9e, #397bd1); box-shadow: 0 5px 14px rgba(27, 64, 120, .17); }
+.metric-chart-item { position: relative; min-width: 0; min-height: 94px; overflow: hidden; padding: 15px 17px; border: 0; border-radius: 9px; color: #fff; background: linear-gradient(125deg, #264f9e, #397bd1); background-position: 0% center; background-size: 200% 100%; box-shadow: 0 5px 14px rgba(27, 64, 120, .17); transition: transform .2s ease, background-position .35s ease, box-shadow .2s ease; }
+.metric-chart-item:hover { transform: translateX(3px); background-position: 100% center; box-shadow: 0 7px 18px rgba(27, 64, 120, .24); }
 .metric-chart-item::after { position: absolute; right: -16px; bottom: -34px; width: 78px; height: 78px; border: 2px solid rgba(255,255,255,.18); border-radius: 15px; content: ''; transform: rotate(38deg); }
 .metric-chart-top { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 9px; min-height: 0; color: rgba(255,255,255,.94); font-size: 13px; font-weight: 700; }
+.metric-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
 .metric-chart-top .metric-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.metric-card-link { position: relative; z-index: 1; display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; width: 30px; height: 30px; margin: -6px -8px -6px 0; border-radius: 50%; color: inherit; text-decoration: none; transition: background-color .2s ease, transform .2s ease; }
+.metric-card-link:hover { background-color: rgba(255,255,255,.2); transform: translateX(2px); }
+.metric-card-link:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.metric-card-link mat-icon { width: 18px; height: 18px; font-size: 18px; }
 .metric-chart-top .metric-value { display: block; overflow: visible; color: #fff; font-size: clamp(20px, 2vw, 26px); font-weight: 850; line-height: 1.15; text-align: left; white-space: nowrap; font-variant-numeric: tabular-nums; text-shadow: 0 1px 1px rgba(0,0,0,.12); }
 .metric-bar-track { position: absolute; right: 16px; bottom: 10px; left: 16px; height: 3px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.24); }
 .metric-bar-fill { display: block; height: 100%; min-width: 0; border-radius: inherit; background: rgba(255,255,255,.87); transition: width .35s ease; }
-.tone-receivables { background: linear-gradient(125deg, #28539f, #3e80d8); }
-.tone-paid { background: linear-gradient(125deg, #43864d, #6ab45e); }
-.tone-overdue { background: linear-gradient(125deg, #cc5630, #ed8b35); }
-.tone-customers { background: linear-gradient(125deg, #087e83, #17aaa3); }
-.tone-invoices { background: linear-gradient(125deg, #3459a5, #4a82d9); }
-.tone-sales { background: linear-gradient(125deg, #28539f, #3e80d8); }
-.tone-purchases { background: linear-gradient(125deg, #43864d, #6ab45e); }
-.tone-refunds { background: linear-gradient(125deg, #d05d28, #ee8b31); }
-.tone-stock { background: linear-gradient(125deg, #98641a, #d2952e); }
-.tone-earnings { background: linear-gradient(125deg, #244e9a, #3976cc); }
+.tone-receivables { background-image: linear-gradient(125deg, #28539f, #3e80d8); }
+.tone-paid { background-image: linear-gradient(125deg, #43864d, #6ab45e); }
+.tone-overdue { background-image: linear-gradient(125deg, #cc5630, #ed8b35); }
+.tone-customers { background-image: linear-gradient(125deg, #087e83, #17aaa3); }
+.tone-invoices { background-image: linear-gradient(125deg, #3459a5, #4a82d9); }
+.tone-sales { background-image: linear-gradient(125deg, #28539f, #3e80d8); }
+.tone-purchases { background-image: linear-gradient(125deg, #43864d, #6ab45e); }
+.tone-refunds { background-image: linear-gradient(125deg, #d05d28, #ee8b31); }
+.tone-stock { background-image: linear-gradient(125deg, #98641a, #d2952e); }
+.tone-earnings { background-image: linear-gradient(125deg, #244e9a, #3976cc); }
 .metric-scope-note { margin: 14px 0 0; color: var(--md-sys-color-on-surface-variant); font-size: 11px; }
 .chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
 .dashboard-panel { min-width: 0; overflow: hidden; }

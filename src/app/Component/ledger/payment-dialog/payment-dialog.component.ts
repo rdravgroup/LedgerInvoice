@@ -13,6 +13,8 @@ interface DialogData {
   customerName?: string;
   companyId: string;
   currentOutstanding?: number;
+  invoiceNumber?: string;
+  invoiceOutstanding?: number;
 }
 
 @Component({
@@ -20,12 +22,15 @@ interface DialogData {
   standalone: true,
   imports: [CommonModule, MaterialModule, ReactiveFormsModule],
   templateUrl: './payment-dialog.component.html',
+  styleUrls: ['./payment-dialog.component.css'],
   providers: [
     { provide: MAT_DATE_LOCALE, useValue: 'en-GB' } // Use dd/MM/yyyy display for this dialog
   ]
 })
 export class PaymentDialogComponent {
   form: any;
+  saving = false;
+  saveError = '';
 
   // invoice dropdown removed per request
   
@@ -39,7 +44,13 @@ export class PaymentDialogComponent {
     // initialize reactive form after fb is available
     this.form = this.fb.group({
       invoiceNumber: [''],
-      amountPaid: [null, [Validators.required, Validators.min(0.01)]],
+      amountPaid: [null, [
+        Validators.required,
+        Validators.min(0.01),
+        ...(data.invoiceOutstanding !== undefined
+          ? [Validators.max(data.invoiceOutstanding)]
+          : [])
+      ]],
       // Use Date object for mat-datepicker; provider sets locale to en-GB (dd/MM/yyyy)
       paymentDate: [new Date(), Validators.required],
       // Default payment method should be Cash
@@ -83,8 +94,20 @@ export class PaymentDialogComponent {
   }
 
   submit(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid || this.saving) { this.form.markAllAsTouched(); return; }
+    this.saveError = '';
     const value = this.form.value || {};
+    const amountPaid = Number(value.amountPaid);
+    if (this.data.invoiceNumber &&
+        (this.data.invoiceOutstanding === undefined ||
+         !Number.isFinite(this.data.invoiceOutstanding) ||
+         amountPaid > this.data.invoiceOutstanding)) {
+      this.dialogRef.close({
+        ok: false,
+        error: 'Payment amount cannot exceed the verified outstanding balance for this invoice.'
+      });
+      return;
+    }
     // Map to backend payload expected by API
     const toISO = (input: any) => {
       if (!input) return undefined;
@@ -134,7 +157,8 @@ export class PaymentDialogComponent {
 
     const payment = {
       customerId: this.data.customerId || '',
-      paymentAmount: Number(value.amountPaid),
+      ...(this.data.invoiceNumber ? { invoiceNumber: this.data.invoiceNumber } : {}),
+      paymentAmount: amountPaid,
       receiptDate: toISO(value.paymentDate) || new Date().toISOString(),
       paymentMethod: mappedMethod,
       notes: String(value.reference || ''),
@@ -146,21 +170,24 @@ export class PaymentDialogComponent {
       transactionDate: toISO(value.transactionDate)
     };
 
+    this.saving = true;
     this.ledgerService.recordPayment(payment)
       .pipe(take(1))
       .subscribe({
         next: (resp) => {
-          if (resp && (resp.result === 'pass' || resp.result === 'success')) {
-            this.dialogRef.close({ ok: true });
-          } else {
-            this.dialogRef.close({ ok: false, error: resp?.errorMessage });
-          }
+          this.saving = false;
+          if (resp && (resp.result === 'pass' || resp.result === 'success')) this.dialogRef.close({ ok: true });
+          else this.saveError = resp?.errorMessage || 'Payment could not be recorded.';
         },
-        error: (err) => this.dialogRef.close({ ok: false, error: err?.message || 'Error' })
+        error: (err) => {
+          this.saving = false;
+          this.saveError = err?.error?.errorMessage || err?.error?.ErrorMessage || err?.message || 'Payment could not be recorded.';
+        }
       });
   }
 
   cancel(): void {
-    this.dialogRef.close({ ok: false });
+    if (!this.saving) this.dialogRef.close({ ok: false });
   }
 }
+

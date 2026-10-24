@@ -11,6 +11,9 @@
       <p class="page-subtitle">Credit notes and refunds issued against invoices</p>
     </div>
     <div class="report-actions">
+      <button mat-flat-button color="primary" type="button" (click)="openNewReturn()" [disabled]="loading || loadingReturnInvoices">
+        <mat-icon>add</mat-icon> New Return
+      </button>
       <button mat-stroked-button type="button" (click)="printReport()" [disabled]="loading || dataSource.filteredData.length === 0">
         <mat-icon>print</mat-icon> Print
       </button>
@@ -200,3 +203,25 @@
   }
 
 </div>
+
+<ng-template #returnInvoicePicker>
+  <section class="return-picker" role="dialog" aria-modal="true">
+    <header class="return-picker-header">
+      <div><h2>Create Sales Return</h2><p>Choose an invoice to load its remaining returnable quantities.</p></div>
+      <button mat-icon-button mat-dialog-close aria-label="Close"><mat-icon>close</mat-icon></button>
+    </header>
+    <mat-form-field appearance="outline" class="return-picker-search">
+      <mat-label>Search invoice or customer</mat-label><mat-icon matPrefix>search</mat-icon>
+      <input matInput [(ngModel)]="returnInvoiceSearch" placeholder="Invoice number, customer name or ID">
+    </mat-form-field>
+    <div class="return-picker-list">
+      @for (invoice of filteredReturnInvoices; track invoice.invoiceNumber) {
+        <button type="button" class="return-picker-row" (click)="selectInvoiceForReturn(invoice)">
+          <span><strong>{{ invoice.invoiceNumber }}</strong><small>{{ invoice.cuName || invoice.customerId || 'Customer' }}</small></span>
+          <span class="return-picker-amount">₹{{ formatAmount(invoice.totalAmt) }}<mat-icon>chevron_right</mat-icon></span>
+        </button>
+      } @empty { <p class="return-picker-empty">No invoices found for this date range.</p> }
+    </div>
+  </section>
+</ng-template>
+

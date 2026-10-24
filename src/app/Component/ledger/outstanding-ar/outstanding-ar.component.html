@@ -197,27 +197,52 @@
         <!-- Actions -->
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
-          <td mat-cell *matCellDef="let element">
-            <button mat-icon-button color="primary" 
-              (click)="viewCustomer(element.customerId)" 
-              matTooltip="View Details">
-              <mat-icon>visibility</mat-icon>
+          <td mat-cell *matCellDef="let element" class="actions-cell">
+            <button #actionOrigin="cdkOverlayOrigin" cdkOverlayOrigin
+              mat-icon-button type="button" class="customer-actions-trigger"
+              (click)="toggleCustomerActions('desktop:' + element.customerId)"
+              [attr.aria-expanded]="isCustomerActionsOpen('desktop:' + element.customerId)"
+              [attr.aria-label]="'Actions for ' + element.customerName"
+              matTooltip="Customer actions">
+              <span class="composite-action-icon" aria-hidden="true">
+                <mat-icon>person</mat-icon><mat-icon>more_horiz</mat-icon>
+              </span>
             </button>
-            <button mat-icon-button color="info" 
-              (click)="viewPayments(element.customerId, element.customerName)" 
-              matTooltip="View Payments">
-              <mat-icon>receipt_long</mat-icon>
-            </button>
-            <button mat-icon-button color="warn"
-              (click)="openPaymentPrompt(element)"
-              matTooltip="Record Payment">
-              <mat-icon>attach_money</mat-icon>
-            </button>
-            <button mat-icon-button color="accent" 
-              (click)="sendReminder(element.customerId, element.customerName)" 
-              matTooltip="Send Reminder">
-              <mat-icon>mail</mat-icon>
-            </button>
+            <ng-template cdkConnectedOverlay
+              [cdkConnectedOverlayOrigin]="actionOrigin"
+              [cdkConnectedOverlayOpen]="isCustomerActionsOpen('desktop:' + element.customerId)"
+              [cdkConnectedOverlayPositions]="actionPopoverPositions"
+              cdkConnectedOverlayHasBackdrop
+              cdkConnectedOverlayBackdropClass="ar-actions-backdrop"
+              (backdropClick)="closeCustomerActions()"
+              (detach)="closeCustomerActions()">
+              <div class="customer-action-popover" (click)="$event.stopPropagation()">
+                <div class="customer-action-popover-head">
+                  <span>{{ element.customerName }}</span>
+                  <button mat-icon-button type="button" (click)="closeCustomerActions()" aria-label="Close customer actions">
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </div>
+                <div class="customer-action-grid">
+                  <button mat-stroked-button type="button" (click)="closeCustomerActions(); viewCustomer(element.customerId)">
+                    <mat-icon>visibility</mat-icon>View Details
+                  </button>
+                  <button mat-stroked-button type="button" (click)="closeCustomerActions(); viewPayments(element.customerId, element.customerName)">
+                    <mat-icon>receipt_long</mat-icon>View Payments
+                  </button>
+                  <button mat-stroked-button type="button" color="primary" (click)="closeCustomerActions(); openPaymentPrompt(element)">
+                    <mat-icon>payments</mat-icon>Record Payment
+                  </button>
+                  <button mat-stroked-button type="button"
+                    (click)="closeCustomerActions(); sendReminder(element.customerId, element.customerName)"
+                    [disabled]="sendingReminderCustomerIds.has(element.customerId)"
+                    [matTooltip]="sendingReminderCustomerIds.has(element.customerId) ? 'Sending reminder…' : 'Send payment reminder'">
+                    <mat-icon>{{ sendingReminderCustomerIds.has(element.customerId) ? 'hourglass_top' : 'mail_outline' }}</mat-icon>
+                    {{ sendingReminderCustomerIds.has(element.customerId) ? 'Sending…' : 'Send Reminder' }}
+                  </button>
+                </div>
+              </div>
+            </ng-template>
           </td>
         </ng-container>
 
@@ -283,18 +308,52 @@
 
         <!-- Card Actions -->
         <div class="card-actions">
-          <button mat-icon-button color="primary" (click)="viewCustomer(element.customerId)" matTooltip="View Details">
-            <mat-icon>visibility</mat-icon>
+          <button #mobileActionOrigin="cdkOverlayOrigin" cdkOverlayOrigin
+            mat-stroked-button type="button" class="mobile-customer-actions-trigger"
+            (click)="toggleCustomerActions('mobile:' + element.customerId)"
+            [attr.aria-expanded]="isCustomerActionsOpen('mobile:' + element.customerId)"
+            [attr.aria-label]="'Open actions for ' + element.customerName">
+            <span class="composite-action-icon" aria-hidden="true">
+              <mat-icon>person</mat-icon><mat-icon>more_horiz</mat-icon>
+            </span>
+            <span>Customer Actions</span>
+            <mat-icon class="trigger-chevron">{{ isCustomerActionsOpen('mobile:' + element.customerId) ? 'expand_less' : 'expand_more' }}</mat-icon>
           </button>
-          <button mat-icon-button color="info" (click)="viewPayments(element.customerId, element.customerName)" matTooltip="View Payments">
-            <mat-icon>receipt_long</mat-icon>
-          </button>
-          <button mat-icon-button color="warn" (click)="openPaymentPrompt(element)" matTooltip="Record Payment">
-            <mat-icon>attach_money</mat-icon>
-          </button>
-          <button mat-icon-button color="accent" (click)="sendReminder(element.customerId, element.customerName)" matTooltip="Send Reminder">
-            <mat-icon>mail</mat-icon>
-          </button>
+          <ng-template cdkConnectedOverlay
+            [cdkConnectedOverlayOrigin]="mobileActionOrigin"
+            [cdkConnectedOverlayOpen]="isCustomerActionsOpen('mobile:' + element.customerId)"
+            [cdkConnectedOverlayPositions]="actionPopoverPositions"
+            cdkConnectedOverlayHasBackdrop
+            cdkConnectedOverlayBackdropClass="ar-actions-backdrop"
+            (backdropClick)="closeCustomerActions()"
+            (detach)="closeCustomerActions()">
+            <div class="customer-action-popover" (click)="$event.stopPropagation()">
+              <div class="customer-action-popover-head">
+                <span>{{ element.customerName }}</span>
+                <button mat-icon-button type="button" (click)="closeCustomerActions()" aria-label="Close customer actions">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+              <div class="customer-action-grid">
+                <button mat-stroked-button type="button" (click)="closeCustomerActions(); viewCustomer(element.customerId)">
+                  <mat-icon>visibility</mat-icon>View Details
+                </button>
+                <button mat-stroked-button type="button" (click)="closeCustomerActions(); viewPayments(element.customerId, element.customerName)">
+                  <mat-icon>receipt_long</mat-icon>View Payments
+                </button>
+                <button mat-stroked-button type="button" color="primary" (click)="closeCustomerActions(); openPaymentPrompt(element)">
+                  <mat-icon>payments</mat-icon>Record Payment
+                </button>
+                <button mat-stroked-button type="button"
+                  (click)="closeCustomerActions(); sendReminder(element.customerId, element.customerName)"
+                  [disabled]="sendingReminderCustomerIds.has(element.customerId)"
+                  [matTooltip]="sendingReminderCustomerIds.has(element.customerId) ? 'Sending reminder…' : 'Send payment reminder'">
+                  <mat-icon>{{ sendingReminderCustomerIds.has(element.customerId) ? 'hourglass_top' : 'mail_outline' }}</mat-icon>
+                  {{ sendingReminderCustomerIds.has(element.customerId) ? 'Sending…' : 'Send Reminder' }}
+                </button>
+              </div>
+            </div>
+          </ng-template>
         </div>
       </div>
 

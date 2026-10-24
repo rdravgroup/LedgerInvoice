@@ -43,6 +43,40 @@ describe('ListinvoiceComponent', () => {
     expect(component.pageSizeOptions).toEqual([10, 20, 50, 100, 200, 500, 1000]);
   });
 
+  it('only enables invoice payment for a valid invoice with an outstanding balance', () => {
+    const invoice = {
+      invoiceNumber: 'INV-100',
+      invNum: 'INV-100',
+      invDate: '2026-05-01',
+      cuName: 'Customer',
+      customerId: 'CUST-1',
+      coName: 'Company',
+      totalAmt: 100
+    };
+
+    expect(component.invoicePaymentDisabled(invoice)).toBeFalse();
+    expect(component.invoicePaymentDisabled({ ...invoice, invoiceOutstanding: 0 })).toBeTrue();
+    expect(component.invoicePaymentDisabled({ ...invoice, invoiceOutstanding: 100, isLocked: true })).toBeTrue();
+    expect(component.invoicePaymentDisabled({ ...invoice, customerId: '' })).toBeTrue();
+  });
+
+  it('combines the customer selection with invoice text search', () => {
+    const matches = component.dataSource.filterPredicate;
+    const invoice = {
+      invoiceNumber: 'INV-100',
+      invNum: 'INV-100',
+      invDate: '2026-05-01',
+      cuName: 'Customer',
+      customerId: 'CUST-1',
+      coName: 'Company',
+      totalAmt: 100
+    };
+
+    expect(matches(invoice, JSON.stringify({ customerId: 'cust-1', searchTerm: 'inv-100' }))).toBeTrue();
+    expect(matches(invoice, JSON.stringify({ customerId: 'cust-2', searchTerm: 'inv-100' }))).toBeFalse();
+    expect(matches(invoice, JSON.stringify({ customerId: 'cust-1', searchTerm: 'missing' }))).toBeFalse();
+  });
+
   it('applies the selected range when Run is clicked', () => {
     spyOn(component, 'LoadInvoice');
     component.fromDate = new Date(2025, 3, 1);

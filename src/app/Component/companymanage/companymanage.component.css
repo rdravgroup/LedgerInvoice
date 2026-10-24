@@ -57,8 +57,8 @@
 .cm-item-details { display:flex; flex-direction:column; gap:4px; margin-bottom:10px; }
 .cm-item-detail { display:flex; align-items:center; gap:6px; font-size:13px; color:#334155; }
 .cm-item-detail mat-icon { font-size:15px !important; width:15px !important; height:15px !important; color:#4f46e5; }
-.cm-item-actions { display:flex; gap:8px; }
-.cm-item-btn { flex:1; height:36px !important; border-radius:8px !important; font-size:13px !important; font-weight:600 !important; }
+.cm-item-actions { display:flex; flex-wrap:wrap; gap:8px; }
+.cm-item-btn { flex:1 1 130px; height:36px !important; border-radius:8px !important; font-size:13px !important; font-weight:600 !important; }
 
 .cm-empty { display:flex; flex-direction:column; align-items:center; gap:8px; padding:48px 16px; text-align:center; color:#94a3b8; }
 .cm-empty mat-icon { font-size:48px !important; }

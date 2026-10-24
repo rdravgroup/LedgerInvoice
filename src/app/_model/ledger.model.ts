@@ -170,6 +170,7 @@ export interface paymentEntryRequest {
  */
 export interface backendPaymentRequest {
   customerId: string;
+  invoiceNumber?: string;
   paymentAmount: number;
   receiptDate: string;
   paymentMethod: string;

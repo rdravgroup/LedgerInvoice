@@ -1,0 +1,108 @@
+<div class="sales-payments-page">
+  <header class="sp-header">
+    <div>
+      <span class="sp-eyebrow">RECEIVABLES</span>
+      <h1><mat-icon>payments</mat-icon> Sales Payments</h1>
+      <p>Record customer receipts and review how payments are allocated to invoices.</p>
+    </div>
+  </header>
+
+  <mat-card class="sp-create-card">
+    <div class="sp-card-title">
+      <span class="sp-step-icon"><mat-icon>add_card</mat-icon></span>
+      <div><strong>Record a payment</strong><small>Choose the customer who made this payment. You can allocate the receipt to their invoices in the next step.</small></div>
+    </div>
+    <div class="sp-create-row">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="sp-customer">
+        <mat-label>Paying customer</mat-label><mat-icon matPrefix>person_search</mat-icon>
+        <input matInput [formControl]="customerSearch" [matAutocomplete]="customerAuto" (input)="onCustomerSearch()" placeholder="Search by name, customer ID or contact">
+        <mat-autocomplete #customerAuto="matAutocomplete" [displayWith]="displayPaymentCustomer"
+                          (optionSelected)="chooseCustomer($event.option.value)">
+          @for (customer of filteredCustomers; track customer.uniqueKeyID) {
+            <mat-option [value]="customer">
+              <span class="sp-option-name">{{ customer.name || customer.customer_company || customer.uniqueKeyID }}</span>
+              <span class="sp-option-meta">{{ customer.uniqueKeyID }}@if (customer.email || customer.phone || customer.mobileNo) { · {{ customer.email || customer.phone || customer.mobileNo }} }</span>
+            </mat-option>
+          }
+          @if (!filteredCustomers.length) { <mat-option disabled>No matching customers</mat-option> }
+        </mat-autocomplete>
+      </mat-form-field>
+      <button mat-flat-button color="primary" type="button" class="sp-record-button"
+              (click)="openRecordPayment()" [disabled]="!selectedCustomer || saving">
+        <mat-icon>payments</mat-icon> Continue to payment
+      </button>
+    </div>
+    @if (selectedCustomer) {
+      <div class="sp-selected-customer" role="status">
+        <mat-icon>check_circle</mat-icon>
+        <span>Receipt will be recorded for <strong>{{ selectedCustomer.name || selectedCustomer.customer_company || selectedCustomer.uniqueKeyID }}</strong></span>
+      </div>
+    }
+  </mat-card>
+
+  <section class="sp-list-card">
+    <div class="sp-list-heading">
+      <div><span class="sp-section-kicker">HISTORY</span><h2>Payment receipts</h2>
+        <span>{{ visiblePayments.length }} {{ visiblePayments.length === 1 ? 'receipt' : 'receipts' }}</span>
+        @if (selectedPaymentCustomer) {
+          <span> · {{ selectedPaymentCustomer.name || selectedPaymentCustomer.customer_company || selectedPaymentCustomer.uniqueKeyID }}</span>
+        }
+      </div>
+      <div class="sp-list-filters">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="sp-customer-filter">
+          <mat-label>Filter by customer</mat-label><mat-icon matPrefix>person_search</mat-icon>
+          <input matInput [formControl]="paymentCustomerSearch" [matAutocomplete]="paymentCustomerAuto"
+                 (input)="onPaymentCustomerSearch()"
+                 placeholder="All customers" />
+          <button mat-icon-button matSuffix type="button" (click)="clearPaymentCustomerFilter()"
+                  aria-label="Show payments for all customers">
+            <mat-icon>close</mat-icon>
+          </button>
+          <mat-autocomplete #paymentCustomerAuto="matAutocomplete" [displayWith]="displayPaymentCustomer"
+                            (optionSelected)="selectPaymentCustomer($event.option.value)">
+            <mat-option [value]="allCustomersOption">All customers</mat-option>
+            @for (customer of filteredPaymentCustomers; track customer.uniqueKeyID) {
+              <mat-option [value]="customer">
+                <span class="sp-option-name">{{ customer.name || customer.customer_company || customer.uniqueKeyID }}</span>
+                <span class="sp-option-meta">{{ customer.uniqueKeyID }}@if (customer.email || customer.phone || customer.mobileNo) { · {{ customer.email || customer.phone || customer.mobileNo }} }</span>
+              </mat-option>
+            }
+            @if (!filteredPaymentCustomers.length) { <mat-option disabled>No matching customers</mat-option> }
+          </mat-autocomplete>
+        </mat-form-field>
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="sp-search">
+          <mat-label>Search receipts</mat-label><mat-icon matPrefix>search</mat-icon>
+          <input matInput [(ngModel)]="search" placeholder="Receipt, method, reference or status">
+        </mat-form-field>
+      </div>
+    </div>
+    @if (loading) { <div class="sp-loading"><mat-progress-bar mode="indeterminate"></mat-progress-bar><p>Loading receipts…</p></div> }
+    @if (!loading && visiblePayments.length) {
+      <div class="sp-table-wrap"><table class="sp-table"><thead><tr><th>Receipt #</th><th>Date</th><th>Customer</th><th>Method / Reference</th><th class="num">Received</th><th class="num">Allocated</th><th class="num">Unallocated</th><th>Status</th></tr></thead>
+        <tbody>@for (row of visiblePayments; track row.paymentId || row.paymentNumber) {
+          <tr>
+            <td><strong>{{ row.paymentNumber || '—' }}</strong></td>
+            <td>{{ row.receiptDate | date:'dd/MM/yyyy' }}</td>
+            <td><strong class="sp-customer-name">{{ row.customerName || row.cuName || row.customerId || '—' }}</strong><small>{{ row.customerId || row.customerID || '' }}</small></td>
+            <td>{{ row.paymentMethod || '—' }}<small>{{ row.transactionId || row.chequeNumber || row.notes || '' }}</small></td>
+            <td class="num sp-received">₹{{ amount(row.paymentAmount) }}</td>
+            <td class="num">₹{{ amount(row.allocatedAmount) }}</td>
+            <td class="num">₹{{ amount(row.unallocatedAmount) }}</td>
+            <td><span class="sp-status">{{ row.status || 'Recorded' | titlecase }}</span></td>
+          </tr>
+        }</tbody></table></div>
+    }
+    @if (!loading && !visiblePayments.length) {
+      <div class="sp-empty">
+        <mat-icon>{{ payments.length ? 'filter_list_off' : 'receipt_long' }}</mat-icon>
+        <h3>{{ payments.length ? 'No matching receipts' : 'No receipts yet' }}</h3>
+        <p>{{ payments.length ? 'Try another customer or search term.' : 'Recorded customer payments will appear here.' }}</p>
+        @if (payments.length && (selectedPaymentCustomer || search)) {
+          <button mat-stroked-button type="button" (click)="clearPaymentCustomerFilter(); search = ''">
+            <mat-icon>filter_alt_off</mat-icon> Clear filters
+          </button>
+        }
+      </div>
+    }
+  </section>
+</div>

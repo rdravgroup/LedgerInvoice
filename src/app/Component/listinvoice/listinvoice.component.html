@@ -26,19 +26,37 @@
 
   <!-- Search and date filters -->
   <div class="toolbar-row">
-    <mat-form-field appearance="outline" class="search-field">
-      <mat-label>Search invoices</mat-label>
-      <input matInput (input)="applyFilter($event)" placeholder="Invoice #, customer, amount…" />
-      <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+    <mat-form-field appearance="outline" class="customer-filter-field" subscriptSizing="dynamic">
+      <mat-label>Customer (optional)</mat-label>
+      <input matInput [formControl]="customerSearch" [matAutocomplete]="customerAutocomplete"
+             (input)="onCustomerSearchInput()" placeholder="All customers or search by name" />
+      <mat-icon matSuffix>search</mat-icon>
+      <mat-autocomplete #customerAutocomplete="matAutocomplete" [displayWith]="displayCustomer"
+                        (optionSelected)="selectCustomer($event.option.value)">
+        <mat-option [value]="allCustomersOption">All Customers</mat-option>
+        @for (customer of filteredCustomers; track customer.uniqueKeyID) {
+          <mat-option [value]="customer">
+            <span class="customer-option-name">{{ customer.name || customer.customer_company || 'Unnamed customer' }}</span>
+            <span class="customer-option-meta">
+              {{ customer.uniqueKeyID }}@if (customer.email || customer.phone || customer.mobileNo) {
+                · {{ customer.email || customer.phone || customer.mobileNo }}
+              }
+            </span>
+          </mat-option>
+        }
+        @if (filteredCustomers.length === 0) {
+          <mat-option disabled>No matching customers</mat-option>
+        }
+      </mat-autocomplete>
     </mat-form-field>
-    <mat-form-field appearance="outline" class="date-filter-field">
+    <mat-form-field appearance="outline" class="date-filter-field" subscriptSizing="dynamic">
       <mat-label>From Date</mat-label>
       <input matInput [matDatepicker]="fromPicker" [value]="fromDate"
              (dateChange)="fromDate = $event.value" aria-label="From Date" />
       <mat-datepicker-toggle matIconSuffix [for]="fromPicker"></mat-datepicker-toggle>
       <mat-datepicker #fromPicker></mat-datepicker>
     </mat-form-field>
-    <mat-form-field appearance="outline" class="date-filter-field">
+    <mat-form-field appearance="outline" class="date-filter-field" subscriptSizing="dynamic">
       <mat-label>To Date</mat-label>
       <input matInput [matDatepicker]="toPicker" [value]="toDate"
              (dateChange)="toDate = $event.value" aria-label="To Date" />
@@ -55,6 +73,23 @@
       Print
     </button>
   </div>
+  <div class="invoice-search-row">
+    <mat-form-field appearance="outline" class="search-field" subscriptSizing="dynamic">
+      <mat-label>Search invoices</mat-label>
+      <input matInput (input)="applyFilter($event)" placeholder="Invoice #, customer, amount…" />
+      <mat-icon matPrefix aria-hidden="true">search</mat-icon>
+    </mat-form-field>
+  </div>
+  @if (selectedCustomerId && customerOutstanding !== null && !customerOutstandingLoading) {
+    <div class="customer-payment-context" role="status">
+      <mat-icon>account_balance_wallet</mat-icon>
+      <span>{{ selectedCustomerName }} outstanding:</span>
+      <strong>₹{{ customerOutstanding | number:'1.2-2' }}</strong>
+    </div>
+  }
+  @if (customerOutstandingError) {
+    <p class="customer-payment-error" role="alert">{{ customerOutstandingError }}</p>
+  }
   @if (dateRangeError) {
     <p class="date-filter-error" role="alert">{{ dateRangeError }}</p>
   }
@@ -134,6 +169,14 @@
               </div>
             }
             <div class="inv-card-actions">
+              <button mat-flat-button color="primary" type="button" (click)="recordInvoicePayment(row)"
+                      [disabled]="invoicePaymentDisabled(row)" [matTooltip]="invoicePaymentTooltip(row)">
+                <mat-icon aria-hidden="true">{{ row.invoiceOutstandingLoading ? 'hourglass_top' : 'payments' }}</mat-icon>
+                Record Payment
+                @if (row.invoiceOutstanding !== undefined && row.invoiceOutstanding > 0) {
+                  · ₹{{ row.invoiceOutstanding | number:'1.2-2' }}
+                }
+              </button>
               <button mat-stroked-button (click)="Editinvoice(row.invoiceNumber)" [disabled]="row.isLocked">
                 <mat-icon aria-hidden="true">edit</mat-icon> Edit
               </button>
@@ -275,7 +318,9 @@
                       (click)="toggleActionPanel(row)"
                       [attr.aria-expanded]="isActionPanelOpen(row)"
                       matTooltip="Actions" aria-label="Invoice actions">
-                <mat-icon aria-hidden="true">more_horiz</mat-icon>
+                <span class="composite-action-icon" aria-hidden="true">
+                  <mat-icon>person</mat-icon><mat-icon>more_horiz</mat-icon>
+                </span>
               </button>
 
               <ng-template
@@ -296,6 +341,12 @@
                   </div>
 
                   <div class="action-popover-grid">
+                    <button mat-stroked-button color="primary" type="button"
+                            (click)="recordInvoicePayment(row)" [disabled]="invoicePaymentDisabled(row)"
+                            [matTooltip]="invoicePaymentTooltip(row)">
+                      <mat-icon aria-hidden="true">{{ row.invoiceOutstandingLoading ? 'hourglass_top' : 'payments' }}</mat-icon>
+                      Record Payment
+                    </button>
                     <button mat-stroked-button type="button"
                             (click)="Editinvoice(row.invoiceNumber)"
                             [disabled]="row.isLocked || isSuperDuper"

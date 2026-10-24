@@ -11,8 +11,10 @@
   align-items: center;
 }
 .search-field { max-width: 400px; width: 100%; }
+.invoice-search-row { display: flex; margin: calc(-1 * var(--space-3)) 0 var(--space-4); }
+.invoice-search-row .search-field { max-width: 400px; }
 .date-filter-field { width: 180px; }
-.toolbar-row > button { min-height: 48px; margin-bottom: 1.25rem; }
+.toolbar-row > button { min-height: 48px; margin-bottom: 0; }
 .date-filter-error { color: var(--md-sys-color-error); margin: -12px 0 var(--space-3); }
 
 /* ── Mobile card list ───────────────────────────────────────── */
@@ -97,7 +99,7 @@
 
 .full-table {
   width: 100%;
-  min-width: 860px;
+  min-width: 1040px;
 }
 
 :host ::ng-deep .full-table .mat-mdc-header-cell,
@@ -197,8 +199,36 @@
   border-radius: 50% !important;
 }
 
-.action-group-trigger mat-icon {
+.action-group-trigger .composite-action-icon {
+  position: relative;
+  display: inline-block;
+  width: 26px;
+  height: 26px;
+}
+
+.action-group-trigger .composite-action-icon mat-icon:first-child {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 20px;
   margin: 0;
+  font-size: 20px;
+}
+
+.action-group-trigger .composite-action-icon mat-icon:last-child {
+  position: absolute;
+  right: -3px;
+  bottom: -2px;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  border: 2px solid var(--md-sys-color-surface);
+  border-radius: 50%;
+  color: var(--md-sys-color-primary);
+  background: var(--md-sys-color-surface-container-high);
+  font-size: 13px;
+  line-height: 12px;
 }
 
 .action-popover {
@@ -271,3 +301,68 @@
 /* NOTE: manual centering for narrow screens is no longer needed — the CDK Overlay's
    connected-position strategy (see actionPopoverPositions in the .ts) keeps the panel
    inside the viewport and flips it automatically. */
+
+/* Customer filter and customer-level payment action */
+.customer-filter-field {
+  width: 270px;
+  max-width: 100%;
+  margin: 0;
+}
+.customer-option-name, .customer-option-meta { display: block; line-height: 1.35; }
+.customer-option-name { font-weight: 600; }
+.customer-option-meta { color: var(--md-sys-color-on-surface-variant); font-size: 11px; }
+.customer-payment-context {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: fit-content;
+  max-width: 100%;
+  margin: calc(-1 * var(--space-3)) 0 var(--space-3);
+  padding: 8px 12px;
+  border: 1px solid var(--md-sys-color-outline);
+  border-radius: var(--md-sys-shape-corner-full);
+  color: var(--md-sys-color-on-surface-variant);
+  background: var(--md-sys-color-surface-container-low);
+  font-size: 12px;
+}
+.customer-payment-context mat-icon { width: 18px; height: 18px; color: var(--md-sys-color-primary); font-size: 18px; }
+.customer-payment-context strong { color: var(--md-sys-color-primary); font-family: var(--md-sys-typescale-mono-family); }
+.customer-payment-error { margin: calc(-1 * var(--space-3)) 0 var(--space-3); color: var(--md-sys-color-error); font-size: 12px; }
+
+/* ── Status badges in table and cards ──────────────────────────── */
+.status-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.inv-badges { display: flex; gap: 4px; align-items: center; }
+.inv-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 7px;
+  border-radius: var(--md-sys-shape-corner-full);
+  font-size: 11px;
+  font-weight: var(--md-sys-typescale-weight-bold);
+  white-space: nowrap;
+  line-height: 1.6;
+}
+.inv-badge mat-icon { font-size: 12px; width: 12px; height: 12px; }
+.inv-badge-approved { background: var(--md-sys-color-success-container); color: var(--md-sys-color-on-success-container); }
+.inv-badge-locked { background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container); }
+.inv-badge-returned { background: var(--md-sys-color-tertiary-container); color: var(--md-sys-color-on-tertiary-container); }
+.inv-badge-draft { background: var(--md-sys-color-surface-variant); color: var(--md-sys-color-on-surface-variant); }
+
+/* ── Return amount sub-line ─────────────────────────────────────── */
+.return-amount-sub {
+  margin-top: 2px;
+  color: var(--md-sys-color-error);
+  font-family: var(--md-sys-typescale-mono-family);
+  font-size: 11px;
+}
+
+/* ── Reports button in header ───────────────────────────────────── */
+.page-header-actions { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+
+@media (max-width: 768px) {
+  .customer-filter-field { width: 100%; }
+  .customer-payment-context { margin-top: 0; }
+  .invoice-search-row { margin-top: 0; }
+  .invoice-search-row .search-field { max-width: 100%; }
+}

@@ -11,6 +11,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { CompanyService } from '../../_service/company.service';
 import { ToastrService } from 'ngx-toastr';
 import { CompanyFormDialogComponent } from './company-form-dialog.component';
+import { CompanyDetailsDialogComponent } from './company-details-dialog.component';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 import { AuthService } from '../../_service/authentication.service';
 import { LoggerService } from '../../_service/logger.service';
@@ -124,6 +125,32 @@ export class CompanyManageComponent implements OnInit, AfterViewInit {
     };
     this.dialog.open(CompanyFormDialogComponent, cfg).afterClosed().subscribe((res) => {
       this.handleDialogResult(res);
+    });
+  }
+
+  openDetails(item: Company): void {
+    this.companyService.getCompanyById(item.companyId).subscribe({
+      next: (company) => {
+        const details = { ...item, ...company };
+        const response = company as Company & { CompanyId?: string; Name?: string };
+        const companyId = details.companyId || response.CompanyId;
+        const name = details.name || response.Name;
+        if (!companyId || !name) {
+          console.error('Company details response is missing required identity fields', company);
+          this.toastr.error('Company details could not be loaded.', 'Error');
+          return;
+        }
+        this.dialog.open(CompanyDetailsDialogComponent, {
+          width: this.isMobile ? '100%' : '900px',
+          maxWidth: this.isMobile ? '100vw' : '96vw',
+          maxHeight: '92vh',
+          data: { ...details, companyId, name }
+        });
+      },
+      error: (error) => {
+        console.error(`Failed to load details for company ${item.companyId}`, error);
+        this.toastr.error('Company details could not be loaded.', 'Error');
+      }
     });
   }
 
@@ -328,4 +355,3 @@ export class CompanyManageComponent implements OnInit, AfterViewInit {
   }
 
 }
-

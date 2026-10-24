@@ -100,5 +100,10 @@ export const routes: Routes = [
     loadComponent: () => import('./Component/sales-returns/sales-returns.component').then(m => m.SalesReturnsComponent),
     canActivate: [authGuard] },
 
+  { path: 'sales-payments',
+    loadComponent: () => import('./Component/sales-payments/sales-payments.component').then(m => m.SalesPaymentsComponent),
+    canActivate: [authGuard] },
+
   { path: '**', redirectTo: '' }
 ];
+

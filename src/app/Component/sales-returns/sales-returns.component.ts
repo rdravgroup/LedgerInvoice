@@ -6,8 +6,9 @@
 // endpoint as Sales Reports (GET /api/Invoice/Report?reportType=returns
 // and /Report/Export), since that already returns exactly this data —
 // no backend changes were needed for this page.
-import { Component, Injectable, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, Injectable, OnInit, OnDestroy, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ReactiveFormsModule, FormBuilder, FormControl, FormGroup, Validators } from '@angular/forms';
 import { MaterialModule } from '../../material.module';
 import { MatTableDataSource } from '@angular/material/table';
@@ -22,6 +23,7 @@ import { AuthService } from '../../_service/authentication.service';
 import { SelectedCompanyService } from '../../_service/selected-company.service';
 import { MasterService } from '../../_service/master.service';
 import { jsPDF } from 'jspdf';
+import { MatDialog } from '@angular/material/dialog';
 
 const SALES_RETURNS_DATE_FORMATS = {
   parse: { dateInput: { day: '2-digit', month: '2-digit', year: 'numeric' } },
@@ -54,7 +56,7 @@ class SalesReturnsDateAdapter extends NativeDateAdapter {
 @Component({
   selector: 'app-sales-returns',
   standalone: true,
-  imports: [CommonModule, MaterialModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, MaterialModule, ReactiveFormsModule],
   providers: [
     { provide: MAT_DATE_LOCALE, useValue: 'en-GB' },
     { provide: DateAdapter, useClass: SalesReturnsDateAdapter },
@@ -85,6 +87,56 @@ export class SalesReturnsComponent implements OnInit, OnDestroy {
 
   // Totals
   totalReturnsValue = 0;
+
+  @ViewChild('returnInvoicePicker') returnInvoicePicker!: TemplateRef<unknown>;
+  returnInvoiceRows: any[] = [];
+  returnInvoiceSearch = '';
+  loadingReturnInvoices = false;
+
+  get filteredReturnInvoices(): any[] {
+    const q = this.returnInvoiceSearch.trim().toLocaleLowerCase();
+    return this.returnInvoiceRows.filter(row => !q ||
+      `${row.invoiceNumber} ${row.cuName} ${row.customerId}`.toLocaleLowerCase().includes(q));
+  }
+
+  openNewReturn(): void {
+    const range = this.validDateRange();
+    if (!range) return;
+    this.loadingReturnInvoices = true;
+    this.masterSvc.GetAllInvoice(this.cid(), range.fromDate, range.toDate)
+      .pipe(takeUntil(this.destroy$)).subscribe({
+        next: (response: any) => {
+          const rows = Array.isArray(response) ? response : response?.data ?? response?.invoices ?? [];
+          this.returnInvoiceRows = (Array.isArray(rows) ? rows : []).map((row: any) => ({
+            ...row,
+            invoiceNumber: row.invoiceNumber || row.invNum || row.InvoiceNumber || row.InvNum || '',
+            cuName: row.cuName || row.customerName || row.CuName || row.CustomerName || '',
+            customerId: row.customerId || row.cuID || row.CustomerId || '',
+            totalAmt: Number(row.totalAmt || row.grandTotal || row.TotalAmt || 0)
+          })).filter((row: any) => row.invoiceNumber && !row.isLocked && !row.isInactive);
+          this.returnInvoiceSearch = '';
+          this.loadingReturnInvoices = false;
+          this.dialog.open(this.returnInvoicePicker, { width: '720px', maxWidth: '96vw', maxHeight: '90vh' });
+        },
+        error: () => {
+          this.loadingReturnInvoices = false;
+          this.toastr.error('Could not load invoices for return creation.');
+        }
+      });
+  }
+
+  selectInvoiceForReturn(invoice: any): void {
+    this.dialog.closeAll();
+    import('../listinvoice/sales-return-dialog.component').then(m => {
+      this.dialog.open(m.SalesReturnDialogComponent, {
+        width: window.innerWidth < 768 ? '100%' : '760px',
+        maxWidth: '100vw', maxHeight: '90vh',
+        data: { invoice, companyId: this.cid() }
+      }).afterClosed().pipe(takeUntil(this.destroy$)).subscribe((created: boolean) => {
+        if (created) this.runReport();
+      });
+    }).catch(() => this.toastr.error('Could not open the sales return form.'));
+  }
 
   private paginatorRef?: MatPaginator;
   private reportRequest$ = new Subject<void>();
@@ -118,7 +170,8 @@ export class SalesReturnsComponent implements OnInit, OnDestroy {
     private auth:       AuthService,
     private selectedCo: SelectedCompanyService,
     private toastr:     ToastrService,
-    private masterSvc:  MasterService
+    private masterSvc: MasterService,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -424,3 +477,8 @@ export class SalesReturnsComponent implements OnInit, OnDestroy {
     URL.revokeObjectURL(url);
   }
 }
+
+
+
+
+

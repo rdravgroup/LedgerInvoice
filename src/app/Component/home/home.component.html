@@ -162,8 +162,14 @@
           <article class="metric-chart-item" [class]="'metric-chart-item tone-' + metric.tone"
             [matTooltip]="metric.kind === 'amount' ? metric.tooltip + ' · ' + formatAmount(metric.value) : metric.tooltip + ' · ' + metric.value">
             <div class="metric-chart-top">
-                  <span class="metric-label">{{ metric.label }}</span>
-                  <strong class="metric-value">{{ metricDisplayValue(metric) }}</strong>
+              <div class="metric-card-heading">
+                <span class="metric-label">{{ metric.label }}</span>
+                <a class="metric-card-link" [routerLink]="metric.route" [queryParams]="filterQueryParams"
+                  [attr.aria-label]="'Open ' + metric.label + ' details'" [matTooltip]="'Open ' + metric.label + ' details'">
+                  <mat-icon aria-hidden="true">arrow_forward</mat-icon>
+                </a>
+              </div>
+              <strong class="metric-value">{{ metricDisplayValue(metric) }}</strong>
             </div>
             <div class="metric-bar-track" role="img"
               [attr.aria-label]="metric.label + ': ' + (metric.kind === 'amount' ? formatAmount(metric.value) : metric.value)">

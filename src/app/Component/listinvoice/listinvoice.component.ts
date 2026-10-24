@@ -10,6 +10,7 @@ import { MatDialog } from '@angular/material/dialog';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
+import { FormControl } from '@angular/forms';
 import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE, NativeDateAdapter } from '@angular/material/core';
 import { PreviewDialogComponent } from './preview-dialog.component';
 import { Subject } from 'rxjs';
@@ -26,6 +27,8 @@ import {
 } from '../confirm-dialog/confirm-destructive-action-dialog.component';
 // NEW: Invoice service for approve / lock / return
 import { InvoiceService } from '../../_service/invoice.service';
+import { LedgerService } from '../../_service/ledger.service';
+import { PaymentDialogComponent } from '../ledger/payment-dialog/payment-dialog.component';
 
 const INVOICE_LIST_DATE_FORMATS = {
   parse: { dateInput: { day: '2-digit', month: '2-digit', year: 'numeric' } },
@@ -64,8 +67,14 @@ interface Invoice {
   invDate: string;
   createDate?: string;
   cuName: string;
+  customerId?: string;
+  cuID?: string;
+  CustomerId?: string;
   coName: string;
   totalAmt: number;
+  invoiceOutstanding?: number;
+  invoiceOutstandingLoading?: boolean;
+  invoicePaymentError?: string;
   // NEW: approval, locking, returns
   isApproved?:  boolean;
   isLocked?:    boolean;
@@ -108,6 +117,14 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
 
   loading = false;
   isMobile = false;
+  customers: any[] = [];
+  customerSearch = new FormControl<any | string>('', { nonNullable: true });
+  selectedCustomerId = '';
+  selectedCustomerName = '';
+  customerOutstanding: number | null = null;
+  customerOutstandingLoading = false;
+  customerOutstandingError = '';
+  readonly allCustomersOption = { uniqueKeyID: '', name: 'All Customers' };
   isSuperAdmin = false;
   isSuperDuper = false;   // NEW: read-only role
   canApprove   = false;   // NEW: can approve/lock
@@ -134,6 +151,9 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
 
   private destroy$ = new Subject<void>();
   private invoiceLoad$ = new Subject<void>();
+  private customerLoad$ = new Subject<void>();
+  private customerLedgerLoad$ = new Subject<void>();
+  private searchTerm = '';
   activeActionInvoiceNumber: string | null = null;
 
   // FIX: Actions popover rendered via CDK Overlay (attached to <body>) instead of an
@@ -151,6 +171,7 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
   constructor(
     private service: MasterService,
     private invoiceSvc: InvoiceService,     // NEW
+    private ledgerService: LedgerService,
     private alert: ToastrService,
     private router: Router,
     private dialog: MatDialog,
@@ -174,6 +195,22 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
     this.isSuperDuper = role === 'super_duper_admin';
     this.canApprove   = !this.isSuperDuper && (role === 'super_admin' || role === 'admin');
     this.canReturn    = !this.isSuperDuper;
+    this.dataSource.filterPredicate = (invoice, filter) => {
+      const criteria = JSON.parse(filter || '{}') as { searchTerm?: string; customerId?: string };
+      const customerId = String(
+        invoice.customerId ||
+        (invoice as Invoice & { cuID?: string }).cuID ||
+        (invoice as Invoice & { CustomerId?: string }).CustomerId ||
+        ''
+      );
+      if (criteria.customerId && customerId.toLocaleLowerCase() !== criteria.customerId.toLocaleLowerCase()) return false;
+      if (!criteria.searchTerm) return true;
+      const searchable = [
+        invoice.invoiceNumber, invoice.invNum, invoice.cuName, invoice.coName,
+        invoice.totalAmt, customerId
+      ].map(value => String(value ?? '').toLocaleLowerCase()).join(' ');
+      return searchable.includes(criteria.searchTerm);
+    };
   }
 
   private checkMobile(): void {
@@ -188,9 +225,349 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // CHANGE: reload when super_admin switches company
     this.selectedCompanyService.selectedCompanyId$.pipe(takeUntil(this.destroy$)).subscribe(() => {
+      this.selectCustomer(this.allCustomersOption);
+      this.loadCustomers();
       this.loadActionConfiguration();
       this.LoadInvoice();
     });
+  }
+
+  get filteredCustomers(): any[] {
+    const value = this.customerSearch.value;
+    const query = (typeof value === 'string' ? value : this.displayCustomer(value))
+      .trim().toLocaleLowerCase();
+    if (!query || query === 'all customers') return this.customers;
+    return this.customers.filter(customer =>
+      [
+        customer.name, customer.customer_company, customer.uniqueKeyID,
+        customer.email, customer.emailId, customer.phone, customer.mobileNo
+      ].some(value => String(value || '').toLocaleLowerCase().includes(query))
+    );
+  }
+
+  displayCustomer(value: any): string {
+    if (typeof value === 'string') return value;
+    if (!value?.uniqueKeyID) return 'All Customers';
+    return value.name || value.customer_company || '';
+  }
+
+  private loadCustomers(): void {
+    this.customerLoad$.next();
+    this.customers = [];
+    const companyId = this.selectedCompanyService.getSelectedCompanyId() || this.auth.getCompanyId();
+    if (!companyId) {
+      return;
+    }
+    this.service.GetCustomer(companyId)
+      .pipe(takeUntil(this.destroy$), takeUntil(this.customerLoad$))
+      .subscribe({
+      next: (response: any) => {
+        const rows = Array.isArray(response)
+          ? response
+          : response?.data ?? response?.Data ?? response?.items ?? response?.Items ?? [];
+        this.customers = (Array.isArray(rows) ? rows : []).sort((left: any, right: any) =>
+          String(left?.name || left?.customer_company || '').localeCompare(
+            String(right?.name || right?.customer_company || ''), undefined,
+            { sensitivity: 'base', numeric: true }
+          )
+        );
+      },
+      error: error => {
+        console.error('Failed to load invoice-list customers', error);
+        this.alert.error('Failed to load customers for invoice filtering.', 'Customers');
+      }
+    });
+  }
+
+  onCustomerSearchInput(): void {
+    if (typeof this.customerSearch.value === 'string') {
+      this.selectedCustomerId = '';
+      this.selectedCustomerName = '';
+      this.customerLedgerLoad$.next();
+      this.customerOutstanding = null;
+      this.customerOutstandingLoading = false;
+      this.customerOutstandingError = '';
+      this.updateInvoiceFilter();
+    }
+  }
+
+  selectCustomer(customer: any): void {
+    this.selectedCustomerId = customer?.uniqueKeyID || '';
+    this.selectedCustomerName = this.selectedCustomerId
+      ? this.displayCustomer(customer)
+      : '';
+    this.customerSearch.setValue(
+      this.selectedCustomerId ? this.selectedCustomerName : 'All Customers',
+      { emitEvent: false }
+    );
+    this.updateInvoiceFilter();
+    this.loadCustomerOutstanding();
+  }
+
+  private updateInvoiceFilter(): void {
+    this.dataSource.filter = JSON.stringify({
+      searchTerm: this.searchTerm,
+      customerId: this.selectedCustomerId
+    });
+    this.dataSource.paginator?.firstPage();
+  }
+
+  private loadCustomerOutstanding(): void {
+    this.customerLedgerLoad$.next();
+    this.customerOutstanding = null;
+    this.customerOutstandingError = '';
+    if (!this.selectedCustomerId) {
+      this.customerOutstandingLoading = false;
+      return;
+    }
+
+    this.customerOutstandingLoading = true;
+    this.ledgerService.getCustomerLedger(this.selectedCustomerId)
+      .pipe(takeUntil(this.destroy$), takeUntil(this.customerLedgerLoad$))
+      .subscribe({
+        next: (response: any) => {
+          const data = response?.data ?? response?.Data ?? response;
+          const outstandingBalance = data?.outstandingBalance ?? data?.OutstandingBalance;
+          const candidates = [
+            data?.outstanding, data?.Outstanding, data?.balance, data?.Balance,
+            typeof outstandingBalance === 'object'
+              ? outstandingBalance?.totalOutstanding ?? outstandingBalance?.TotalOutstanding ??
+                outstandingBalance?.outstandingAmount ?? outstandingBalance?.OutstandingAmount
+              : outstandingBalance,
+            data?.outstandingAmount, data?.OutstandingAmount,
+            data?.totalOutstanding, data?.TotalOutstanding, data?.totalAR, data?.TotalAR
+          ];
+          const candidate = candidates.find(value => value !== undefined && value !== null && value !== '');
+          const amount = Number(candidate);
+          if (candidate === undefined || !Number.isFinite(amount)) {
+            this.customerOutstandingError = 'Customer outstanding balance is unavailable; payment recording is disabled.';
+            console.error('Customer ledger response did not include a valid outstanding balance', response);
+          } else {
+            this.customerOutstanding = Math.max(0, amount);
+          }
+          this.customerOutstandingLoading = false;
+        },
+        error: error => {
+          console.error('Failed to load selected customer outstanding balance', error);
+          this.customerOutstandingError = 'Could not load customer outstanding balance; payment recording is disabled.';
+          this.customerOutstandingLoading = false;
+        }
+      });
+  }
+
+  get canRecordCustomerPayment(): boolean {
+    return !!this.selectedCustomerId &&
+      !this.customerOutstandingLoading &&
+      this.customerOutstanding !== null &&
+      this.customerOutstanding > 0;
+  }
+
+  get customerPaymentTooltip(): string {
+    if (!this.selectedCustomerId) return 'Select a customer first';
+    if (this.customerOutstandingLoading) return 'Loading customer outstanding balance';
+    if (this.customerOutstandingError) return this.customerOutstandingError;
+    if (this.customerOutstanding === 0) return 'This customer has no outstanding balance';
+    return 'Record a payment for the selected customer';
+  }
+
+  recordCustomerPayment(): void {
+    if (!this.canRecordCustomerPayment) return;
+    const companyId = this.selectedCompanyService.getSelectedCompanyId() || this.auth.getCompanyId();
+    if (!companyId) {
+      this.alert.error('Select a company before recording a payment.', 'Payment');
+      return;
+    }
+
+    this.dialog.open(PaymentDialogComponent, {
+      width: window.innerWidth < 600 ? '100vw' : '560px',
+      maxWidth: '96vw',
+      maxHeight: '92vh',
+      data: {
+        customerId: this.selectedCustomerId,
+        customerName: this.selectedCustomerName,
+        companyId,
+        currentOutstanding: this.customerOutstanding
+      }
+    }).afterClosed().pipe(takeUntil(this.destroy$)).subscribe((result: any) => {
+      if (result?.ok) {
+        this.alert.success('Payment recorded.', 'Payment');
+        this.loadCustomerOutstanding();
+      } else if (result?.error) {
+        this.alert.error(result.error, 'Payment');
+      }
+    });
+  }
+
+  invoicePaymentDisabled(row: Invoice): boolean {
+    return row.isLocked === true ||
+      row.invoiceOutstandingLoading === true ||
+      !!row.invoicePaymentError ||
+      !this.getInvoiceCustomerId(row) ||
+      !this.getInvoiceNumber(row) ||
+      (row.invoiceOutstanding !== undefined && row.invoiceOutstanding <= 0);
+  }
+
+  invoicePaymentTooltip(row: Invoice): string {
+    if (row.isLocked) return 'Invoice is locked';
+    if (row.invoiceOutstandingLoading) return 'Checking invoice outstanding balance';
+    if (row.invoicePaymentError) return row.invoicePaymentError;
+    if (!this.getInvoiceCustomerId(row)) return 'Customer details are unavailable for this invoice';
+    if (!this.getInvoiceNumber(row)) return 'Invoice number is unavailable';
+    if (row.invoiceOutstanding === 0) return 'This invoice has no outstanding balance';
+    if (row.invoiceOutstanding !== undefined) return `Outstanding: ₹${row.invoiceOutstanding.toFixed(2)}`;
+    return 'Verify balance and record payment against this invoice';
+  }
+
+  recordInvoicePayment(row: Invoice): void {
+    if (this.invoicePaymentDisabled(row)) return;
+    const customerId = this.getInvoiceCustomerId(row);
+    const invoiceNumber = this.getInvoiceNumber(row);
+    const companyId = this.selectedCompanyService.getSelectedCompanyId() || this.auth.getCompanyId();
+    if (!customerId || !invoiceNumber || !companyId) {
+      this.alert.error('Invoice, customer, or company details are unavailable.', 'Payment');
+      return;
+    }
+
+    row.invoiceOutstandingLoading = true;
+    row.invoicePaymentError = undefined;
+    this.ledgerService.getCustomerLedger(customerId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
+          const data = response?.data ?? response?.Data ?? response;
+          const invoices = this.getOutstandingInvoiceRows(data);
+          const invoice = Array.isArray(invoices)
+            ? invoices.find((item: any) => this.sameInvoiceNumber(
+              item?.invoiceNumber ?? item?.InvoiceNumber ?? item?.invoiceNo ?? item?.InvoiceNo ??
+              item?.referenceNumber ?? item?.ReferenceNumber,
+              invoiceNumber
+            ))
+            : undefined;
+          if (!invoice) {
+            row.invoiceOutstanding = 0;
+            row.invoicePaymentError = 'Invoice-level outstanding balance is unavailable; payment is disabled.';
+            row.invoiceOutstandingLoading = false;
+            this.alert.error(
+              `Could not verify the outstanding balance for invoice ${invoiceNumber}. No payment was recorded.`,
+              'Payment'
+            );
+            return;
+          }
+
+          const balanceValue = this.getInvoiceOutstanding(invoice);
+          const outstanding = Number(balanceValue);
+          if (balanceValue === undefined || balanceValue === null || balanceValue === '' || !Number.isFinite(outstanding)) {
+            row.invoiceOutstanding = 0;
+            row.invoicePaymentError = 'Invoice-level outstanding balance is unavailable; payment is disabled.';
+            row.invoiceOutstandingLoading = false;
+            console.error('Invoice ledger entry did not include a valid outstanding balance', invoice);
+            this.alert.error(
+              `Could not verify the outstanding balance for invoice ${invoiceNumber}. No payment was recorded.`,
+              'Payment'
+            );
+            return;
+          }
+
+          row.invoiceOutstanding = Math.max(0, outstanding);
+          row.invoiceOutstandingLoading = false;
+          if (row.invoiceOutstanding <= 0) {
+            this.alert.info(`Invoice ${invoiceNumber} has no outstanding balance.`, 'Payment');
+            return;
+          }
+
+          this.dialog.open(PaymentDialogComponent, {
+            width: window.innerWidth < 600 ? '100vw' : '560px',
+            maxWidth: '96vw',
+      maxHeight: '92vh',
+            data: {
+              customerId,
+              customerName: row.cuName,
+              companyId,
+              invoiceNumber,
+              invoiceOutstanding: row.invoiceOutstanding,
+              currentOutstanding: row.invoiceOutstanding
+            }
+          }).afterClosed().pipe(takeUntil(this.destroy$)).subscribe((result: any) => {
+            if (result?.ok) {
+              this.alert.success(`Payment recorded against invoice ${invoiceNumber}.`, 'Payment');
+              this.refreshInvoiceOutstanding(row, customerId, invoiceNumber);
+              if (this.selectedCustomerId === customerId) this.loadCustomerOutstanding();
+            } else if (result?.error) {
+              this.alert.error(result.error, 'Payment');
+            }
+          });
+        },
+        error: error => {
+          console.error(`Failed to verify outstanding balance for invoice ${invoiceNumber}`, error);
+          row.invoicePaymentError = 'Could not verify outstanding balance; payment is disabled.';
+          row.invoiceOutstandingLoading = false;
+          this.alert.error(
+            `Could not verify the outstanding balance for invoice ${invoiceNumber}. No payment was recorded.`,
+            'Payment'
+          );
+        }
+      });
+  }
+
+  private refreshInvoiceOutstanding(row: Invoice, customerId: string, invoiceNumber: string): void {
+    this.ledgerService.getCustomerLedger(customerId)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (response: any) => {
+          const data = response?.data ?? response?.Data ?? response;
+          const invoices = this.getOutstandingInvoiceRows(data);
+          const invoice = Array.isArray(invoices)
+            ? invoices.find((item: any) => this.sameInvoiceNumber(
+              item?.invoiceNumber ?? item?.InvoiceNumber ?? item?.invoiceNo ?? item?.InvoiceNo ??
+              item?.referenceNumber ?? item?.ReferenceNumber,
+              invoiceNumber
+            ))
+            : undefined;
+          const value = invoice ? this.getInvoiceOutstanding(invoice) : undefined;
+          const outstanding = Number(value);
+          if (value === undefined || value === null || value === '' || !Number.isFinite(outstanding)) {
+            row.invoiceOutstanding = undefined;
+            row.invoicePaymentError = 'Could not refresh invoice outstanding balance.';
+            console.error(`Could not refresh outstanding balance for invoice ${invoiceNumber}`, response);
+          } else {
+            row.invoiceOutstanding = Math.max(0, outstanding);
+            row.invoicePaymentError = undefined;
+          }
+        },
+        error: error => {
+          console.error(`Could not refresh outstanding balance for invoice ${invoiceNumber}`, error);
+          row.invoiceOutstanding = undefined;
+          row.invoicePaymentError = 'Could not refresh invoice outstanding balance.';
+        }
+      });
+  }
+
+  private getInvoiceCustomerId(row: Invoice): string {
+    return String(row.customerId || row.cuID || row.CustomerId || '').trim();
+  }
+
+  private getInvoiceNumber(row: Invoice): string {
+    return String(row.invoiceNumber || row.invNum || '').trim();
+  }
+
+  private sameInvoiceNumber(left: unknown, right: string): boolean {
+    return String(left ?? '').trim().toLocaleLowerCase() === right.trim().toLocaleLowerCase();
+  }
+
+  private getOutstandingInvoiceRows(data: any): any[] | undefined {
+    const balance = data?.outstandingBalance ?? data?.OutstandingBalance;
+    const rows = data?.outstandingInvoices ?? data?.OutstandingInvoices ??
+      data?.outstandingInvoiceList ?? data?.OutstandingInvoiceList ??
+      balance?.outstandingInvoices ?? balance?.OutstandingInvoices ??
+      balance?.outstandingInvoiceList ?? balance?.OutstandingInvoiceList;
+    return Array.isArray(rows) ? rows : undefined;
+  }
+
+  private getInvoiceOutstanding(invoice: any): unknown {
+    return invoice?.outstanding ?? invoice?.Outstanding ??
+      invoice?.outstandingAmount ?? invoice?.OutstandingAmount ??
+      invoice?.balance ?? invoice?.Balance ?? invoice?.amountDue ?? invoice?.AmountDue ??
+      invoice?.balanceAmount ?? invoice?.BalanceAmount;
   }
 
   private loadActionConfiguration(): void {
@@ -220,6 +597,8 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
     this.destroy$.next();
     this.destroy$.complete();
     this.invoiceLoad$.complete();
+    this.customerLoad$.complete();
+    this.customerLedgerLoad$.complete();
   }
 
   private formatDateInput(date: Date): string {
@@ -359,8 +738,18 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
                 if (!item.createDate && item.createdAt) item.createDate = item.createdAt;
                 if (!item.createDate && item.CreateDate) item.createDate = item.CreateDate;
                 if (!item.invDate && item.createDate) item.invDate = item.createDate;
-                return item;
-              });
+                  item.customerId = item.customerId || item.CustomerId || item.CustomerID ||
+                    item.cuID || item.cuId || item.CuID || item.customer_id || '';
+                  const invoiceOutstanding = item.invoiceOutstanding ?? item.InvoiceOutstanding ??
+                    item.outstandingAmount ?? item.OutstandingAmount ??
+                    item.outstanding ?? item.Outstanding ?? item.balanceDue ?? item.BalanceDue;
+                  const outstandingAmount = Number(invoiceOutstanding);
+                  if (invoiceOutstanding !== undefined && invoiceOutstanding !== null &&
+                      invoiceOutstanding !== '' && Number.isFinite(outstandingAmount)) {
+                    item.invoiceOutstanding = Math.max(0, outstandingAmount);
+                  }
+                  return item;
+                });
               this.dataSource.data = data;
               this.closeActionPanel();
               this.attachTableControls();
@@ -391,8 +780,8 @@ export class ListinvoiceComponent implements OnInit, OnDestroy {
   }
 
   applyFilter(event: Event): void {
-    this.dataSource.filter = (event.target as HTMLInputElement).value.trim().toLowerCase();
-    if (this.dataSource.paginator) this.dataSource.paginator.firstPage();
+    this.searchTerm = (event.target as HTMLInputElement).value.trim().toLowerCase();
+    this.updateInvoiceFilter();
   }
 
   /**

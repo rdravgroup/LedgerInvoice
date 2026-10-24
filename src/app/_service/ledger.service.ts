@@ -571,6 +571,12 @@ export class LedgerService {
     ).pipe(catchError(err => this.handleError(err, 'Record payment')));
   }
 
+  /** Get all customer receipts for the active company. */
+  getPaymentsByCompanyId(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}CustomerLedger/payments/company`)
+      .pipe(catchError(err => this.handleError(err, "Get company payments")));
+  }
+  /** Get all customer receipts for the active company. */
   /**
    * Get all payments for a customer
    * GET /api/ledger/payments/customer/{customerId}
@@ -580,6 +586,7 @@ export class LedgerService {
       `${this.baseUrl}CustomerLedger/payments/customer/${customerId}`
     ).pipe(catchError(err => this.handleError(err, 'Get customer payments')));
   }
+
 
   /**
    * Reverse a payment transaction
@@ -591,6 +598,7 @@ export class LedgerService {
       { reason }
     ).pipe(catchError(err => this.handleError(err, 'Reverse payment')));
   }
+
 
   /**
    * Delete/Inactivate a payment by payment number
