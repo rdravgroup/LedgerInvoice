@@ -45,13 +45,13 @@
       <mat-icon>insights</mat-icon><span>Total Earnings</span><span class="link-stat">{{ summary ? formatCompactAmount(summary.netSales) : '—' }}</span>
     </button>
     <button mat-menu-item routerLink="/listinvoice" [queryParams]="filterQueryParams" matTooltip="Sales orders and invoices">
-      <mat-icon>receipt_long</mat-icon><span>Orders</span><span class="link-stat">{{ summary?.orderCount | number:numberFormat.locale }}</span>
+      <mat-icon>receipt_long</mat-icon><span>Orders</span><span class="link-stat">{{ summary?.orderCount | number:'1.0-0':numberFormat.locale }}</span>
     </button>
     <button mat-menu-item routerLink="/purchase/reports" [queryParams]="filterQueryParams" matTooltip="Purchase summary and reports">
-      <mat-icon>shopping_bag</mat-icon><span>Purchases</span><span class="link-stat">{{ summary?.purchaseCount | number:numberFormat.locale }}</span>
+      <mat-icon>shopping_bag</mat-icon><span>Purchases</span><span class="link-stat">{{ summary?.purchaseCount | number:'1.0-0':numberFormat.locale }}</span>
     </button>
     <button mat-menu-item routerLink="/sales-reports" [queryParams]="filterQueryParams" matTooltip="Sales reports">
-      <mat-icon>point_of_sale</mat-icon><span>Sales</span><span class="link-stat">{{ summary?.invoiceCount | number:numberFormat.locale }}</span>
+      <mat-icon>point_of_sale</mat-icon><span>Sales</span><span class="link-stat">{{ summary?.invoiceCount | number:'1.0-0':numberFormat.locale }}</span>
     </button>
     <button mat-menu-item routerLink="/customer/add" matTooltip="Create a customer account">
       <mat-icon>person_add</mat-icon><span>Add Customer</span>
@@ -243,7 +243,7 @@
                     <span [class]="'product-sales-fill product-sales-fill-' + i"
                       [style.width.%]="topProductWidth(product.salesAmount)"></span>
                   </div>
-                  <small>{{ product.quantitySold | number:numberFormat.locale:'1.0-2' }} units sold</small>
+                  <small>{{ product.quantitySold | number:'1.0-2':numberFormat.locale }} units sold</small>
                 </div>
                 }
             </div>
@@ -346,15 +346,15 @@
           </a>
           <a class="stock-stat" routerLink="/purchase/reports" [queryParams]="filterQueryParams">
             <span><mat-icon>inventory</mat-icon> Stock quantity</span>
-            <strong>{{ stock.currentStockQuantity | number:numberFormat.locale:'1.0-2' }}</strong>
+            <strong>{{ stock.currentStockQuantity | number:'1.0-2':numberFormat.locale }}</strong>
           </a>
           <a class="stock-stat" routerLink="/purchase/reports" [queryParams]="filterQueryParams">
             <span><mat-icon>warning_amber</mat-icon> Low stock items</span>
-            <strong>{{ stock.lowStockCount | number:numberFormat.locale }}</strong>
+            <strong>{{ stock.lowStockCount | number:'1.0-0':numberFormat.locale }}</strong>
           </a>
           <a class="stock-stat" routerLink="/purchase/orders" [queryParams]="filterQueryParams">
             <span><mat-icon>pending_actions</mat-icon> Pending approvals</span>
-            <strong>{{ stock.pendingApprovalCount | number:numberFormat.locale }}</strong>
+            <strong>{{ stock.pendingApprovalCount | number:'1.0-0':numberFormat.locale }}</strong>
           </a>
         </mat-card-content>
       } @else {
